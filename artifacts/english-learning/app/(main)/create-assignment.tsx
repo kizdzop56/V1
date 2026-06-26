@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Platform, Alert,
+  TouchableOpacity, ActivityIndicator, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -68,6 +68,8 @@ export default function CreateAssignmentScreen() {
   const [content, setContent] = useState("");
   const [questions, setQuestions] = useState<QuestionDraft[]>([DEFAULT_QUESTION()]);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   // ── Question helpers ────────────────────────────────────────────────
   const addQuestion = () => setQuestions((p) => [...p, DEFAULT_QUESTION()]);
@@ -93,8 +95,26 @@ export default function CreateAssignmentScreen() {
 
   // ── Submit ──────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!title.trim()) { Alert.alert("Ошибка", "Введите название задания"); return; }
-    if (!description.trim()) { Alert.alert("Ошибка", "Введите описание задания"); return; }
+    setFormError("");
+
+    // Validation
+    if (!title.trim()) { setFormError("Введите название задания"); return; }
+    if (!description.trim()) { setFormError("Введите описание задания"); return; }
+
+    const ageMinNum = parseInt(ageMin, 10);
+    const ageMaxNum = parseInt(ageMax, 10);
+    if (isNaN(ageMinNum) || ageMinNum < 1 || ageMinNum > 100) {
+      setFormError("Возраст «от» введён некорректно (1–100)");
+      return;
+    }
+    if (isNaN(ageMaxNum) || ageMaxNum < 1 || ageMaxNum > 100) {
+      setFormError("Возраст «до» введён некорректно (1–100)");
+      return;
+    }
+    if (ageMinNum > ageMaxNum) {
+      setFormError("Возраст «от» не может быть больше возраста «до»");
+      return;
+    }
 
     const questionPayload = questions
       .filter((q) => q.text.trim())
@@ -127,18 +147,17 @@ export default function CreateAssignmentScreen() {
           title: title.trim(),
           description: description.trim(),
           type,
-          ageMin: parseInt(ageMin) || 5,
-          ageMax: parseInt(ageMax) || 18,
+          ageMin: ageMinNum,
+          ageMax: ageMaxNum,
           points: parseInt(points) || 10,
           content: content.trim() || undefined,
           questions: questionPayload,
         }),
       });
-      Alert.alert("Готово!", "Задание успешно создано", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      setSuccess(true);
+      setTimeout(() => router.back(), 1200);
     } catch (e: any) {
-      Alert.alert("Ошибка", e?.message ?? "Не удалось создать задание");
+      setFormError(e?.message ?? "Не удалось создать задание");
     } finally {
       setSaving(false);
     }
@@ -438,13 +457,35 @@ export default function CreateAssignmentScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Inline error */}
+        {!!formError && (
+          <View style={{
+            backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fca5a5",
+            borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 8,
+          }}>
+            <Feather name="alert-circle" size={16} color={colors.destructive} />
+            <Text style={{ fontSize: 14, color: colors.destructive, flex: 1 }}>{formError}</Text>
+          </View>
+        )}
+
+        {/* Success banner */}
+        {success && (
+          <View style={{
+            backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#86efac",
+            borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 8,
+          }}>
+            <Feather name="check-circle" size={16} color={colors.success} />
+            <Text style={{ fontSize: 14, color: colors.success, fontWeight: "600" }}>Задание создано!</Text>
+          </View>
+        )}
+
         {/* Submit */}
-        <TouchableOpacity style={s.submitBtn} onPress={handleSubmit} disabled={saving}>
+        <TouchableOpacity style={[s.submitBtn, success && { backgroundColor: colors.success }]} onPress={handleSubmit} disabled={saving || success}>
           {saving
             ? <ActivityIndicator color="#fff" />
             : <>
                 <Feather name="check" size={18} color="#fff" />
-                <Text style={s.submitText}>Создать задание</Text>
+                <Text style={s.submitText}>{success ? "Готово!" : "Создать задание"}</Text>
               </>
           }
         </TouchableOpacity>

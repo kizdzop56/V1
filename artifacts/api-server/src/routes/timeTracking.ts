@@ -12,11 +12,22 @@ router.post("/time-tracking/start", requireAuth, async (req, res) => {
   const openSessions = await db.select().from(timeSessionsTable)
     .where(and(eq(timeSessionsTable.studentId, user.userId), isNull(timeSessionsTable.endedAt)));
 
+  let accumulatedMinutes = 0;
   for (const session of openSessions) {
     const durationMinutes = Math.round((Date.now() - session.startedAt.getTime()) / 60000);
+    accumulatedMinutes += durationMinutes;
     await db.update(timeSessionsTable)
       .set({ endedAt: new Date(), durationMinutes })
       .where(eq(timeSessionsTable.id, session.id));
+  }
+
+  // Persist closed session time to user record so it survives app kills
+  if (accumulatedMinutes > 0) {
+    const [u] = await db.select({ t: usersTable.totalTimeMinutes })
+      .from(usersTable).where(eq(usersTable.id, user.userId));
+    await db.update(usersTable)
+      .set({ totalTimeMinutes: (u?.t ?? 0) + accumulatedMinutes })
+      .where(eq(usersTable.id, user.userId));
   }
 
   const [session] = await db.insert(timeSessionsTable).values({ studentId: user.userId }).returning();

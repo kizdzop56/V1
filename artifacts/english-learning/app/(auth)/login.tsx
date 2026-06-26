@@ -40,7 +40,11 @@ export default function LoginScreen() {
       });
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || "Неверный псевдоним или пароль");
+        setError(
+          response.status === 401
+            ? "Неверный псевдоним или пароль"
+            : data.error || "Ошибка входа. Попробуйте снова."
+        );
         return;
       }
       await login(data.token, data.user);
