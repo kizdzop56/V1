@@ -100,44 +100,56 @@ function AddByCodeModal({
 }) {
   const colors = useColors();
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
   const [found, setFound] = useState<any>(null);
 
   const reset = () => { setCode(""); setFound(null); setError(""); };
 
-  const search = async () => {
-    const trimmed = code.trim().toUpperCase();
-    if (trimmed.length < 6) { setError("Введите полный 6-символьный код"); return; }
-    setLoading(true); setError(""); setFound(null);
-    try {
-      const data = await apiFetch(`/api/connections/by-code/${trimmed}`);
-      if (data.role !== "student") {
-        setError("Этот пользователь не является учеником"); return;
+  // Auto-search when exactly 6 chars entered
+  const handleCodeChange = async (raw: string) => {
+    const t = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    setCode(t);
+    setFound(null);
+    setError("");
+
+    if (t.length === 6) {
+      setSearching(true);
+      try {
+        const data = await apiFetch(`/api/connections/by-code/${t}`);
+        if (data.role !== "student") {
+          setError("Этот пользователь не является учеником");
+        } else {
+          setFound(data);
+        }
+      } catch {
+        setError("Пользователь с таким кодом не найден");
+      } finally {
+        setSearching(false);
       }
-      setFound(data);
-    } catch (e: any) {
-      setError(e.message ?? "Пользователь не найден");
-    } finally { setLoading(false); }
+    }
   };
 
   const confirm = async () => {
     if (!found) return;
-    setLoading(true); setError("");
+    setConfirming(true); setError("");
     try {
       const result = await apiFetch(endpoint, {
-        method: "POST", body: JSON.stringify({ code: code.trim().toUpperCase() }),
+        method: "POST", body: JSON.stringify({ code }),
       });
       onAdded(result);
       reset(); onClose();
     } catch (e: any) {
       setError(e.message ?? "Ошибка добавления");
-    } finally { setLoading(false); }
+    } finally { setConfirming(false); }
   };
 
   const levelMeta = found?.knowledgeLevel
     ? LEVEL_META[found.knowledgeLevel as keyof typeof LEVEL_META]
     : null;
+
+  const borderColor = error ? colors.destructive : found ? "#10b981" : colors.border;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { onClose(); reset(); }}>
@@ -150,45 +162,55 @@ function AddByCodeModal({
             Ученик найдёт свой код в разделе «Профиль»
           </Text>
 
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+          {/* Code input */}
+          <View style={{ position: "relative", marginBottom: 6 }}>
             <TextInput
               style={{
-                flex: 1, backgroundColor: colors.card,
-                borderRadius: 12, borderWidth: 1.5, borderColor: found ? "#10b981" : colors.border,
-                paddingHorizontal: 16, paddingVertical: 14,
-                fontSize: 20, fontWeight: "800", letterSpacing: 4,
+                backgroundColor: colors.card,
+                borderRadius: 14, borderWidth: 2, borderColor,
+                paddingHorizontal: 16, paddingVertical: 16,
+                fontSize: 28, fontWeight: "900", letterSpacing: 8,
                 color: colors.foreground, textTransform: "uppercase", textAlign: "center",
               }}
-              placeholder="A3X9K2"
-              placeholderTextColor={colors.mutedForeground}
+              placeholder="_ _ _ _ _ _"
+              placeholderTextColor={colors.mutedForeground + "80"}
               value={code}
-              onChangeText={(t) => { setCode(t.toUpperCase()); setFound(null); setError(""); }}
+              onChangeText={handleCodeChange}
               maxLength={6}
               autoCapitalize="characters"
               autoCorrect={false}
+              autoFocus
             />
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.primary, borderRadius: 12,
-                paddingHorizontal: 18, justifyContent: "center",
-              }}
-              onPress={search} disabled={loading}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Feather name="search" size={20} color="#fff" />}
-            </TouchableOpacity>
+            {searching && (
+              <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
+                <ActivityIndicator color={colors.primary} size="small" />
+              </View>
+            )}
           </View>
 
+          {/* Hint */}
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }}>
+            Введите 6-значный код — поиск произойдёт автоматически
+          </Text>
+
+          {/* Error */}
           {!!error && (
-            <Text style={{ color: colors.destructive, fontSize: 13, marginBottom: 12 }}>{error}</Text>
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 8,
+              backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, marginBottom: 14,
+              borderWidth: 1, borderColor: "#fecaca",
+            }}>
+              <Feather name="alert-circle" size={16} color={colors.destructive} />
+              <Text style={{ color: colors.destructive, fontSize: 13, flex: 1 }}>{error}</Text>
+            </View>
           )}
 
+          {/* Found user card */}
           {found && (
             <View style={{
               backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14,
-              borderWidth: 1.5, borderColor: "#10b98150",
-              flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16,
+              borderWidth: 1.5, borderColor: "#10b98140",
+              flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14,
             }}>
               <View style={{
                 width: 52, height: 52, borderRadius: 26,
@@ -199,28 +221,37 @@ function AddByCodeModal({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name}</Text>
-                <Text style={{ fontSize: 13, color: "#065f46aa" }}>@{found.username}</Text>
+                <Text style={{ fontSize: 13, color: "#065f46bb" }}>@{found.username}</Text>
                 {levelMeta && (
-                  <Text style={{ fontSize: 12, color: levelMeta.color, fontWeight: "700", marginTop: 2 }}>
-                    {levelMeta.labelRu}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: levelMeta.color }} />
+                    <Text style={{ fontSize: 12, color: levelMeta.color, fontWeight: "700" }}>
+                      {levelMeta.labelRu}
+                    </Text>
+                  </View>
                 )}
               </View>
               <Feather name="check-circle" size={26} color="#10b981" />
             </View>
           )}
 
+          {/* Confirm button — only shown after user found */}
           {found && (
             <TouchableOpacity
               style={{
-                backgroundColor: colors.primary, borderRadius: 14,
-                paddingVertical: 14, alignItems: "center", marginBottom: 8,
+                backgroundColor: "#10b981", borderRadius: 14,
+                paddingVertical: 15, alignItems: "center", marginBottom: 8,
+                flexDirection: "row", justifyContent: "center", gap: 8,
               }}
-              onPress={confirm} disabled={loading}
+              onPress={confirm} disabled={confirming}
             >
-              {loading
+              {confirming
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>Добавить</Text>}
+                : <>
+                    <Feather name="user-plus" size={18} color="#fff" />
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>Подтвердить</Text>
+                  </>
+              }
             </TouchableOpacity>
           )}
 
