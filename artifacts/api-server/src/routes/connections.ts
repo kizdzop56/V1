@@ -155,6 +155,28 @@ router.delete("/connections/teacher/students/:studentId", requireAuth, async (re
   res.json({ ok: true });
 });
 
+// ── Student: get accepted teachers ───────────────────────────────────
+router.get("/connections/student/teachers", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+
+  const links = await db.select({ teacherId: teacherStudentsTable.teacherId })
+    .from(teacherStudentsTable).where(and(
+      eq(teacherStudentsTable.studentId, caller.userId),
+      eq(teacherStudentsTable.status, "accepted"),
+    ));
+
+  if (links.length === 0) { res.json([]); return; }
+
+  const ids = links.map((l) => l.teacherId);
+  const teachers = await db.select({
+    id: usersTable.id, name: usersTable.name, username: usersTable.username,
+    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor,
+    role: usersTable.role, totalPoints: usersTable.totalPoints,
+  }).from(usersTable).where(inArray(usersTable.id, ids));
+
+  res.json(teachers);
+});
+
 // ── Student: get incoming teacher requests ───────────────────────────
 router.get("/connections/student/teacher-requests", requireAuth, async (req, res) => {
   const caller = getUser(req);

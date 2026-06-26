@@ -155,6 +155,12 @@ type FriendRow = {
 };
 
 // ── Friends modal ─────────────────────────────────────────────────────
+type TeacherItem = {
+  id: number; name: string; username: string;
+  avatarEmoji: string | null; avatarColor: string | null;
+  role: string; totalPoints: number;
+};
+
 function FriendsModal({
   visible, onClose, onOpenFriend,
 }: {
@@ -165,6 +171,7 @@ function FriendsModal({
   const colors = useColors();
   const [tab, setTab] = useState<"list" | "add">("list");
   const [friends, setFriends] = useState<FriendRow[]>([]);
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [code, setCode] = useState("");
   const [found, setFound] = useState<any>(null);
@@ -174,8 +181,14 @@ function FriendsModal({
 
   const loadFriends = useCallback(async () => {
     setLoadingList(true);
-    try { setFriends(await apiFetch("/api/connections/friends")); }
-    catch { /* ignore */ }
+    try {
+      const [fr, tc] = await Promise.all([
+        apiFetch("/api/connections/friends"),
+        apiFetch("/api/connections/student/teachers"),
+      ]);
+      setFriends(fr);
+      setTeachers(tc);
+    } catch { /* ignore */ }
     finally { setLoadingList(false); }
   }, []);
 
@@ -321,7 +334,34 @@ function FriendsModal({
                     </View>
                   ))}
 
-                  {friends.length === 0 && (
+                  {/* My teachers section */}
+                  {teachers.length > 0 && (
+                    <>
+                      <Text style={{
+                        fontSize: 11, fontWeight: "700", color: colors.mutedForeground,
+                        textTransform: "uppercase", letterSpacing: 0.6,
+                        marginTop: friends.length > 0 ? 16 : 0, marginBottom: 8,
+                      }}>
+                        Мои учителя · {teachers.length}
+                      </Text>
+                      {teachers.map((t) => (
+                        <View
+                          key={t.id}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                        >
+                          <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
+                            <Text style={{ fontSize: 20 }}>{t.avatarEmoji ?? "🎓"}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>🎓 Учитель</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  )}
+
+                  {friends.length === 0 && teachers.length === 0 && (
                     <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
                       <Text style={{ fontSize: 40 }}>👫</Text>
                       <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>Нет друзей</Text>
@@ -433,6 +473,7 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState(user?.bio ?? "");
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(user?.bio ?? "");
+  const [bioLoaded, setBioLoaded] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -445,6 +486,29 @@ export default function ProfileScreen() {
 
   const isStudent = user?.role === "student";
   const isTeacher = isTeacherOrAdmin(user?.role ?? "");
+
+  // Fetch fresh bio from server on mount (so it never shows stale data after save)
+  useEffect(() => {
+    if (!user?.id) return;
+    const baseUrl = process.env["EXPO_PUBLIC_DOMAIN"]
+      ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+      : "";
+    AsyncStorage.getItem("auth_token").then((token) => {
+      fetch(`${baseUrl}/api/users/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.bio !== undefined && !bioLoaded) {
+            setBio(data.bio ?? "");
+            setBioInput(data.bio ?? "");
+            setBioLoaded(true);
+          }
+        })
+        .catch(() => { /* silent */ });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Fetch pending friend requests + teacher requests count for badge
   useEffect(() => {
