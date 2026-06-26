@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import {
-  usersTable, teacherStudentsTable, parentChildrenTable, friendshipsTable,
+  usersTable, teacherStudentsTable, parentChildrenTable, friendshipsTable, submissionsTable,
 } from "@workspace/db";
 import { eq, and, or, inArray } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
@@ -324,6 +324,51 @@ router.delete("/connections/friends/:id", requireAuth, async (req, res) => {
 
   await db.delete(friendshipsTable).where(eq(friendshipsTable.id, id));
   res.json({ ok: true });
+});
+
+// ── Public profile of a friend (accepted only) ───────────────────────
+router.get("/connections/friends/:userId/profile", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  const targetId = Number(req.params["userId"]);
+
+  // Verify accepted friendship
+  const [friendship] = await db.select().from(friendshipsTable).where(
+    and(
+      or(
+        and(eq(friendshipsTable.requesterId, caller.userId), eq(friendshipsTable.addresseeId, targetId)),
+        and(eq(friendshipsTable.requesterId, targetId), eq(friendshipsTable.addresseeId, caller.userId)),
+      ),
+      eq(friendshipsTable.status, "accepted"),
+    )
+  );
+
+  if (!friendship) {
+    res.status(403).json({ error: "Профиль доступен только друзьям" });
+    return;
+  }
+
+  const [user] = await db.select({
+    id: usersTable.id,
+    name: usersTable.name,
+    username: usersTable.username,
+    avatarEmoji: usersTable.avatarEmoji,
+    avatarColor: usersTable.avatarColor,
+    knowledgeLevel: usersTable.knowledgeLevel,
+    totalPoints: usersTable.totalPoints,
+    totalTimeMinutes: usersTable.totalTimeMinutes,
+    bio: usersTable.bio,
+    age: usersTable.age,
+    role: usersTable.role,
+  }).from(usersTable).where(eq(usersTable.id, targetId));
+
+  if (!user) { res.status(404).json({ error: "Пользователь не найден" }); return; }
+
+  const subRows = await db
+    .select({ id: submissionsTable.id })
+    .from(submissionsTable)
+    .where(eq(submissionsTable.studentId, targetId));
+
+  res.json({ ...user, completedAssignments: subRows.length });
 });
 
 export default router;

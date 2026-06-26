@@ -155,7 +155,13 @@ type FriendRow = {
 };
 
 // ── Friends modal ─────────────────────────────────────────────────────
-function FriendsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function FriendsModal({
+  visible, onClose, onOpenFriend,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onOpenFriend: (id: number) => void;
+}) {
   const colors = useColors();
   const [tab, setTab] = useState<"list" | "add">("list");
   const [friends, setFriends] = useState<FriendRow[]>([]);
@@ -277,9 +283,14 @@ function FriendsModal({ visible, onClose }: { visible: boolean; onClose: () => v
                     </View>
                   ))}
 
-                  {/* Accepted friends */}
+                  {/* Accepted friends — tappable to view profile */}
                   {accepted.map((f) => (
-                    <View key={f.friendshipId} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+                    <TouchableOpacity
+                      key={f.friendshipId}
+                      activeOpacity={0.7}
+                      onPress={() => { onClose(); onOpenFriend(f.user.id); }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                    >
                       <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
                         <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
                       </View>
@@ -287,10 +298,14 @@ function FriendsModal({ visible, onClose }: { visible: boolean; onClose: () => v
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
                         <Text style={{ fontSize: 12, color: colors.mutedForeground }}>⭐ {f.user.totalPoints} очков</Text>
                       </View>
-                      <TouchableOpacity onPress={() => removeOrDecline(f.friendshipId)}>
+                      <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation(); removeOrDecline(f.friendshipId); }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
                         <Feather name="user-x" size={18} color={colors.mutedForeground} />
                       </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
                   ))}
 
                   {/* Pending sent */}
@@ -422,9 +437,33 @@ export default function ProfileScreen() {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const isStudent = user?.role === "student";
   const isTeacher = isTeacherOrAdmin(user?.role ?? "");
+
+  // Fetch pending friend requests count for badge
+  useEffect(() => {
+    if (!isStudent) return;
+    const load = async () => {
+      try {
+        const token = await AsyncStorage.getItem("auth_token");
+        const baseUrl = process.env["EXPO_PUBLIC_DOMAIN"]
+          ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+          : "";
+        const res = await fetch(`${baseUrl}/api/connections/friends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data: Array<{ status: string; direction: string }> = await res.json();
+        const count = data.filter((f) => f.status === "pending" && f.direction === "received").length;
+        setPendingCount(count);
+      } catch { /* silent */ }
+    };
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, [isStudent]);
 
   const { data: submissions } = useGetStudentSubmissions(
     user?.id || 0,
@@ -595,7 +634,11 @@ export default function ProfileScreen() {
         onSave={handleAvatarSave}
       />
       {isStudent && (
-        <FriendsModal visible={friendsOpen} onClose={() => setFriendsOpen(false)} />
+        <FriendsModal
+          visible={friendsOpen}
+          onClose={() => setFriendsOpen(false)}
+          onOpenFriend={(id) => router.push(`/(main)/friend/${id}` as any)}
+        />
       )}
 
       <ScrollView contentContainerStyle={s.scroll}>
@@ -834,6 +877,16 @@ export default function ProfileScreen() {
                   <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>Мои друзья</Text>
                   <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Добавляй друзей по коду</Text>
                 </View>
+                {/* Badge for incoming friend requests */}
+                {pendingCount > 0 && (
+                  <View style={{
+                    minWidth: 22, height: 22, borderRadius: 11,
+                    backgroundColor: "#ef4444", justifyContent: "center", alignItems: "center",
+                    paddingHorizontal: 5,
+                  }}>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#fff" }}>{pendingCount}</Text>
+                  </View>
+                )}
                 <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
