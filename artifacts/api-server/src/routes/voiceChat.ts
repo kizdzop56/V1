@@ -3,14 +3,16 @@ import { db } from "@workspace/db";
 import { voiceChatSessionsTable, voiceChatMessagesTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, getUser } from "../lib/auth";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 
 const router = Router();
 
-const openai = new OpenAI({
-  apiKey: process.env["OPENAI_API_KEY"] || "",
-  baseURL: process.env["OPENAI_API_BASE"] || undefined,
-});
+function getOpenAI(): OpenAI | null {
+  const apiKey = process.env["OPENAI_API_KEY"] || process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
+  const baseURL = process.env["OPENAI_API_BASE"] || process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"];
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey, baseURL });
+}
 
 const POINTS_PER_VOICE_EXCHANGE = 5;
 
@@ -91,23 +93,27 @@ router.post("/voice-chat/sessions/:id/messages", requireAuth, async (req, res) =
     return;
   }
 
+  const openai = getOpenAI();
   let studentTranscript = "";
   let studentAudioUrl: string | null = null;
 
-  try {
-    // Convert base64 to buffer and transcribe using OpenAI Whisper
-    const audioBuffer = Buffer.from(audioBase64, "base64");
-    const audioFile = new File([audioBuffer], "audio.m4a", { type: mimeType || "audio/m4a" });
+  if (openai) {
+    try {
+      const audioBuffer = Buffer.from(audioBase64, "base64");
+      const audioFile = await toFile(audioBuffer, "audio.m4a", { type: mimeType || "audio/m4a" });
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioFile,
-      model: "whisper-1",
-      language: "en",
-    });
-    studentTranscript = transcription.text;
-  } catch (err) {
-    req.log.error({ err }, "Failed to transcribe audio");
-    studentTranscript = "[Audio message - transcription unavailable]";
+      const transcription = await openai.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+        language: "en",
+      });
+      studentTranscript = transcription.text;
+    } catch (err) {
+      req.log.error({ err }, "Failed to transcribe audio");
+      studentTranscript = "[Audio - transcription unavailable]";
+    }
+  } else {
+    studentTranscript = "[Audio message received]";
   }
 
   // Get previous messages for context
@@ -120,44 +126,42 @@ router.post("/voice-chat/sessions/:id/messages", requireAuth, async (req, res) =
     content: m.transcript,
   }));
 
-  // Get AI response
-  let aiTranscript = "Hello! I'm your English tutor. Let's practice together!";
+  let aiTranscript = "Hello! I am your English tutor. Let us practice together! What would you like to talk about today?";
   let aiAudioUrl: string | null = null;
 
-  try {
-    const chatResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a friendly and encouraging English language tutor for children. 
-          Your goal is to help students improve their English speaking skills through natural conversation.
-          Keep your responses short (1-3 sentences), encouraging, and age-appropriate.
-          If the student makes grammar mistakes, gently correct them by modeling the correct usage in your response.
-          Always respond in English. Ask simple questions to keep the conversation going.`,
-        },
-        ...conversationHistory,
-        { role: "user", content: studentTranscript },
-      ],
-    });
+  if (openai) {
+    try {
+      const chatResponse = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a friendly and encouraging English language tutor for children (ages 5-18). 
+Help students improve their English speaking skills through natural conversation.
+Keep responses short (1-3 sentences), encouraging, and age-appropriate.
+Gently correct grammar mistakes by modeling correct usage in your response.
+Always respond in English. Ask simple questions to keep the conversation going.`,
+          },
+          ...conversationHistory,
+          { role: "user", content: studentTranscript },
+        ],
+      });
+      aiTranscript = chatResponse.choices[0]?.message?.content || aiTranscript;
 
-    aiTranscript = chatResponse.choices[0]?.message?.content || aiTranscript;
-
-    // Generate TTS audio for AI response
-    const ttsResponse = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "nova",
-      input: aiTranscript,
-    });
-
-    const audioArrayBuffer = await ttsResponse.arrayBuffer();
-    const base64Audio = Buffer.from(audioArrayBuffer).toString("base64");
-    aiAudioUrl = `data:audio/mp3;base64,${base64Audio}`;
-  } catch (err) {
-    req.log.error({ err }, "Failed to get AI response");
+      // Generate TTS
+      const ttsResponse = await openai.audio.speech.create({
+        model: "tts-1",
+        voice: "nova",
+        input: aiTranscript,
+      });
+      const audioArrayBuffer = await ttsResponse.arrayBuffer();
+      aiAudioUrl = `data:audio/mp3;base64,${Buffer.from(audioArrayBuffer).toString("base64")}`;
+    } catch (err) {
+      req.log.error({ err }, "Failed to get AI response");
+    }
   }
 
-  // Save student message
+  // Save messages
   const [studentMsg] = await db.insert(voiceChatMessagesTable).values({
     sessionId,
     role: "student",
@@ -165,7 +169,6 @@ router.post("/voice-chat/sessions/:id/messages", requireAuth, async (req, res) =
     transcript: studentTranscript,
   }).returning();
 
-  // Save AI message
   const [aiMsg] = await db.insert(voiceChatMessagesTable).values({
     sessionId,
     role: "ai",
@@ -173,7 +176,7 @@ router.post("/voice-chat/sessions/:id/messages", requireAuth, async (req, res) =
     transcript: aiTranscript,
   }).returning();
 
-  // Update session stats
+  // Update session & award points
   const [currentSession] = await db.select().from(voiceChatSessionsTable)
     .where(eq(voiceChatSessionsTable.id, sessionId));
 
@@ -185,7 +188,6 @@ router.post("/voice-chat/sessions/:id/messages", requireAuth, async (req, res) =
     })
     .where(eq(voiceChatSessionsTable.id, sessionId));
 
-  // Award points
   const [userData] = await db.select({ totalPoints: usersTable.totalPoints })
     .from(usersTable).where(eq(usersTable.id, user.userId));
   await db.update(usersTable)

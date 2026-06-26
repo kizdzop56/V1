@@ -13,8 +13,8 @@ function StudentTimerManager() {
   const { mutate: endSession } = useEndTimeSession();
 
   useEffect(() => {
-    startSession({});
-    return () => { endSession({}); };
+    startSession(undefined);
+    return () => { endSession(undefined); };
   }, []);
 
   return null;

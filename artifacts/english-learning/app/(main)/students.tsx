@@ -21,11 +21,11 @@ export default function StudentsScreen() {
 
   const { data: allStudents, isLoading: loadingAll } = useListUsers(
     { role: "student" },
-    { query: { enabled: !isParent } }
+    { query: { enabled: !isParent } as any }
   );
   const { data: children, isLoading: loadingChildren } = useGetParentChildren(
     user?.id || 0,
-    { query: { enabled: isParent && !!user?.id } }
+    { query: { enabled: isParent && !!user?.id } as any }
   );
 
   const students = (isParent ? children : allStudents) || [];
