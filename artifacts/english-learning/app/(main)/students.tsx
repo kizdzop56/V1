@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin, LEVEL_META } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -39,17 +40,21 @@ type PersonItem = {
   inviteCode: string | null;
 };
 
-function UserCard({ item, onRemove, colors }: { item: PersonItem; onRemove: () => void; colors: any }) {
+function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRemove: () => void; onPress: () => void; colors: any }) {
   const levelMeta = item.knowledgeLevel
     ? LEVEL_META[item.knowledgeLevel as keyof typeof LEVEL_META]
     : null;
 
   return (
-    <View style={{
-      backgroundColor: colors.card, borderRadius: 16, padding: 14,
-      borderWidth: 1, borderColor: colors.border, marginBottom: 10,
-      flexDirection: "row", alignItems: "center", gap: 12,
-    }}>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      onPress={onPress}
+      style={{
+        backgroundColor: colors.card, borderRadius: 16, padding: 14,
+        borderWidth: 1, borderColor: colors.border, marginBottom: 10,
+        flexDirection: "row", alignItems: "center", gap: 12,
+      }}
+    >
       <View style={{
         width: 48, height: 48, borderRadius: 24,
         backgroundColor: item.avatarColor ?? "#6366f1",
@@ -81,11 +86,11 @@ function UserCard({ item, onRemove, colors }: { item: PersonItem; onRemove: () =
             {item.totalPoints}
           </Text>
         </View>
-        <TouchableOpacity onPress={onRemove}>
+        <TouchableOpacity onPress={(e) => { e.stopPropagation(); onRemove(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Feather name="x" size={18} color={colors.destructive} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -277,6 +282,7 @@ export default function StudentsScreen() {
   const colors = useColors();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const isTeacher = isTeacherOrAdmin(user?.role ?? "");
   const isParent = user?.role === "parent";
@@ -455,7 +461,7 @@ export default function StudentsScreen() {
                 </Text>
               )}
               {items.map((item) => (
-                <UserCard key={item.id} item={item} colors={colors} onRemove={() => handleRemove(item)} />
+                <UserCard key={item.id} item={item} colors={colors} onRemove={() => handleRemove(item)} onPress={() => router.push(`/(main)/friend/${item.id}` as any)} />
               ))}
             </>
           )}

@@ -204,18 +204,74 @@ export default function AssignmentDetailScreen() {
         {/* Questions */}
         {(assignment.questions || []).length > 0 && (
           <View style={{ marginBottom: 16 }}>
-            <Text style={styles.sectionTitle}>Questions</Text>
+            <Text style={styles.sectionTitle}>Вопросы</Text>
             {(assignment.questions || []).map((q: Question, i: number) => {
-              const isAnswered = answers[q.id] !== undefined;
               const questionResult = result?.results?.find((r: any) => r.questionId === q.id);
+              const hasOptions = Array.isArray(q.options) && q.options.length > 0;
+              const selected = answers[q.id];
               return (
                 <View key={q.id} style={styles.questionCard}>
                   <Text style={styles.questionText}>{i + 1}. {q.text}</Text>
+
+                  {/* Teacher view — show correct answer */}
                   {isTeacherRole && q.correctAnswer ? (
                     <View style={[styles.answerInput, styles.answerCorrect]}>
                       <Text style={{ color: colors.success, fontWeight: "600" }}>✓ {q.correctAnswer}</Text>
                     </View>
+                  ) : hasOptions ? (
+                    /* Multiple choice */
+                    <View style={{ gap: 8 }}>
+                      {(q.options as string[]).map((opt, oi) => {
+                        const isSelected = selected === opt;
+                        const isCorrectOpt = submitted && opt === questionResult?.correctAnswer;
+                        const isWrongOpt = submitted && isSelected && !questionResult?.isCorrect;
+                        return (
+                          <TouchableOpacity
+                            key={oi}
+                            onPress={() => !submitted && setAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                            activeOpacity={submitted ? 1 : 0.7}
+                            style={{
+                              flexDirection: "row", alignItems: "center", gap: 10,
+                              padding: 12, borderRadius: 12, borderWidth: 1.5,
+                              borderColor: isCorrectOpt ? colors.success
+                                : isWrongOpt ? colors.destructive
+                                : isSelected ? colors.primary
+                                : colors.border,
+                              backgroundColor: isCorrectOpt ? "#f0fdf4"
+                                : isWrongOpt ? "#fef2f2"
+                                : isSelected ? colors.primary + "12"
+                                : colors.background,
+                            }}
+                          >
+                            <View style={{
+                              width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+                              borderColor: isCorrectOpt ? colors.success
+                                : isWrongOpt ? colors.destructive
+                                : isSelected ? colors.primary
+                                : colors.border,
+                              backgroundColor: (isSelected || isCorrectOpt) ? (isCorrectOpt ? colors.success : colors.primary) : "transparent",
+                              justifyContent: "center", alignItems: "center",
+                            }}>
+                              {(isSelected || isCorrectOpt) && <Feather name="check" size={13} color="#fff" />}
+                            </View>
+                            <Text style={{
+                              fontSize: 14, flex: 1, fontWeight: isSelected ? "600" : "400",
+                              color: isCorrectOpt ? colors.success
+                                : isWrongOpt ? colors.destructive
+                                : colors.foreground,
+                            }}>{opt}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                      {submitted && questionResult && !questionResult.isCorrect && (
+                        <Text style={styles.wrongLabel}>✗ Правильно: {questionResult.correctAnswer}</Text>
+                      )}
+                      {submitted && questionResult?.isCorrect && (
+                        <Text style={styles.correctLabel}>✓ Верно!</Text>
+                      )}
+                    </View>
                   ) : (
+                    /* Open text */
                     <>
                       <TextInput
                         style={[
@@ -225,14 +281,14 @@ export default function AssignmentDetailScreen() {
                         ]}
                         value={answers[q.id] || ""}
                         onChangeText={v => setAnswers(prev => ({ ...prev, [q.id]: v }))}
-                        placeholder="Your answer..."
+                        placeholder="Ваш ответ..."
                         placeholderTextColor={colors.mutedForeground}
                         editable={!submitted}
                       />
                       {submitted && questionResult && (
                         questionResult.isCorrect
-                          ? <Text style={styles.correctLabel}>✓ Correct!</Text>
-                          : <Text style={styles.wrongLabel}>✗ Correct answer: {questionResult.correctAnswer}</Text>
+                          ? <Text style={styles.correctLabel}>✓ Верно!</Text>
+                          : <Text style={styles.wrongLabel}>✗ Правильно: {questionResult.correctAnswer}</Text>
                       )}
                     </>
                   )}

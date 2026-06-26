@@ -367,8 +367,10 @@ function FriendsModal({
                         Мои учителя · {teachers.length}
                       </Text>
                       {teachers.map((t) => (
-                        <View
+                        <TouchableOpacity
                           key={t.id}
+                          activeOpacity={0.75}
+                          onPress={() => { onClose(); onOpenFriend(t.id); }}
                           style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
                         >
                           <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
@@ -378,7 +380,8 @@ function FriendsModal({
                             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>
                             <Text style={{ fontSize: 12, color: colors.mutedForeground }}>🎓 Учитель</Text>
                           </View>
-                        </View>
+                          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                        </TouchableOpacity>
                       ))}
                     </>
                   )}
