@@ -28,6 +28,7 @@ export default function AssignmentDetailScreen() {
   const [result, setResult] = useState<any>(null);
 
   const isAdmin = user?.role === "admin";
+  const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
 
   const { data: assignment, isLoading } = useGetAssignment(assignmentId, {
     query: { enabled: !!assignmentId } as any,
@@ -210,7 +211,7 @@ export default function AssignmentDetailScreen() {
               return (
                 <View key={q.id} style={styles.questionCard}>
                   <Text style={styles.questionText}>{i + 1}. {q.text}</Text>
-                  {isAdmin && q.correctAnswer ? (
+                  {isTeacherRole && q.correctAnswer ? (
                     <View style={[styles.answerInput, styles.answerCorrect]}>
                       <Text style={{ color: colors.success, fontWeight: "600" }}>✓ {q.correctAnswer}</Text>
                     </View>
@@ -258,7 +259,7 @@ export default function AssignmentDetailScreen() {
         )}
 
         {/* Submit button (students only, not yet submitted) */}
-        {!isAdmin && !submitted && (assignment.questions || []).length > 0 && (
+        {!isTeacherRole && !submitted && (assignment.questions || []).length > 0 && (
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
             {submitting
               ? <ActivityIndicator color="#fff" />

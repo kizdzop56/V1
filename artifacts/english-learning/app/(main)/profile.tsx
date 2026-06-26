@@ -36,6 +36,19 @@ function formatTime(minutes: number) {
   return `${h} ч ${m} мин`;
 }
 
+function formatSessionTime(seconds: number) {
+  if (seconds < 1800) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h === 0) return `${m} мин`;
+  if (m === 0) return `${h} ч`;
+  return `${h} ч ${m} мин`;
+}
+
 // Live in-app timer — restores elapsed time from session start saved in AsyncStorage
 const SESSION_START_KEY = "timer_session_start";
 
@@ -939,7 +952,7 @@ export default function ProfileScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={s.timerValue}>{formatTime(totalMinutes)}</Text>
                   <Text style={s.timerLabel}>
-                    Сегодня: {formatTime(Math.floor(sessionSeconds / 60))} в этой сессии
+                    Сегодня: {formatSessionTime(sessionSeconds)} в этой сессии
                   </Text>
                 </View>
               </View>
