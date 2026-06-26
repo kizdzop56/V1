@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Platform,
@@ -66,10 +66,15 @@ export default function CreateAssignmentScreen() {
   const [ageMax, setAgeMax] = useState("18");
   const [points, setPoints] = useState("10");
   const [content, setContent] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaInputMode, setMediaInputMode] = useState<"url" | "file">("url");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [questions, setQuestions] = useState<QuestionDraft[]>([DEFAULT_QUESTION()]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<any>(null);
 
   // ── Question helpers ────────────────────────────────────────────────
   const addQuestion = () => setQuestions((p) => [...p, DEFAULT_QUESTION()]);
@@ -139,6 +144,9 @@ export default function CreateAssignmentScreen() {
       })
       .filter(Boolean);
 
+    const finalMediaUrl = (type === "audio" || type === "video") ? mediaUrl.trim() || undefined : undefined;
+    const finalContent = type === "reading" ? content.trim() || undefined : undefined;
+
     setSaving(true);
     try {
       await apiFetch("/api/assignments", {
@@ -150,7 +158,8 @@ export default function CreateAssignmentScreen() {
           ageMin: ageMinNum,
           ageMax: ageMaxNum,
           points: parseInt(points) || 10,
-          content: content.trim() || undefined,
+          content: finalContent,
+          mediaUrl: finalMediaUrl,
           questions: questionPayload,
         }),
       });
@@ -243,6 +252,30 @@ export default function CreateAssignmentScreen() {
     submitText: { fontSize: 16, fontWeight: "700", color: "#fff" },
   });
 
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setFormError("");
+    try {
+      const token = await AsyncStorage.getItem("auth_token");
+      const form = new FormData();
+      form.append("file", file);
+      const endpoint = type === "audio" ? "/api/upload/audio" : "/api/upload/video";
+      const res = await fetch(`${BASE}${endpoint}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token ?? ""}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Ошибка загрузки");
+      setMediaUrl(data.url);
+      setUploadedFileName(file.name);
+    } catch (e: any) {
+      setFormError(e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const contentLabel =
     type === "reading" ? "Текст для чтения"
     : type === "audio" ? "Ссылка на аудио"
@@ -315,17 +348,134 @@ export default function CreateAssignmentScreen() {
         </View>
 
         {/* Контент (чтение / аудио / видео) */}
-        {(type === "reading" || type === "audio" || type === "video") && (
+        {type === "reading" && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Контент</Text>
-            <Text style={s.label}>{contentLabel}</Text>
+            <Text style={s.label}>Текст для чтения</Text>
             <TextInput
-              style={[s.input, type === "reading" && s.textArea]}
+              style={[s.input, s.textArea]}
               value={content} onChangeText={setContent}
-              placeholder={type === "reading" ? "Вставьте текст для чтения..." : "Вставьте URL медиафайла..."}
+              placeholder="Вставьте текст для чтения..."
               placeholderTextColor={colors.mutedForeground}
-              multiline={type === "reading"}
+              multiline
             />
+          </View>
+        )}
+
+        {(type === "audio" || type === "video") && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Медиафайл</Text>
+
+            {/* Mode toggle */}
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+              {(["url", "file"] as const).map((mode) => {
+                const active = mediaInputMode === mode;
+                return (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[s.formatBtn, {
+                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primary + "12" : colors.background,
+                      flex: 1,
+                    }]}
+                    onPress={() => setMediaInputMode(mode)}
+                  >
+                    <Feather
+                      name={mode === "url" ? "link" : "upload"}
+                      size={14}
+                      color={active ? colors.primary : colors.mutedForeground}
+                    />
+                    <Text style={[s.formatBtnText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                      {mode === "url" ? "По ссылке" : "Загрузить файл"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {mediaInputMode === "url" ? (
+              <>
+                <Text style={s.label}>
+                  {type === "audio" ? "Ссылка на аудио" : "Ссылка на видео"}
+                </Text>
+                <TextInput
+                  style={s.input}
+                  value={mediaUrl} onChangeText={setMediaUrl}
+                  placeholder={type === "audio" ? "https://example.com/audio.mp3" : "https://youtube.com/watch?v=..."}
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              </>
+            ) : (
+              <>
+                <Text style={s.label}>
+                  {type === "audio" ? "Аудиофайл (MP3, M4A, WAV)" : "Видеофайл (MP4, MOV)"}
+                </Text>
+
+                {/* Uploaded file indicator */}
+                {uploadedFileName ? (
+                  <View style={{
+                    flexDirection: "row", alignItems: "center", gap: 10,
+                    backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#86efac",
+                    borderRadius: 12, padding: 12, marginBottom: 8,
+                  }}>
+                    <Feather name="check-circle" size={16} color={colors.success} />
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.success, fontWeight: "600" }}>
+                      {uploadedFileName}
+                    </Text>
+                    <TouchableOpacity onPress={() => { setMediaUrl(""); setUploadedFileName(""); }}>
+                      <Feather name="x" size={16} color={colors.success} />
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+
+                {Platform.OS === "web" ? (
+                  <>
+                    {/* Hidden HTML file input for web */}
+                    {/* @ts-ignore */}
+                    <input
+                      type="file"
+                      accept={type === "audio" ? "audio/*" : "video/*"}
+                      style={{ display: "none" }}
+                      ref={fileInputRef}
+                      onChange={(e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                    />
+                    <TouchableOpacity
+                      style={[s.addOptBtn, { paddingVertical: 16, borderColor: colors.primary, borderStyle: "dashed" }]}
+                      onPress={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <Feather name="upload" size={18} color={colors.primary} />
+                      }
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}>
+                        {uploading ? "Загрузка..." : `Выбрать ${type === "audio" ? "аудио" : "видео"}`}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  /* Native: show URL input as fallback */
+                  <>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 8 }}>
+                      На мобильных устройствах используйте ссылку:
+                    </Text>
+                    <TextInput
+                      style={s.input}
+                      value={mediaUrl} onChangeText={setMediaUrl}
+                      placeholder={type === "audio" ? "https://example.com/audio.mp3" : "https://youtube.com/watch?v=..."}
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="none"
+                      keyboardType="url"
+                    />
+                  </>
+                )}
+              </>
+            )}
           </View>
         )}
 

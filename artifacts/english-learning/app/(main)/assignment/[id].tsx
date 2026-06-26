@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Alert, TextInput, Linking,
@@ -8,12 +8,63 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  useGetAssignment,
-  useSubmitAssignment,
-  useGetAssignmentSubmissions,
-} from "@workspace/api-client-react";
-import type { Question } from "@workspace/api-client-react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
+  ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+  : "";
+
+async function apiFetch(path: string, options?: RequestInit) {
+  const token = await AsyncStorage.getItem("auth_token");
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options?.headers ?? {}),
+    },
+  });
+  if (res.status === 204) return null;
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? `Ошибка ${res.status}`);
+  return data;
+}
+
+type Question = {
+  id: number;
+  text: string;
+  options: string[] | null;
+  correctAnswer: string | null;
+  orderIndex: number;
+};
+
+type AssignmentDetail = {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  points: number;
+  ageMin: number;
+  ageMax: number;
+  content: string | null;
+  mediaUrl: string | null;
+  isDraft: boolean;
+  questions: Question[];
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  text_test: "#8b5cf6",
+  audio: "#06b6d4",
+  reading: "#10b981",
+  video: "#f59e0b",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  text_test: "Тест",
+  audio: "Аудирование",
+  reading: "Чтение",
+  video: "Видео",
+};
 
 export default function AssignmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,45 +74,48 @@ export default function AssignmentDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [assignment, setAssignment] = useState<AssignmentDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
 
   const isAdmin = user?.role === "admin";
   const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
 
-  const { data: assignment, isLoading } = useGetAssignment(assignmentId, {
-    query: { enabled: !!assignmentId } as any,
-  });
+  // Load assignment
+  useEffect(() => {
+    if (!assignmentId) return;
+    setIsLoading(true);
+    setFetchError(null);
+    apiFetch(`/api/assignments/${assignmentId}`)
+      .then(setAssignment)
+      .catch((e: Error) => setFetchError(e.message))
+      .finally(() => setIsLoading(false));
+  }, [assignmentId]);
 
-  const { data: submissions } = useGetAssignmentSubmissions(assignmentId, {
-    query: { enabled: isAdmin && !!assignmentId } as any,
-  });
-
-  const { mutate: submit, isPending: submitting } = useSubmitAssignment({
-    mutation: {
-      onSuccess: (data) => {
-        setResult(data);
-        setSubmitted(true);
-      },
-      onError: () => Alert.alert("Error", "Failed to submit. Please try again."),
-    },
-  });
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!assignment) return;
-    const answerList = (assignment.questions || []).map((q: Question) => ({
-      questionId: q.id,
-      answer: answers[q.id] || "",
-    }));
-    submit({ id: assignmentId, data: { answers: answerList } });
-  };
-
-  const TYPE_COLORS: Record<string, string> = {
-    text_test: colors.textTestColor,
-    audio: colors.audioColor,
-    reading: colors.readingColor,
-    video: colors.videoColor,
+    setSubmitting(true);
+    try {
+      const answerList = (assignment.questions || []).map((q: Question) => ({
+        questionId: q.id,
+        answer: answers[q.id] || "",
+      }));
+      const data = await apiFetch(`/api/assignments/${assignmentId}/submit`, {
+        method: "POST",
+        body: JSON.stringify({ answers: answerList }),
+      });
+      setResult(data);
+      setSubmitted(true);
+    } catch (e: any) {
+      Alert.alert("Ошибка", "Не удалось отправить. Попробуйте снова.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -97,6 +151,7 @@ export default function AssignmentDetailScreen() {
       paddingHorizontal: 12, paddingVertical: 10,
       fontSize: 15, color: colors.foreground,
       backgroundColor: colors.background,
+      ...(Platform.OS === "web" ? { outlineWidth: 0 } as any : {}),
     },
     answerCorrect: { borderColor: colors.success, backgroundColor: "#f0fdf4" },
     answerWrong: { borderColor: colors.destructive, backgroundColor: "#fef2f2" },
@@ -118,35 +173,70 @@ export default function AssignmentDetailScreen() {
       backgroundColor: "#fef3c7", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
     },
     resultPointsText: { fontSize: 16, fontWeight: "700", color: "#92400e" },
-    submissionsSection: { marginBottom: 20 },
-    subCard: {
-      backgroundColor: colors.card, borderRadius: 12, padding: 12,
-      borderWidth: 1, borderColor: colors.border, marginBottom: 8,
-      flexDirection: "row", alignItems: "center",
-    },
-    subName: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.foreground },
-    subScore: { fontSize: 16, fontWeight: "800", color: colors.foreground },
     content: {
       backgroundColor: colors.muted, borderRadius: 12, padding: 14,
       marginBottom: 16, borderWidth: 1, borderColor: colors.border,
     },
     contentText: { fontSize: 14, color: colors.foreground, lineHeight: 22 },
     loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+    mediaBtn: {
+      borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16,
+      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    },
+    mediaHint: { fontSize: 13, color: colors.mutedForeground, marginBottom: 10, lineHeight: 18 },
   });
 
   if (isLoading) {
     return <View style={[styles.container, styles.loading]}><ActivityIndicator color={colors.primary} size="large" /></View>;
   }
 
-  if (!assignment) {
+  if (fetchError || !assignment) {
     return (
-      <View style={[styles.container, styles.loading]}>
-        <Text style={{ color: colors.mutedForeground }}>Задание не найдено</Text>
+      <View style={[styles.container]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Задание</Text>
+        </View>
+        <View style={[styles.loading]}>
+          <Feather name="alert-circle" size={40} color={colors.destructive} />
+          <Text style={{ marginTop: 12, fontSize: 15, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
+            {fetchError ?? "Задание не найдено"}
+          </Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
+            onPress={() => {
+              setIsLoading(true);
+              setFetchError(null);
+              apiFetch(`/api/assignments/${assignmentId}`)
+                .then(setAssignment)
+                .catch((e: Error) => setFetchError(e.message))
+                .finally(() => setIsLoading(false));
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Повторить</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   const typeColor = TYPE_COLORS[assignment.type] || colors.primary;
+
+  // ── Media helper ────────────────────────────────────────────────────
+  const mediaUrl = assignment.mediaUrl || (assignment.type !== "reading" ? assignment.content : null);
+  const textContent = assignment.type === "reading" ? assignment.content : null;
+
+  const openMedia = () => {
+    if (!mediaUrl) return;
+    const url = mediaUrl.startsWith("http") ? mediaUrl : `https://${mediaUrl}`;
+    Linking.openURL(url);
+  };
+
+  const youtubeEmbed = mediaUrl
+    ? mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
+    : null;
 
   return (
     <View style={styles.container}>
@@ -157,117 +247,28 @@ export default function AssignmentDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>{assignment.title}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {/* Assignment info */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Info card */}
         <View style={styles.card}>
           <Text style={styles.assignTitle}>{assignment.title}</Text>
           <Text style={styles.assignDesc}>{assignment.description}</Text>
           <View style={styles.metaRow}>
-            <View style={[styles.badge, { backgroundColor: typeColor + "15" }]}>
-              <Text style={[styles.badgeText, { color: typeColor }]}>{assignment.type.replace("_", " ")}</Text>
+            <View style={[styles.badge, { backgroundColor: typeColor + "18" }]}>
+              <Text style={[styles.badgeText, { color: typeColor }]}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: "#fef3c7" }]}>
               <Feather name="star" size={12} color="#92400e" />
-              <Text style={[styles.badgeText, { color: "#92400e" }]}>{assignment.points} pts</Text>
+              <Text style={[styles.badgeText, { color: "#92400e" }]}>{assignment.points} очков</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.muted }]}>
               <Feather name="users" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>Ages {assignment.ageMin}–{assignment.ageMax}</Text>
+              <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{assignment.ageMin}–{assignment.ageMax} лет</Text>
             </View>
           </View>
         </View>
 
-        {/* Content: Reading text */}
-        {assignment.content && assignment.type === "reading" && (
-          <View style={styles.content}>
-            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>Текст для чтения</Text>
-            <Text style={styles.contentText}>{assignment.content}</Text>
-          </View>
-        )}
-
-        {/* Content: Video player */}
-        {assignment.type === "video" && (assignment.content || assignment.mediaUrl) && (
-          <View style={[styles.content, { gap: 10 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#f59e0b20", justifyContent: "center", alignItems: "center" }}>
-                <Feather name="video" size={17} color="#f59e0b" />
-              </View>
-              <Text style={styles.sectionTitle}>Видео</Text>
-            </View>
-            {!isTeacherRole && (
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 6 }}>
-                📺 Сначала посмотрите видео, затем ответьте на вопросы ниже
-              </Text>
-            )}
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#f59e0b", borderRadius: 12,
-                paddingVertical: 12, paddingHorizontal: 16,
-                flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-              }}
-              onPress={() => {
-                const url = assignment.mediaUrl || assignment.content;
-                if (url) Linking.openURL(url.startsWith("http") ? url : `https://${url}`);
-              }}
-            >
-              <Feather name="play-circle" size={18} color="#fff" />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
-            </TouchableOpacity>
-            {assignment.content && assignment.content.startsWith("http") && Platform.OS === "web" && (
-              <View style={{ borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                <iframe
-                  src={assignment.content.includes("youtube.com/watch")
-                    ? assignment.content.replace("watch?v=", "embed/")
-                    : assignment.content}
-                  style={{ width: "100%", height: 240, border: "none" }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Content: Audio player */}
-        {assignment.type === "audio" && (assignment.content || assignment.mediaUrl) && (
-          <View style={[styles.content, { gap: 10 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#06b6d420", justifyContent: "center", alignItems: "center" }}>
-                <Feather name="headphones" size={17} color="#06b6d4" />
-              </View>
-              <Text style={styles.sectionTitle}>Аудио</Text>
-            </View>
-            {!isTeacherRole && (
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 6 }}>
-                🎧 Сначала прослушайте аудио, затем ответьте на вопросы ниже
-              </Text>
-            )}
-            {Platform.OS === "web" && (assignment.content || assignment.mediaUrl) ? (
-              <audio
-                controls
-                src={assignment.content || assignment.mediaUrl || ""}
-                style={{ width: "100%", borderRadius: 8 }}
-              />
-            ) : (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#06b6d4", borderRadius: 12,
-                  paddingVertical: 12, paddingHorizontal: 16,
-                  flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-                }}
-                onPress={() => {
-                  const url = assignment.mediaUrl || assignment.content;
-                  if (url) Linking.openURL(url.startsWith("http") ? url : `https://${url}`);
-                }}
-              >
-                <Feather name="headphones" size={18} color="#fff" />
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {/* Result card after submission */}
+        {/* Result after submission */}
         {submitted && result && (
           <View style={[styles.resultCard, { borderColor: result.score >= 70 ? colors.success : colors.destructive }]}>
             <Text style={[styles.resultScore, { color: result.score >= 70 ? colors.success : colors.destructive }]}>
@@ -278,6 +279,68 @@ export default function AssignmentDetailScreen() {
               <Feather name="star" size={16} color="#92400e" />
               <Text style={styles.resultPointsText}>+{result.pointsEarned} очков!</Text>
             </View>
+          </View>
+        )}
+
+        {/* Reading text */}
+        {textContent && (
+          <View style={styles.content}>
+            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>Текст для чтения</Text>
+            <Text style={styles.contentText}>{textContent}</Text>
+          </View>
+        )}
+
+        {/* Video */}
+        {assignment.type === "video" && mediaUrl && (
+          <View style={[styles.content, { gap: 8 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#f59e0b20", justifyContent: "center", alignItems: "center" }}>
+                <Feather name="video" size={17} color="#f59e0b" />
+              </View>
+              <Text style={styles.sectionTitle}>Видео</Text>
+            </View>
+            {!isTeacherRole && (
+              <Text style={styles.mediaHint}>📺 Сначала посмотрите видео, затем ответьте на вопросы</Text>
+            )}
+            {Platform.OS === "web" && youtubeEmbed && youtubeEmbed.includes("embed") ? (
+              <View style={{ borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+                {/* @ts-ignore */}
+                <iframe
+                  src={youtubeEmbed}
+                  style={{ width: "100%", height: 220, border: "none" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </View>
+            ) : null}
+            <TouchableOpacity style={[styles.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
+              <Feather name="play-circle" size={18} color="#fff" />
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Audio */}
+        {assignment.type === "audio" && mediaUrl && (
+          <View style={[styles.content, { gap: 8 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#06b6d420", justifyContent: "center", alignItems: "center" }}>
+                <Feather name="headphones" size={17} color="#06b6d4" />
+              </View>
+              <Text style={styles.sectionTitle}>Аудио</Text>
+            </View>
+            {!isTeacherRole && (
+              <Text style={styles.mediaHint}>🎧 Сначала прослушайте аудио, затем ответьте на вопросы</Text>
+            )}
+            {Platform.OS === "web" ? (
+              /* @ts-ignore */
+              <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />
+            ) : (
+              <TouchableOpacity style={[styles.mediaBtn, { backgroundColor: "#06b6d4" }]} onPress={openMedia}>
+                <Feather name="headphones" size={18} color="#fff" />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -293,13 +356,11 @@ export default function AssignmentDetailScreen() {
                 <View key={q.id} style={styles.questionCard}>
                   <Text style={styles.questionText}>{i + 1}. {q.text}</Text>
 
-                  {/* Teacher view — show correct answer */}
                   {isTeacherRole && q.correctAnswer ? (
                     <View style={[styles.answerInput, styles.answerCorrect]}>
                       <Text style={{ color: colors.success, fontWeight: "600" }}>✓ {q.correctAnswer}</Text>
                     </View>
                   ) : hasOptions ? (
-                    /* Multiple choice */
                     <View style={{ gap: 8 }}>
                       {(q.options as string[]).map((opt, oi) => {
                         const isSelected = selected === opt;
@@ -351,7 +412,6 @@ export default function AssignmentDetailScreen() {
                       )}
                     </View>
                   ) : (
-                    /* Open text */
                     <>
                       <TextInput
                         style={[
@@ -378,23 +438,7 @@ export default function AssignmentDetailScreen() {
           </View>
         )}
 
-        {/* Admin: submissions list */}
-        {isAdmin && submissions && submissions.length > 0 && (
-          <View style={styles.submissionsSection}>
-            <Text style={styles.sectionTitle}>Student Submissions ({submissions.length})</Text>
-            {submissions.map((sub: any) => (
-              <View key={sub.id} style={styles.subCard}>
-                <Feather name="user" size={16} color={colors.mutedForeground} style={{ marginRight: 8 }} />
-                <Text style={styles.subName}>{sub.studentName || "Student"}</Text>
-                <Text style={[styles.subScore, { color: sub.score >= 70 ? colors.success : colors.destructive }]}>
-                  {sub.score}%
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Submit button (students only, not yet submitted) */}
+        {/* Submit button */}
         {!isTeacherRole && !submitted && (assignment.questions || []).length > 0 && (
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
             {submitting

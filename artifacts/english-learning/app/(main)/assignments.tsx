@@ -522,26 +522,32 @@ export default function AssignmentsScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); loadMyTasks(); loadMyAssignments(); }} />}
           ListHeaderComponent={
             <>
-              {/* Teacher: my assignments section */}
-              {isTeacher && myAssignments.length > 0 && (
-                <View style={{ marginBottom: 8 }}>
-                  <Text style={styles.sectionLabel}>Мои задания · {myAssignments.length}</Text>
-                  {myAssignments.map((item) => renderMyAssignmentCard(item))}
-                  <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Все задания</Text>
-                </View>
-              )}
-              {/* Student: assigned by teacher section */}
-              {isStudent && myTasks.length > 0 && (
-                <View style={{ marginBottom: 8 }}>
-                  <Text style={styles.sectionLabel}>Назначено учителем · {myTasks.length}</Text>
-                  {myTasks.map((item) => (
-                    <View key={item.assignedTaskId}>
-                      {renderMyTaskCard({ item })}
-                    </View>
-                  ))}
-                  <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Все задания</Text>
-                </View>
-              )}
+              {/* Teacher: my assignments section — filtered by active tab */}
+              {(() => {
+                const filtered = myAssignments.filter(a => filter === "Все" || a.type === filter);
+                return isTeacher && filtered.length > 0 ? (
+                  <View style={{ marginBottom: 8 }}>
+                    <Text style={styles.sectionLabel}>Мои задания · {filtered.length}</Text>
+                    {filtered.map((item) => renderMyAssignmentCard(item))}
+                    <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Все задания</Text>
+                  </View>
+                ) : null;
+              })()}
+              {/* Student: assigned by teacher section — filtered by active tab */}
+              {(() => {
+                const filtered = myTasks.filter((t: any) => filter === "Все" || t.type === filter);
+                return isStudent && filtered.length > 0 ? (
+                  <View style={{ marginBottom: 8 }}>
+                    <Text style={styles.sectionLabel}>Назначено учителем · {filtered.length}</Text>
+                    {filtered.map((item: any) => (
+                      <View key={item.assignedTaskId}>
+                        {renderMyTaskCard({ item })}
+                      </View>
+                    ))}
+                    <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Все задания</Text>
+                  </View>
+                ) : null;
+              })()}
             </>
           }
           ListEmptyComponent={
