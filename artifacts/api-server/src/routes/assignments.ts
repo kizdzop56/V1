@@ -314,28 +314,41 @@ router.post("/assignments/:id/assign", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Нет принятых учеников из списка" }); return;
   }
 
-  // Find students who already have this assignment (active, not yet submitted)
-  const existingTasks = await db.select({ studentId: assignedTasksTable.studentId })
+  // Find students who already have this assignment (active)
+  const existingTasks = await db.select({
+    studentId: assignedTasksTable.studentId,
+    assignedAt: assignedTasksTable.assignedAt,
+  })
     .from(assignedTasksTable)
     .where(and(
       eq(assignedTasksTable.assignmentId, assignmentId),
       inArray(assignedTasksTable.studentId, validStudentIds),
     ));
-  const existingSet = new Set(existingTasks.map((t) => t.studentId));
+  const existingMap = new Map(existingTasks.map((t) => [t.studentId, t.assignedAt]));
 
-  // Among existing, find who already submitted
-  const submittedRows = existingSet.size > 0
-    ? await db.select({ studentId: submissionsTable.studentId })
+  // Among existing, find who already submitted AFTER the task was assigned
+  // (old submissions before re-assignment don't count)
+  const submittedSet = new Set<number>();
+  if (existingMap.size > 0) {
+    const submittedRows = await db.select({
+      studentId: submissionsTable.studentId,
+      submittedAt: submissionsTable.submittedAt,
+    })
       .from(submissionsTable)
       .where(and(
         eq(submissionsTable.assignmentId, assignmentId),
-        inArray(submissionsTable.studentId, [...existingSet]),
-      ))
-    : [];
-  const submittedSet = new Set(submittedRows.map((s) => s.studentId));
+        inArray(submissionsTable.studentId, [...existingMap.keys()]),
+      ));
+    for (const row of submittedRows) {
+      const assignedAt = existingMap.get(row.studentId);
+      if (assignedAt && row.submittedAt > assignedAt) {
+        submittedSet.add(row.studentId);
+      }
+    }
+  }
 
   // Skip students who have an active unsubmitted task
-  const skipIds = [...existingSet].filter((id) => !submittedSet.has(id));
+  const skipIds = [...existingMap.keys()].filter((id) => !submittedSet.has(id));
   const toAssignIds = validStudentIds.filter((id) => !skipIds.includes(id));
 
   if (toAssignIds.length === 0) {

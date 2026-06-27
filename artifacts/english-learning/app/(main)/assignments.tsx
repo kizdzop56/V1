@@ -59,6 +59,7 @@ function AssignModal({
   onDone: () => void;
 }) {
   const colors = useColors();
+  const { logout } = useAuth();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -73,12 +74,14 @@ function AssignModal({
       .then(setStudents)
       .catch((e: any) => {
         const msg = e?.message ?? "";
-        setError(msg === "Forbidden"
-          ? "Ошибка доступа. Выйдите и снова войдите в аккаунт учителя."
-          : (msg || "Не удалось загрузить учеников"));
+        if (msg === "Forbidden") {
+          logout();
+          return;
+        }
+        setError(msg || "Не удалось загрузить учеников");
       })
       .finally(() => setLoading(false));
-  }, [visible]);
+  }, [visible, logout]);
 
   const toggle = (id: number) => setSelected((prev) => {
     const next = new Set(prev);
@@ -102,9 +105,11 @@ function AssignModal({
       }
     } catch (e: any) {
       const msg = e?.message ?? "";
-      setError(msg === "Forbidden"
-        ? "Ошибка доступа. Выйдите и снова войдите в аккаунт учителя."
-        : (msg || "Не удалось назначить задание"));
+      if (msg === "Forbidden") {
+        logout();
+        return;
+      }
+      setError(msg || "Не удалось назначить задание");
     } finally {
       setSending(false);
     }
