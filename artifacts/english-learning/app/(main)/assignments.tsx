@@ -478,14 +478,21 @@ export default function AssignmentsScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: "#fca5a5", backgroundColor: "#fef2f2", flex: undefined, paddingHorizontal: 12 }]}
             onPress={() => {
-              Alert.alert(
-                "Удалить задание?",
-                `«${item.title}» будет удалено безвозвратно`,
-                [
-                  { text: "Отмена", style: "cancel" },
-                  { text: "Удалить", style: "destructive", onPress: () => handleDeleteAssignment(item.id) },
-                ]
-              );
+              if (Platform.OS === "web") {
+                // eslint-disable-next-line no-restricted-globals
+                if (window.confirm(`Удалить задание «${item.title}»?\nЭто действие нельзя отменить.`)) {
+                  handleDeleteAssignment(item.id);
+                }
+              } else {
+                Alert.alert(
+                  "Удалить задание?",
+                  `«${item.title}» будет удалено безвозвратно`,
+                  [
+                    { text: "Отмена", style: "cancel" },
+                    { text: "Удалить", style: "destructive", onPress: () => handleDeleteAssignment(item.id) },
+                  ]
+                );
+              }
             }}
           >
             {deletingId === item.id

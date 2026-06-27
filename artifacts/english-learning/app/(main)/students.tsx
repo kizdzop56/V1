@@ -329,36 +329,37 @@ export default function StudentsScreen() {
 
   const handleRemove = (item: PersonItem) => {
     const label = isTeacher ? "ученика" : "ребёнка";
-    Alert.alert(
-      `Удалить ${label}?`,
-      `«${item.name}» будет удалён из вашего списка. Это не удаляет его аккаунт.`,
-      [
+    const msg = `«${item.name}» будет удалён из вашего списка. Это не удаляет его аккаунт.`;
+    if (Platform.OS === "web") {
+      // eslint-disable-next-line no-restricted-globals
+      if (window.confirm(`Удалить ${label}?\n${msg}`)) doRemove(item);
+    } else {
+      Alert.alert(`Удалить ${label}?`, msg, [
         { text: "Отмена", style: "cancel" },
         { text: "Удалить", style: "destructive", onPress: () => doRemove(item) },
-      ]
-    );
+      ]);
+    }
   };
 
   const handleCancelRequest = (req: PendingRequest) => {
-    Alert.alert(
-      "Отменить заявку?",
-      `Заявка для «${req.student.name}» будет отозвана.`,
-      [
+    const msg = `Заявка для «${req.student.name}» будет отозвана.`;
+    const doCancel = async () => {
+      try {
+        await apiFetch(`/api/connections/teacher/students/${req.student.id}`, { method: "DELETE" });
+        setPendingRequests((prev) => prev.filter((r) => r.requestId !== req.requestId));
+      } catch (e: any) {
+        Alert.alert("Ошибка", e.message);
+      }
+    };
+    if (Platform.OS === "web") {
+      // eslint-disable-next-line no-restricted-globals
+      if (window.confirm(`Отменить заявку?\n${msg}`)) doCancel();
+    } else {
+      Alert.alert("Отменить заявку?", msg, [
         { text: "Отмена", style: "cancel" },
-        {
-          text: "Отозвать",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await apiFetch(`/api/connections/teacher/students/${req.student.id}`, { method: "DELETE" });
-              setPendingRequests((prev) => prev.filter((r) => r.requestId !== req.requestId));
-            } catch (e: any) {
-              Alert.alert("Ошибка", e.message);
-            }
-          },
-        },
-      ]
-    );
+        { text: "Отозвать", style: "destructive", onPress: doCancel },
+      ]);
+    }
   };
 
   const title = isTeacher ? "Мои ученики" : "Мои дети";
