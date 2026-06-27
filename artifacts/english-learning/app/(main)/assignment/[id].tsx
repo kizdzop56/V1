@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Alert, TextInput, Linking, Image,
 } from "react-native";
+import { ImageZoomModal } from "@/components/ImageZoomModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -85,6 +86,7 @@ export default function AssignmentDetailScreen() {
   const [assignment, setAssignment] = useState<AssignmentDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [zoomImg, setZoomImg] = useState<string | null>(null);
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -327,6 +329,7 @@ export default function AssignmentDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.foreground} />
@@ -445,13 +448,25 @@ export default function AssignmentDetailScreen() {
 
         {/* Image */}
         {imageUrl ? (
-          <View style={[styles.content, { padding: 0, overflow: "hidden" }]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => setZoomImg(imageUrl)}
+            style={[styles.content, { padding: 0, overflow: "hidden" }]}
+          >
             <Image
               source={{ uri: imageUrl }}
-              style={{ width: "100%", height: 200, borderRadius: 12 }}
-              resizeMode="cover"
+              style={{ width: "100%", height: 240, borderRadius: 12 }}
+              resizeMode="contain"
             />
-          </View>
+            <View style={{
+              position: "absolute", bottom: 8, right: 8,
+              backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8,
+              paddingHorizontal: 8, paddingVertical: 4,
+              flexDirection: "row", alignItems: "center", gap: 4,
+            }}>
+              <Feather name="zoom-in" size={12} color="#fff" />
+            </View>
+          </TouchableOpacity>
         ) : null}
 
         {/* Reading text */}

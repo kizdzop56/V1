@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
+import { ImageZoomModal } from "@/components/ImageZoomModal";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -60,6 +61,7 @@ export default function SubmissionReviewScreen() {
   const [data, setData] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [zoomImg, setZoomImg] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch(`/api/submissions/${submissionId}/review`)
@@ -128,6 +130,7 @@ export default function SubmissionReviewScreen() {
 
   return (
     <View style={s.container}>
+      <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
       <View style={s.header}>
         <TouchableOpacity
           style={{ width: 36, height: 36, justifyContent: "center", alignItems: "center" }}
@@ -144,13 +147,25 @@ export default function SubmissionReviewScreen() {
 
         {/* Assignment media */}
         {data.assignment?.imageUrl ? (
-          <View style={{ borderRadius: 14, overflow: "hidden", marginBottom: 16, borderWidth: 1, borderColor: color + "40" }}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => setZoomImg(data.assignment!.imageUrl!)}
+            style={{ borderRadius: 14, overflow: "hidden", marginBottom: 16, borderWidth: 1, borderColor: color + "40" }}
+          >
             <Image
               source={{ uri: data.assignment.imageUrl }}
-              style={{ width: "100%", height: 180 }}
-              resizeMode="cover"
+              style={{ width: "100%", height: 200, backgroundColor: "#000" }}
+              resizeMode="contain"
             />
-          </View>
+            <View style={{
+              position: "absolute", bottom: 8, right: 8,
+              backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8,
+              paddingHorizontal: 8, paddingVertical: 4,
+              flexDirection: "row", alignItems: "center", gap: 4,
+            }}>
+              <Feather name="zoom-in" size={12} color="#fff" />
+            </View>
+          </TouchableOpacity>
         ) : null}
 
         {data.assignment?.mediaUrl ? (() => {
