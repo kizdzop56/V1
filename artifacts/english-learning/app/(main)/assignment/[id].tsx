@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Platform, Alert, TextInput, Linking, Image,
 } from "react-native";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
+import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -87,6 +88,8 @@ export default function AssignmentDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [zoomImg, setZoomImg] = useState<string | null>(null);
+  const [showUnansweredModal, setShowUnansweredModal] = useState(false);
+  const [unansweredCount, setUnansweredCount] = useState(0);
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -173,6 +176,22 @@ export default function AssignmentDetailScreen() {
       setSubmitting(false);
     }
   }, [assignment, answers, assignmentId, submitting]);
+
+  // Called when student presses the submit button manually — checks for unanswered questions
+  const handleSubmitPressed = useCallback(() => {
+    const questions = assignment?.questions ?? [];
+    if (questions.length === 0) {
+      handleSubmit();
+      return;
+    }
+    const empty = questions.filter((q: Question) => !answers[q.id]?.trim());
+    if (empty.length === 0) {
+      handleSubmit();
+    } else {
+      setUnansweredCount(empty.length);
+      setShowUnansweredModal(true);
+    }
+  }, [assignment, answers, handleSubmit]);
 
   // Keep answersRef in sync so auto-submit always sends the latest answers
   useEffect(() => {
@@ -330,6 +349,18 @@ export default function AssignmentDetailScreen() {
   return (
     <View style={styles.container}>
       <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+      <ConfirmModal
+        visible={showUnansweredModal}
+        title="Не все вопросы отвечены"
+        message={`Вы оставили без ответа ${unansweredCount} ${
+          unansweredCount === 1 ? "вопрос" :
+          unansweredCount < 5 ? "вопроса" : "вопросов"
+        }. Отправить с пустыми полями?`}
+        confirmText="Отправить всё равно"
+        cancelText="Вернуться и ответить"
+        onConfirm={() => { setShowUnansweredModal(false); handleSubmit(); }}
+        onCancel={() => setShowUnansweredModal(false)}
+      />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.foreground} />
@@ -629,7 +660,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Submit button — shown for all assignment types, not just those with questions */}
         {!isTeacherRole && !submitted && !timerExpired && (
-          <TouchableOpacity style={styles.submitBtn} onPress={() => handleSubmit()} disabled={submitting}>
+          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitPressed} disabled={submitting}>
             {submitting
               ? <ActivityIndicator color="#fff" />
               : <Text style={styles.submitText}>
