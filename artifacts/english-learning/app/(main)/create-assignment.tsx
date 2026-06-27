@@ -150,27 +150,19 @@ export default function CreateAssignmentScreen() {
 
     // ── Media validation by type ───────────────────────────────────────
     if (type === "video") {
-      const hasVideoUrl = videoUrl.trim() !== "";
-      const hasVideoFile = uploadedVideoName !== "";
+      const hasVideoUrl = videoInputMode === "url" && videoUrl.trim() !== "";
+      const hasVideoFile = videoInputMode === "file" && uploadedVideoName !== "";
       if (!hasVideoUrl && !hasVideoFile) {
         set("formError", "Для задания «Видео» необходимо прикрепить видео или ссылку на него");
-        return;
-      }
-      if (hasVideoUrl && hasVideoFile) {
-        set("formError", "Нельзя одновременно указать ссылку и загрузить файл — выберите одно");
         return;
       }
     }
 
     if (type === "audio") {
-      const hasAudioUrl = audioUrl.trim() !== "";
-      const hasAudioFile = uploadedAudioName !== "";
+      const hasAudioUrl = audioInputMode === "url" && audioUrl.trim() !== "";
+      const hasAudioFile = audioInputMode === "file" && uploadedAudioName !== "";
       if (!hasAudioUrl && !hasAudioFile) {
         set("formError", "Для задания «Аудирование» необходимо прикрепить аудио или ссылку на него");
-        return;
-      }
-      if (hasAudioUrl && hasAudioFile) {
-        set("formError", "Нельзя одновременно указать ссылку и загрузить файл — выберите одно");
         return;
       }
     }

@@ -101,6 +101,8 @@ router.get("/assignments/teacher-results", requireAuth, async (req, res) => {
     assignmentTitle: assignmentsTable.title,
     assignmentType: assignmentsTable.type,
     assignmentPoints: assignmentsTable.points,
+    assignmentMediaUrl: assignmentsTable.mediaUrl,
+    assignmentImageUrl: assignmentsTable.imageUrl,
   })
     .from(assignedTasksTable)
     .leftJoin(assignmentsTable, eq(assignedTasksTable.assignmentId, assignmentsTable.id))
@@ -190,6 +192,8 @@ router.get("/submissions/:submissionId/review", requireAuth, async (req, res) =>
     title: assignmentsTable.title,
     type: assignmentsTable.type,
     points: assignmentsTable.points,
+    mediaUrl: assignmentsTable.mediaUrl,
+    imageUrl: assignmentsTable.imageUrl,
   }).from(assignmentsTable).where(eq(assignmentsTable.id, submission.assignmentId));
 
   const answers = await db.select({

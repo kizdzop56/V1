@@ -1,13 +1,14 @@
 import React from "react";
 import {
   View, Text, FlatList, StyleSheet,
-  ActivityIndicator, Platform,
+  ActivityIndicator, Platform, TouchableOpacity,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGetStudentSubmissions } from "@workspace/api-client-react";
+import { useRouter } from "expo-router";
 
 const TYPE_ICONS: Record<string, any> = {
   text_test: "edit-3",
@@ -37,6 +38,7 @@ export default function HistoryScreen() {
   const colors = useColors();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const { data: submissions, isLoading } = useGetStudentSubmissions(
     user?.id || 0,
@@ -90,7 +92,7 @@ export default function HistoryScreen() {
     const color = getScoreColor(score);
 
     return (
-      <View style={s.card}>
+      <TouchableOpacity style={s.card} onPress={() => router.push(`/submission-review/${item.id}` as any)} activeOpacity={0.75}>
         <View style={s.cardTop}>
           <View style={[s.typeIcon, { backgroundColor: colors.primary + "18" }]}>
             <Feather name={TYPE_ICONS[(item.assignment as any)?.type ?? ""] ?? "file"} size={20} color={colors.primary} />
@@ -128,7 +130,11 @@ export default function HistoryScreen() {
             {formatDate(item.submittedAt)} · {formatTime(item.submittedAt)}
           </Text>
         </View>
-      </View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginLeft: 4 }}>Подробнее</Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 

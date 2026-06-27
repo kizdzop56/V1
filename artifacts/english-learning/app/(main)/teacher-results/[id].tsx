@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, Alert,
+  ActivityIndicator, Platform, Alert, Image, Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -39,6 +39,8 @@ type ResultRow = {
   assignmentTitle: string;
   assignmentType: string;
   assignmentPoints: number;
+  assignmentMediaUrl: string | null;
+  assignmentImageUrl: string | null;
   assignedAt: string;
   submission: {
     id: number;
@@ -212,6 +214,61 @@ export default function TeacherResultsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
+          {/* Assignment media */}
+          {results[0]?.assignmentImageUrl ? (
+            <View style={{ borderRadius: 14, overflow: "hidden", marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+              <Image source={{ uri: results[0].assignmentImageUrl }} style={{ width: "100%", height: 160 }} resizeMode="cover" />
+            </View>
+          ) : null}
+
+          {results[0]?.assignmentMediaUrl ? (() => {
+            const mUrl = results[0].assignmentMediaUrl!;
+            const aType = results[0].assignmentType;
+            const isAudio = aType === "audio" || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/audio");
+            const isVideo = aType === "video" || mUrl.includes("youtube") || mUrl.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/video");
+            const openUrl = () => Linking.openURL(mUrl.startsWith("http") ? mUrl : `https://${mUrl}`);
+            const ytEmbed = mUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+
+            if (isVideo) return (
+              <View style={{ backgroundColor: "#fef3c7", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#f59e0b40", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Feather name="video" size={16} color="#f59e0b" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400e" }}>Видео к заданию</Text>
+                </View>
+                {Platform.OS === "web" && ytEmbed.includes("embed") ? (
+                  <View style={{ borderRadius: 10, overflow: "hidden" }}>
+                    {/* @ts-ignore */}
+                    <iframe src={ytEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
+                  </View>
+                ) : null}
+                <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#f59e0b", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                  <Feather name="play-circle" size={16} color="#fff" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
+                </TouchableOpacity>
+              </View>
+            );
+
+            if (isAudio) return (
+              <View style={{ backgroundColor: "#ecfeff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#06b6d440", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Feather name="headphones" size={16} color="#06b6d4" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#0e7490" }}>Аудио к заданию</Text>
+                </View>
+                {Platform.OS === "web" ? (
+                  /* @ts-ignore */
+                  <audio controls src={mUrl} style={{ width: "100%", borderRadius: 8 }} />
+                ) : (
+                  <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#06b6d4", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                    <Feather name="headphones" size={16} color="#fff" />
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+
+            return null;
+          })() : null}
 
           {/* Summary stats */}
           <View style={s.statsRow}>
