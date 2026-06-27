@@ -189,7 +189,7 @@ export default function AssignmentDetailScreen() {
     },
     backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
     headerTitle: { fontSize: 18, fontWeight: "800", color: colors.foreground, flex: 1 },
-    scroll: { paddingHorizontal: 20, paddingBottom: insets.bottom + 40 },
+    scroll: { paddingHorizontal: 20, paddingBottom: insets.bottom + (Platform.OS === "web" ? 110 : 130) },
     card: {
       backgroundColor: colors.card, borderRadius: 16, padding: 16,
       borderWidth: 1, borderColor: colors.border, marginBottom: 16,
@@ -356,10 +356,22 @@ export default function AssignmentDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: "800", color: colors.destructive }}>Время вышло!</Text>
               <Text style={{ fontSize: 12, color: colors.destructive, marginTop: 2 }}>
-                Ответы отправляются автоматически…
+                {submitting ? "Ответы отправляются…" : "Не удалось отправить автоматически"}
               </Text>
             </View>
-            <ActivityIndicator color={colors.destructive} />
+            {submitting ? (
+              <ActivityIndicator color={colors.destructive} />
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  autoSubmitRef.current = false;
+                  setAnswers(prev => { handleSubmit(prev); return prev; });
+                }}
+                style={{ backgroundColor: colors.destructive, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Повторить</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -594,22 +606,16 @@ export default function AssignmentDetailScreen() {
           </View>
         )}
 
-        {/* Submit button */}
-        {!isTeacherRole && !submitted && !timerExpired && (assignment.questions || []).length > 0 && (
+        {/* Submit button — shown for all assignment types, not just those with questions */}
+        {!isTeacherRole && !submitted && !timerExpired && (
           <TouchableOpacity style={styles.submitBtn} onPress={() => handleSubmit()} disabled={submitting}>
             {submitting
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.submitText}>Отправить ответы</Text>
+              : <Text style={styles.submitText}>
+                  {(assignment.questions || []).length === 0 ? "Отметить как выполненное" : "Отправить ответы"}
+                </Text>
             }
           </TouchableOpacity>
-        )}
-
-        {/* Submitting spinner for auto-submit */}
-        {timerExpired && submitting && (
-          <View style={{ alignItems: "center", paddingVertical: 20, gap: 8 }}>
-            <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Отправка результатов…</Text>
-          </View>
         )}
       </ScrollView>
     </View>

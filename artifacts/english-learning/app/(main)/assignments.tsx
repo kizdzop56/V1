@@ -266,6 +266,16 @@ export default function AssignmentsScreen() {
     loadMyCompleted();
   }, [loadMyTasks, loadMyAssignments, loadTeacherSubs, loadMyCompleted]));
 
+  // Auto-poll every 30 seconds for students so new teacher assignments appear without re-entering the tab
+  useEffect(() => {
+    if (!isStudent) return;
+    const interval = setInterval(() => {
+      loadMyTasks();
+      loadMyCompleted();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isStudent, loadMyTasks, loadMyCompleted]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([loadMyTasks(), loadMyAssignments(), loadTeacherSubs(), loadMyCompleted()]);
