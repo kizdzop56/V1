@@ -9,14 +9,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { LEVEL_META } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
 async function apiFetch(path: string) {
-  const token = await AsyncStorage.getItem("auth_token");
+  const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
   });

@@ -7,14 +7,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
 async function apiFetch(path: string) {
-  const token = await AsyncStorage.getItem("auth_token");
+  const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
     headers: { Authorization: `Bearer ${token ?? ""}` },
   });
@@ -64,7 +64,11 @@ export default function SubmissionReviewScreen() {
   useEffect(() => {
     apiFetch(`/api/submissions/${submissionId}/review`)
       .then(setData)
-      .catch((e: Error) => setError(e.message))
+      .catch((e: Error) => setError(
+        e.message === "Forbidden"
+          ? "Нет доступа. Возможно, ваша сессия устарела — выйдите и войдите снова."
+          : e.message
+      ))
       .finally(() => setLoading(false));
   }, [submissionId]);
 

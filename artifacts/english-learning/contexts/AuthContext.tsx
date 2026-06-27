@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export type KnowledgeLevel =
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem("auth_token");
-        const storedUser = await AsyncStorage.getItem("auth_user");
+        const storedToken = await authStorage.getItem("auth_token");
+        const storedUser = await authStorage.getItem("auth_user");
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
@@ -64,15 +64,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const login = useCallback(async (newToken: string, newUser: AuthUser) => {
-    await AsyncStorage.setItem("auth_token", newToken);
-    await AsyncStorage.setItem("auth_user", JSON.stringify(newUser));
+    await authStorage.setItem("auth_token", newToken);
+    await authStorage.setItem("auth_user", JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.removeItem("auth_token");
-    await AsyncStorage.removeItem("auth_user");
+    await authStorage.removeItem("auth_token");
+    await authStorage.removeItem("auth_user");
     setToken(null);
     setUser(null);
   }, []);

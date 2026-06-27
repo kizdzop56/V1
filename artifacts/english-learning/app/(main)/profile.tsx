@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useGetStudentSubmissions, useGetStudentTimeStats } from "@workspace/api-client-react";
 import { ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements, type AchievementStats } from "@/constants/achievements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Ученик", parent: "Родитель", teacher: "Учитель", admin: "Администратор",
@@ -159,7 +160,7 @@ const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   : "";
 
 async function apiFetch(path: string, opts?: RequestInit) {
-  const token = await AsyncStorage.getItem("auth_token");
+  const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(opts?.headers ?? {}) },
@@ -518,7 +519,7 @@ export default function ProfileScreen() {
     const baseUrl = process.env["EXPO_PUBLIC_DOMAIN"]
       ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
       : "";
-    AsyncStorage.getItem("auth_token").then((token) => {
+    authStorage.getItem("auth_token").then((token) => {
       fetch(`${baseUrl}/api/users/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -543,7 +544,7 @@ export default function ProfileScreen() {
       : "";
     const load = async () => {
       try {
-        const token = await AsyncStorage.getItem("auth_token");
+        const token = await authStorage.getItem("auth_token");
         const headers = { Authorization: `Bearer ${token}` };
 
         const [friendsRes, teacherRes] = await Promise.all([
@@ -594,7 +595,7 @@ export default function ProfileScreen() {
 
   const respondToTeacherRequest = async (requestId: number, accept: boolean) => {
     try {
-      const token = await AsyncStorage.getItem("auth_token");
+      const token = await authStorage.getItem("auth_token");
       const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
       if (accept) {
         await fetch(`${baseUrl}/api/connections/student/teacher-requests/${requestId}/accept`, {
@@ -613,8 +614,7 @@ export default function ProfileScreen() {
     if (!user) return;
     setSaving(true);
     try {
-      const token = await import("@react-native-async-storage/async-storage")
-        .then((m) => m.default.getItem("auth_token"));
+      const token = await authStorage.getItem("auth_token");
       await fetch(`${baseUrl}/api/users/${user.id}/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

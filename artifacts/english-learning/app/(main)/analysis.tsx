@@ -8,14 +8,14 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
 async function apiFetch(path: string) {
-  const token = await AsyncStorage.getItem("auth_token");
+  const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
     headers: { Authorization: `Bearer ${token ?? ""}` },
   });

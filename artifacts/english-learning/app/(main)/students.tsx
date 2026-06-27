@@ -8,7 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin, LEVEL_META } from "@/contexts/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import authStorage from "@/utils/authStorage";
 import { useRouter } from "expo-router";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
@@ -16,7 +16,7 @@ const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   : "";
 
 async function apiFetch(path: string, options?: RequestInit) {
-  const token = await AsyncStorage.getItem("auth_token");
+  const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
