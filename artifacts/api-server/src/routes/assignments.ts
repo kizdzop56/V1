@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { assignmentsTable, questionsTable, assignedTasksTable, submissionsTable, submissionAnswersTable, usersTable, teacherStudentsTable } from "@workspace/db";
-import { eq, and, gte, lte, inArray, or, desc, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, or, desc, isNull, gt } from "drizzle-orm";
 import { requireAuth, getUser, requireRole, isTeacher } from "../lib/auth";
 
 const router = Router();
@@ -47,6 +47,9 @@ router.get("/assignments/my-assignments", requireAuth, async (req, res) => {
 router.get("/assignments/my-tasks", requireAuth, async (req, res) => {
   const caller = getUser(req);
 
+  // LEFT JOIN submissions on same student+assignment AND submittedAt > assignedAt.
+  // WHERE submissions.id IS NULL means "no submission exists for the current assignment instance"
+  // so only active (not yet submitted in this round) tasks are returned.
   const tasks = await db.select({
     assignedTaskId: assignedTasksTable.id,
     assignedAt: assignedTasksTable.assignedAt,
@@ -66,7 +69,18 @@ router.get("/assignments/my-tasks", requireAuth, async (req, res) => {
     .from(assignedTasksTable)
     .leftJoin(assignmentsTable, eq(assignedTasksTable.assignmentId, assignmentsTable.id))
     .leftJoin(usersTable, eq(assignedTasksTable.teacherId, usersTable.id))
-    .where(eq(assignedTasksTable.studentId, caller.userId));
+    .leftJoin(
+      submissionsTable,
+      and(
+        eq(submissionsTable.studentId, assignedTasksTable.studentId),
+        eq(submissionsTable.assignmentId, assignedTasksTable.assignmentId),
+        gt(submissionsTable.submittedAt, assignedTasksTable.assignedAt),
+      ),
+    )
+    .where(and(
+      eq(assignedTasksTable.studentId, caller.userId),
+      isNull(submissionsTable.id),
+    ));
 
   res.json(tasks);
 });

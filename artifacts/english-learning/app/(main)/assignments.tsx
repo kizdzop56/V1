@@ -286,15 +286,31 @@ export default function AssignmentsScreen() {
     loadMyCompleted();
   }, [loadMyTasks, loadMyAssignments, loadTeacherSubs, loadMyCompleted]));
 
-  // Auto-poll every 30 seconds for students so new teacher assignments appear without re-entering the tab
+  // Auto-poll every 10 seconds so new assignments appear quickly
   useEffect(() => {
-    if (!isStudent) return;
     const interval = setInterval(() => {
       loadMyTasks();
       loadMyCompleted();
-    }, 30000);
+      loadMyAssignments();
+      loadTeacherSubs();
+    }, 10000);
     return () => clearInterval(interval);
-  }, [isStudent, loadMyTasks, loadMyCompleted]);
+  }, [loadMyTasks, loadMyCompleted, loadMyAssignments, loadTeacherSubs]);
+
+  // Instant refresh when browser tab becomes visible (web only)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadMyTasks();
+        loadMyCompleted();
+        loadMyAssignments();
+        loadTeacherSubs();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loadMyTasks, loadMyCompleted, loadMyAssignments, loadTeacherSubs]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
