@@ -31,6 +31,17 @@ const serveFile = (req: any, filename: string) => {
   return `${protocol}://${host}/api/uploads/${filename}`;
 };
 
+router.post("/upload/image", requireAuth, upload.single("file"), (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+  res.json({
+    url: serveFile(req, req.file.filename),
+    filename: req.file.filename,
+  });
+});
+
 router.post("/upload/audio", requireAuth, upload.single("file"), (req, res) => {
   if (!req.file) {
     res.status(400).json({ error: "No file uploaded" });

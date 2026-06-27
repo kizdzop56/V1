@@ -25,6 +25,7 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...(options?.headers ?? {}),
     },
   });
+  if (res.status === 204) return null;
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Ошибка сервера");
   return data;
