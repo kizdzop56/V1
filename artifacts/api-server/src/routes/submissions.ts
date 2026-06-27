@@ -69,11 +69,8 @@ router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
 
   // Award points to user
   if (pointsEarned > 0) {
-    await db.update(usersTable)
-      .set({ totalPoints: db.$with("pts").as(db.select({ v: usersTable.totalPoints }).from(usersTable)) as any })
-      .where(eq(usersTable.id, user.userId));
-    // Simpler approach: get current points and add
-    const [userData] = await db.select({ totalPoints: usersTable.totalPoints }).from(usersTable).where(eq(usersTable.id, user.userId));
+    const [userData] = await db.select({ totalPoints: usersTable.totalPoints })
+      .from(usersTable).where(eq(usersTable.id, user.userId));
     await db.update(usersTable)
       .set({ totalPoints: (userData?.totalPoints || 0) + pointsEarned })
       .where(eq(usersTable.id, user.userId));

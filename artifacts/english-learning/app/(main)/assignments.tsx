@@ -67,11 +67,16 @@ function AssignModal({
 
   useEffect(() => {
     if (!visible) return;
-    setSelected(new Set()); setError("");
+    setSelected(new Set()); setError(""); setStudents([]);
     setLoading(true);
     apiFetch("/api/connections/teacher/students")
       .then(setStudents)
-      .catch(() => setError("Не удалось загрузить учеников"))
+      .catch((e: any) => {
+        const msg = e?.message ?? "";
+        setError(msg === "Forbidden"
+          ? "Ошибка доступа. Выйдите и снова войдите в аккаунт учителя."
+          : (msg || "Не удалось загрузить учеников"));
+      })
       .finally(() => setLoading(false));
   }, [visible]);
 
@@ -96,7 +101,10 @@ function AssignModal({
         setError("Все выбранные ученики уже имеют это активное задание. Оно появится снова после выполнения.");
       }
     } catch (e: any) {
-      setError(e.message);
+      const msg = e?.message ?? "";
+      setError(msg === "Forbidden"
+        ? "Ошибка доступа. Выйдите и снова войдите в аккаунт учителя."
+        : (msg || "Не удалось назначить задание"));
     } finally {
       setSending(false);
     }
