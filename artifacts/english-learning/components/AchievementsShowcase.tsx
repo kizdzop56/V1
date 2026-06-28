@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, Image, TouchableOpacity, Modal, StyleSheet,
-  ScrollView, Platform,
+  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -10,7 +10,6 @@ import type { Achievement } from "@/constants/achievements";
 interface AchievementsShowcaseProps {
   unlocked: Achievement[];
   locked?: Achievement[];
-  /** If true shows locked achievements dimmed below (own profile). If false — only earned (friend/teacher profile). */
   showLocked?: boolean;
   title?: string;
 }
@@ -27,44 +26,40 @@ function BadgeCard({
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.8}
-      style={[
-        styles.badgeWrap,
-        isLocked && styles.badgeWrapLocked,
-      ]}
+      activeOpacity={0.75}
+      style={styles.badgeWrap}
     >
-      {/* Glow ring for earned */}
-      {!isLocked && (
-        <View style={[styles.glowRing, { borderColor: achievement.color + "60" }]} />
-      )}
-
-      {/* Badge image or emoji */}
-      <View style={[styles.badgeImgWrap, isLocked && { opacity: 0.22 }]}>
-        {achievement.image ? (
-          <Image
-            source={achievement.image}
-            style={styles.badgeImg}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.emojiFallback, { backgroundColor: isLocked ? "#555" : achievement.bgColor }]}>
+      {/* Circular badge */}
+      <View
+        style={[
+          styles.badgeRing,
+          {
+            borderColor: isLocked
+              ? "rgba(160,140,220,0.2)"
+              : achievement.color + "55",
+            backgroundColor: isLocked ? "rgba(220,210,255,0.15)" : achievement.bgColor,
+          },
+        ]}
+      >
+        <View style={[styles.badgeImgWrap, isLocked && { opacity: 0.28 }]}>
+          {achievement.image ? (
+            <Image source={achievement.image} style={styles.badgeImg} resizeMode="cover" />
+          ) : (
             <Text style={styles.badgeEmoji}>{achievement.emoji}</Text>
+          )}
+        </View>
+
+        {isLocked && (
+          <View style={styles.lockOverlay}>
+            <Feather name="lock" size={14} color="rgba(91,79,142,0.85)" />
           </View>
         )}
       </View>
 
-      {/* Lock overlay */}
-      {isLocked && (
-        <View style={styles.lockOverlay}>
-          <Feather name="lock" size={16} color="rgba(255,255,255,0.7)" />
-        </View>
-      )}
-
-      {/* Title below */}
       <Text
         style={[
           styles.badgeTitle,
-          { color: isLocked ? "#888" : achievement.color },
+          { color: isLocked ? "#9b8ec4" : achievement.color },
         ]}
         numberOfLines={2}
       >
@@ -83,51 +78,101 @@ function BadgeDetailModal({
   isLocked: boolean;
   onClose: () => void;
 }) {
-  const colors = useColors();
   if (!achievement) return null;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        <View style={[styles.modalCard, { backgroundColor: isLocked ? "#1e1b2e" : "#16122a" }]}>
+        {/* Stop event propagation so tapping the card doesn't close */}
+        <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+
           {/* Badge */}
-          <View style={[styles.modalBadgeWrap, isLocked && { opacity: 0.35 }]}>
-            {achievement.image ? (
-              <Image source={achievement.image} style={styles.modalBadgeImg} resizeMode="cover" />
-            ) : (
-              <View style={[styles.modalEmojiWrap, { backgroundColor: achievement.bgColor }]}>
-                <Text style={styles.modalEmoji}>{achievement.emoji}</Text>
-              </View>
-            )}
+          <View
+            style={[
+              styles.modalBadgeOuter,
+              {
+                borderColor: isLocked ? "rgba(160,140,220,0.3)" : achievement.color + "50",
+                backgroundColor: isLocked ? "rgba(220,210,255,0.2)" : achievement.bgColor,
+              },
+            ]}
+          >
+            <View style={[styles.modalBadgeInner, isLocked && { opacity: 0.3 }]}>
+              {achievement.image ? (
+                <Image source={achievement.image} style={styles.modalBadgeImg} resizeMode="cover" />
+              ) : (
+                <Text style={styles.modalBadgeEmoji}>{achievement.emoji}</Text>
+              )}
+            </View>
             {isLocked && (
               <View style={styles.modalLockOverlay}>
-                <Feather name="lock" size={28} color="rgba(255,255,255,0.8)" />
+                <Feather name="lock" size={26} color="rgba(91,79,142,0.9)" />
               </View>
             )}
           </View>
 
-          {/* Status badge */}
-          <View style={[styles.statusBadge, {
-            backgroundColor: isLocked ? "#374151" : achievement.color + "25",
-            borderColor: isLocked ? "#4b5563" : achievement.color + "60",
-          }]}>
+          {/* Status pill */}
+          <View
+            style={[
+              styles.statusPill,
+              {
+                backgroundColor: isLocked ? "rgba(220,210,255,0.35)" : achievement.color + "18",
+                borderColor: isLocked ? "rgba(160,140,220,0.35)" : achievement.color + "55",
+              },
+            ]}
+          >
             <Feather
               name={isLocked ? "lock" : "check-circle"}
-              size={12}
-              color={isLocked ? "#9ca3af" : achievement.color}
+              size={11}
+              color={isLocked ? "#7c6db8" : achievement.color}
             />
-            <Text style={[styles.statusText, { color: isLocked ? "#9ca3af" : achievement.color }]}>
-              {isLocked ? "Не получена" : "Получена"}
+            <Text
+              style={[
+                styles.statusPillText,
+                { color: isLocked ? "#7c6db8" : achievement.color },
+              ]}
+            >
+              {isLocked ? "Ещё не получена" : "Получена"}
             </Text>
           </View>
 
+          {/* Title */}
           <Text style={styles.modalTitle}>{achievement.title}</Text>
-          <Text style={styles.modalDesc}>{achievement.description}</Text>
 
-          <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
-            <Text style={styles.modalCloseTxt}>Закрыть</Text>
+          {/* Info block */}
+          <View
+            style={[
+              styles.infoBlock,
+              {
+                backgroundColor: isLocked ? "rgba(220,210,255,0.25)" : achievement.bgColor,
+                borderColor: isLocked ? "rgba(160,140,220,0.3)" : achievement.color + "30",
+              },
+            ]}
+          >
+            <View style={styles.infoRow}>
+              <Feather
+                name={isLocked ? "target" : "star"}
+                size={13}
+                color={isLocked ? "#7c6db8" : achievement.color}
+              />
+              <Text
+                style={[
+                  styles.infoLabel,
+                  { color: isLocked ? "#7c6db8" : achievement.color },
+                ]}
+              >
+                {isLocked ? "Как получить" : "За что получена"}
+              </Text>
+            </View>
+            <Text style={styles.infoText}>
+              {isLocked ? achievement.requirement : achievement.description}
+            </Text>
+          </View>
+
+          {/* Close */}
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <Text style={styles.closeBtnText}>Закрыть</Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
   );
@@ -139,34 +184,39 @@ export function AchievementsShowcase({
   showLocked = false,
   title = "Витрина наград",
 }: AchievementsShowcaseProps) {
+  const colors = useColors();
   const [selected, setSelected] = useState<{ achievement: Achievement; isLocked: boolean } | null>(null);
+  const [lockedVisible, setLockedVisible] = useState(false);
 
   const total = unlocked.length + locked.length;
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Feather name="award" size={16} color="#a78bfa" />
-          <Text style={styles.headerTitle}>{title}</Text>
+          <View style={[styles.headerIcon, { backgroundColor: "#6366f115" }]}>
+            <Feather name="award" size={14} color="#6366f1" />
+          </View>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]}>{title}</Text>
         </View>
-        <View style={styles.countBadge}>
+        <View style={[styles.countPill, { backgroundColor: "#6366f112", borderColor: "#6366f130" }]}>
           <Text style={styles.countText}>
-            {unlocked.length}
-            {showLocked ? `/${total}` : ""} наград
+            {unlocked.length}{showLocked ? `/${total}` : ""} наград
           </Text>
         </View>
       </View>
 
+      {/* ── Earned grid ── */}
       {unlocked.length === 0 && !showLocked ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🏆</Text>
-          <Text style={styles.emptyText}>Пока нет полученных наград</Text>
+          <Text style={styles.emptyEmoji}>🏆</Text>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+            Пока нет полученных наград
+          </Text>
         </View>
       ) : (
         <>
-          {/* Earned grid */}
           {unlocked.length > 0 && (
             <View style={styles.grid}>
               {unlocked.map((a) => (
@@ -180,24 +230,46 @@ export function AchievementsShowcase({
             </View>
           )}
 
-          {/* Locked section — only on own profile */}
+          {/* ── Locked section toggle (own profile only) ── */}
           {showLocked && locked.length > 0 && (
             <>
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Ещё не получены</Text>
-                <View style={styles.dividerLine} />
-              </View>
-              <View style={styles.grid}>
-                {locked.map((a) => (
-                  <BadgeCard
-                    key={a.id}
-                    achievement={a}
-                    isLocked={true}
-                    onPress={() => setSelected({ achievement: a, isLocked: true })}
+              {/* Divider / toggle */}
+              <TouchableOpacity
+                style={[styles.lockedToggle, { borderColor: colors.border }]}
+                onPress={() => setLockedVisible((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.lockedToggleLeft}>
+                  <Feather
+                    name="lock"
+                    size={12}
+                    color={colors.mutedForeground}
                   />
-                ))}
-              </View>
+                  <Text style={[styles.lockedToggleText, { color: colors.mutedForeground }]}>
+                    Ещё не получены · {locked.length}
+                  </Text>
+                </View>
+                <Feather
+                  name={lockedVisible ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color={colors.mutedForeground}
+                />
+              </TouchableOpacity>
+
+              {lockedVisible && (
+                <View style={[styles.lockedSection, { backgroundColor: "rgba(220,210,255,0.18)", borderColor: colors.border }]}>
+                  <View style={styles.grid}>
+                    {locked.map((a) => (
+                      <BadgeCard
+                        key={a.id}
+                        achievement={a}
+                        isLocked={true}
+                        onPress={() => setSelected({ achievement: a, isLocked: true })}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
             </>
           )}
         </>
@@ -214,109 +286,170 @@ export function AchievementsShowcase({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#0f0c1d",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#2d2555",
   },
 
   // Header
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 7 },
-  headerTitle: { fontSize: 14, fontWeight: "800", color: "#e2e8f0", letterSpacing: 0.4 },
-  countBadge: {
-    backgroundColor: "#6366f130",
-    paddingHorizontal: 10, paddingVertical: 3,
-    borderRadius: 10, borderWidth: 1, borderColor: "#6366f150",
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  countText: { fontSize: 11, fontWeight: "700", color: "#a5b4fc" },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerIcon: {
+    width: 28, height: 28, borderRadius: 8,
+    justifyContent: "center", alignItems: "center",
+  },
+  headerTitle: { fontSize: 14, fontWeight: "800", letterSpacing: 0.2 },
+  countPill: {
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 20, borderWidth: 1,
+  },
+  countText: { fontSize: 11, fontWeight: "700", color: "#6366f1" },
 
   // Grid
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
 
   // Badge card
   badgeWrap: {
     width: "22%",
     alignItems: "center",
+  },
+  badgeRing: {
+    width: 60, height: 60, borderRadius: 30,
+    borderWidth: 2,
+    overflow: "hidden",
+    justifyContent: "center", alignItems: "center",
     position: "relative",
   },
-  badgeWrapLocked: { opacity: 0.9 },
-  glowRing: {
-    position: "absolute",
-    top: -3, left: -3, right: -3, bottom: -3,
-    borderRadius: 38,
-    borderWidth: 2,
-    zIndex: 0,
-  },
   badgeImgWrap: {
-    width: 66, height: 66, borderRadius: 33,
-    overflow: "hidden",
-    backgroundColor: "#1a1740",
-  },
-  badgeImg: { width: 66, height: 66 },
-  emojiFallback: {
-    width: 66, height: 66, borderRadius: 33,
+    width: 60, height: 60,
     justifyContent: "center", alignItems: "center",
   },
-  badgeEmoji: { fontSize: 32 },
+  badgeImg: { width: 60, height: 60 },
+  badgeEmoji: { fontSize: 28 },
   lockOverlay: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 22,
-    borderRadius: 33,
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(240,235,255,0.65)",
     justifyContent: "center", alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.55)",
-    zIndex: 2,
   },
   badgeTitle: {
-    fontSize: 9, fontWeight: "700", textAlign: "center",
-    marginTop: 6, lineHeight: 12,
+    fontSize: 9, fontWeight: "700",
+    textAlign: "center", marginTop: 5,
+    lineHeight: 12,
   },
 
-  // Divider
-  divider: { flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 14 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#2d2555" },
-  dividerText: { fontSize: 10, color: "#6b7280", fontWeight: "600", letterSpacing: 0.5 },
+  // Locked toggle
+  lockedToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  lockedToggleLeft: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lockedToggleText: { fontSize: 12, fontWeight: "600" },
 
-  // Empty state
-  emptyState: { alignItems: "center", paddingVertical: 28, gap: 8 },
-  emptyIcon: { fontSize: 36 },
-  emptyText: { fontSize: 13, color: "#6b7280" },
+  lockedSection: {
+    marginTop: 10,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+  },
 
-  // Modal
+  // Empty
+  emptyState: { alignItems: "center", paddingVertical: 24, gap: 8 },
+  emptyEmoji: { fontSize: 34 },
+  emptyText: { fontSize: 13 },
+
+  // Modal overlay
   modalOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center", alignItems: "center", padding: 32,
+    flex: 1,
+    backgroundColor: "rgba(15,12,40,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 28,
   },
   modalCard: {
-    borderRadius: 24, padding: 28, width: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 28,
+    width: "100%",
     alignItems: "center",
-    borderWidth: 1, borderColor: "#2d2555",
-    shadowColor: "#6366f1", shadowOpacity: 0.3, shadowRadius: 20,
+    shadowColor: "#6366f1",
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
-  modalBadgeWrap: { position: "relative", marginBottom: 16 },
-  modalBadgeImg: { width: 110, height: 110, borderRadius: 55 },
-  modalEmojiWrap: {
-    width: 110, height: 110, borderRadius: 55,
+
+  // Modal badge
+  modalBadgeOuter: {
+    width: 104, height: 104, borderRadius: 52,
+    borderWidth: 2.5,
+    overflow: "hidden",
+    justifyContent: "center", alignItems: "center",
+    marginBottom: 14,
+    position: "relative",
+  },
+  modalBadgeInner: {
+    width: 104, height: 104,
     justifyContent: "center", alignItems: "center",
   },
-  modalEmoji: { fontSize: 56 },
+  modalBadgeImg: { width: 104, height: 104 },
+  modalBadgeEmoji: { fontSize: 52 },
   modalLockOverlay: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 55, justifyContent: "center", alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(240,235,255,0.7)",
+    justifyContent: "center", alignItems: "center",
   },
-  statusBadge: {
+
+  // Status pill
+  statusPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
-    borderWidth: 1, marginBottom: 12,
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderRadius: 20, borderWidth: 1,
+    marginBottom: 10,
   },
-  statusText: { fontSize: 11, fontWeight: "700" },
-  modalTitle: { fontSize: 20, fontWeight: "900", color: "#f1f5f9", textAlign: "center", marginBottom: 8 },
-  modalDesc: { fontSize: 13, color: "#94a3b8", textAlign: "center", lineHeight: 19, marginBottom: 24 },
-  modalCloseBtn: {
-    backgroundColor: "#6366f120", borderRadius: 12, paddingHorizontal: 28,
-    paddingVertical: 10, borderWidth: 1, borderColor: "#6366f140",
+  statusPillText: { fontSize: 11, fontWeight: "700" },
+
+  // Modal title
+  modalTitle: {
+    fontSize: 20, fontWeight: "900",
+    color: "#0f172a", textAlign: "center",
+    marginBottom: 14,
   },
-  modalCloseTxt: { fontSize: 14, fontWeight: "700", color: "#a5b4fc" },
+
+  // Info block
+  infoBlock: {
+    width: "100%",
+    borderRadius: 14, padding: 14,
+    borderWidth: 1, marginBottom: 20,
+    gap: 8,
+  },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  infoLabel: { fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5 },
+  infoText: { fontSize: 13, color: "#374151", lineHeight: 19 },
+
+  // Close button
+  closeBtn: {
+    backgroundColor: "#6366f1",
+    borderRadius: 14,
+    paddingHorizontal: 32, paddingVertical: 11,
+    width: "100%", alignItems: "center",
+  },
+  closeBtnText: { fontSize: 14, fontWeight: "800", color: "#ffffff" },
 });
