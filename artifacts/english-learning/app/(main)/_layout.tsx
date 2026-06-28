@@ -118,6 +118,15 @@ export default function MainLayout() {
           }
         />
 
+        {/* Календарь — учитель и ученик */}
+        <Tabs.Screen
+          name="calendar"
+          options={(isTeacher || isStudent)
+            ? { title: "Календарь", tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} /> }
+            : { href: null }
+          }
+        />
+
         {/* Профиль — для всех */}
         <Tabs.Screen
           name="profile"

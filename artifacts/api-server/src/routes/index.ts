@@ -9,6 +9,7 @@ import timeTrackingRouter from "./timeTracking";
 import leaderboardRouter from "./leaderboard";
 import uploadRouter from "./upload";
 import connectionsRouter from "./connections";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(timeTrackingRouter);
 router.use(leaderboardRouter);
 router.use(uploadRouter);
 router.use(connectionsRouter);
+router.use(calendarRouter);
 
 export default router;
