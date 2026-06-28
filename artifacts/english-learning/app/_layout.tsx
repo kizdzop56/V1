@@ -6,6 +6,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { setBaseUrl } from "@workspace/api-client-react";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,7 +17,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Point the API client at /api (routed through the Replit proxy)
 const domain = process.env["EXPO_PUBLIC_DOMAIN"];
 setBaseUrl(domain ? `https://${domain}/api` : "/api");
 
@@ -26,10 +27,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Gradient covers the entire app — all screens are transparent */}
+      <LinearGradient
+        colors={["#F8F5FF", "#E8DFFF", "#D0C2FF"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "transparent" },
+                animation: "fade",
+              }}
+            >
               <Stack.Screen name="index" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(main)" />
@@ -41,3 +55,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({});

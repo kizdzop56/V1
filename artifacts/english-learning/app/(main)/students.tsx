@@ -160,7 +160,7 @@ function AddByCodeModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { onClose(); reset(); }}>
       <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground, marginBottom: 4 }}>
             {title}
           </Text>

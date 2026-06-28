@@ -391,14 +391,20 @@ export default function CalendarScreen() {
     headerTitle: { flex: 1, fontSize: 22, fontWeight: "800", color: colors.foreground },
 
     tabRow: {
-      flexDirection: "row", marginHorizontal: 20, marginBottom: 2,
-      backgroundColor: colors.muted, borderRadius: 14, padding: 4,
+      flexDirection: "row", marginHorizontal: 16, marginBottom: 8, gap: 8,
     },
     tab: {
-      flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
+      flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: "center",
       flexDirection: "row", justifyContent: "center", gap: 6,
+      backgroundColor: "rgba(255,255,255,0.35)",
+      borderWidth: 1, borderColor: "rgba(255,255,255,0.5)",
     },
-    tabActive: { backgroundColor: colors.card },
+    tabActive: {
+      backgroundColor: colors.card,
+      shadowColor: "#6366f1", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15, shadowRadius: 8, elevation: 6,
+      borderColor: "transparent",
+    },
     tabText: { fontSize: 13, fontWeight: "700", color: colors.mutedForeground },
     tabTextActive: { color: colors.primary },
     badge: {
@@ -411,7 +417,9 @@ export default function CalendarScreen() {
     dateChip: {
       alignItems: "center", justifyContent: "center",
       width: 46, height: 58,
-      borderRadius: 12, marginHorizontal: 3, backgroundColor: colors.muted,
+      borderRadius: 12, marginHorizontal: 3,
+      backgroundColor: "rgba(255,255,255,0.35)",
+      borderWidth: 1, borderColor: "rgba(255,255,255,0.5)",
     },
     dateChipActive: { backgroundColor: colors.primary },
     dc_day: { fontSize: 9, fontWeight: "600", color: colors.mutedForeground },
@@ -440,8 +448,10 @@ export default function CalendarScreen() {
     emptyText: { fontSize: 15, color: colors.mutedForeground, textAlign: "center", lineHeight: 22 },
 
     slotCard: {
-      borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+      borderRadius: 16, borderWidth: 0,
       backgroundColor: colors.card, marginBottom: 12, overflow: "hidden",
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 12, elevation: 5,
     },
     slotTop: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
     slotDot: { width: 12, height: 12, borderRadius: 6 },

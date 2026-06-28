@@ -136,13 +136,17 @@ export default function TeacherResultsScreen() {
     statsRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
     statCard: {
       flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14,
-      alignItems: "center", borderWidth: 1, borderColor: colors.border,
+      alignItems: "center", borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
     },
     statVal: { fontSize: 22, fontWeight: "900", color: colors.foreground, marginTop: 6 },
     statLabel: { fontSize: 11, color: colors.mutedForeground },
     studentCard: {
       backgroundColor: colors.card, borderRadius: 16, padding: 16,
-      borderWidth: 1, borderColor: colors.border, marginBottom: 10,
+      borderWidth: 0, marginBottom: 10,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
     studentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
     avatar: {

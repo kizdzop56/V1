@@ -176,6 +176,7 @@ function MainLayoutInner() {
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
         }}
       >
         <Tabs.Screen

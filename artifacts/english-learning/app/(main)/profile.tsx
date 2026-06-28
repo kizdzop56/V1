@@ -87,7 +87,7 @@ function AvatarPickerModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: "800", color: colors.foreground, marginBottom: 16 }}>
             Выбери аватар
           </Text>
@@ -268,7 +268,7 @@ function FriendsModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85%" }}>
           {/* Header */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground }}>Друзья</Text>
@@ -656,7 +656,7 @@ export default function ProfileScreen() {
       position: "absolute", bottom: 0, right: 0,
       width: 28, height: 28, borderRadius: 14,
       backgroundColor: colors.primary, justifyContent: "center", alignItems: "center",
-      borderWidth: 2, borderColor: colors.background,
+      borderWidth: 2, borderColor: "#ffffff",
     },
     name: { fontSize: 22, fontWeight: "800", color: colors.foreground, marginBottom: 3 },
     username: { fontSize: 14, color: colors.mutedForeground, marginBottom: 10 },
@@ -690,7 +690,9 @@ export default function ProfileScreen() {
     statsRow: { flexDirection: "row", gap: 10 },
     statCard: {
       flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14,
-      alignItems: "center", borderWidth: 1, borderColor: colors.border,
+      alignItems: "center", borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
     },
     statValue: { fontSize: 22, fontWeight: "900", color: colors.foreground, marginTop: 6, marginBottom: 2 },
     statLabel: { fontSize: 11, color: colors.mutedForeground, textAlign: "center" },
@@ -729,7 +731,9 @@ export default function ProfileScreen() {
     row: {
       flexDirection: "row", alignItems: "center", gap: 14,
       backgroundColor: colors.card, borderRadius: 14, padding: 16,
-      marginBottom: 8, borderWidth: 1, borderColor: colors.border,
+      marginBottom: 8, borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
     },
     rowText: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground },
 

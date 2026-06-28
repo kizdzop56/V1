@@ -66,7 +66,9 @@ export default function HistoryScreen() {
     list: { paddingHorizontal: 20, paddingBottom: insets.bottom + 100 },
     card: {
       backgroundColor: colors.card, borderRadius: 16, padding: 16,
-      marginBottom: 10, borderWidth: 1, borderColor: colors.border,
+      marginBottom: 10, borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
     cardTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 },
     typeIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: "center", alignItems: "center" },

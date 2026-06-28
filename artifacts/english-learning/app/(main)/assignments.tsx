@@ -119,7 +119,7 @@ function AssignModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
         <View style={{
-          backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
           padding: 24, maxHeight: "85%",
         }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -373,7 +373,9 @@ export default function AssignmentsScreen() {
     list: { paddingHorizontal: 20, paddingBottom: insets.bottom + 90 },
     card: {
       backgroundColor: colors.card, borderRadius: 16, padding: 16,
-      marginBottom: 12, borderWidth: 1, borderColor: colors.border,
+      marginBottom: 12, borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
     assignedCard: {
       backgroundColor: colors.primary + "08", borderRadius: 16, padding: 16,
@@ -419,7 +421,7 @@ export default function AssignmentsScreen() {
       flex: 1, paddingVertical: 8, borderRadius: 12,
       alignItems: "center", justifyContent: "center",
     },
-    modeBtnActive: { backgroundColor: colors.background, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+    modeBtnActive: { backgroundColor: colors.card, shadowColor: "#7c3aed", shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
     modeBtnText: { fontSize: 13, fontWeight: "600", color: colors.mutedForeground },
     modeBtnTextActive: { color: colors.foreground },
     subCard: {

@@ -107,8 +107,10 @@ export default function VoiceChatScreen() {
     bubbleText: { fontSize: 15, lineHeight: 22 },
     inputBar: {
       position: "absolute", bottom: 0, left: 0, right: 0,
-      backgroundColor: colors.background,
-      borderTopWidth: 1, borderTopColor: colors.border,
+      backgroundColor: colors.card,
+      borderTopWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.08, shadowRadius: 12, elevation: 8,
       paddingHorizontal: 16, paddingTop: 10,
       paddingBottom: insets.bottom + 10,
       flexDirection: "row", alignItems: "center", gap: 8,

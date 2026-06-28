@@ -3,7 +3,8 @@ const colors = {
     text: "#0f172a",
     tint: "#6366f1",
 
-    background: "#EDE8FF",
+    // Transparent — gradient from _layout.tsx shows through all screens
+    background: "transparent",
     foreground: "#0f172a",
 
     card: "#ffffff",
@@ -15,8 +16,8 @@ const colors = {
     secondary: "#e0e7ff",
     secondaryForeground: "#3730a3",
 
-    muted: "#E2DAF8",
-    mutedForeground: "#64748b",
+    muted: "rgba(220,210,255,0.55)",
+    mutedForeground: "#5b4f8e",
 
     accent: "#f0fdf4",
     accentForeground: "#166534",
@@ -30,8 +31,11 @@ const colors = {
     destructive: "#ef4444",
     destructiveForeground: "#ffffff",
 
-    border: "#e2e8f0",
-    input: "#e2e8f0",
+    border: "rgba(160,140,220,0.25)",
+    input: "rgba(160,140,220,0.25)",
+
+    // Solid sheet bg for modals / bottom sheets
+    sheet: "#ffffff",
 
     // Role colors
     studentColor: "#6366f1",

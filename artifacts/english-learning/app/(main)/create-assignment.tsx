@@ -287,7 +287,7 @@ export default function CreateAssignmentScreen() {
       borderWidth: 1, borderColor: colors.border, marginBottom: 12,
     },
     timerInput: {
-      backgroundColor: colors.background, borderWidth: 1.5, borderColor: "#f59e0b",
+      backgroundColor: colors.card, borderWidth: 1.5, borderColor: "#f59e0b",
       borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
       fontSize: 18, fontWeight: "800", color: colors.foreground,
       width: 80, textAlign: "center",
@@ -327,7 +327,7 @@ export default function CreateAssignmentScreen() {
     formatBtnText: { fontSize: 13, fontWeight: "600" },
     optionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
     optionInput: {
-      flex: 1, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
+      flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
       borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
       fontSize: 14, color: colors.foreground,
       ...(Platform.OS === "web" ? { outlineWidth: 0, outlineStyle: "none" } as any : {}),

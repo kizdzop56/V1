@@ -131,7 +131,9 @@ export default function AnalysisScreen() {
     scroll: { paddingHorizontal: 20, paddingBottom: insets.bottom + 90 },
     card: {
       backgroundColor: colors.card, borderRadius: 20, padding: 18,
-      borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+      marginBottom: 16, borderWidth: 0,
+      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
     },
     studentRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
     avatar: {
