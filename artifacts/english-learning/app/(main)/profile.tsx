@@ -4,6 +4,8 @@ import {
   Platform, TextInput, Modal, FlatList, ActivityIndicator,
   Clipboard, Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -540,11 +542,13 @@ export default function ProfileScreen() {
 
   const [avatarEmoji, setAvatarEmoji] = useState(user?.avatarEmoji ?? "🦁");
   const [avatarColor, setAvatarColor] = useState(user?.avatarColor ?? "#6366f1");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
   const [bio, setBio] = useState(user?.bio ?? "");
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(user?.bio ?? "");
   const [bioLoaded, setBioLoaded] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -717,7 +721,7 @@ export default function ProfileScreen() {
     } catch { /* silent */ }
   };
 
-  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; bio?: string }) => {
+  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; avatarUrl?: string | null; bio?: string }) => {
     if (!user) return;
     setSaving(true);
     try {
@@ -735,7 +739,45 @@ export default function ProfileScreen() {
   const handleAvatarSave = (emoji: string, color: string) => {
     setAvatarEmoji(emoji);
     setAvatarColor(color);
-    saveProfile({ avatarEmoji: emoji, avatarColor: color });
+    setAvatarUrl(null);
+    saveProfile({ avatarEmoji: emoji, avatarColor: color, avatarUrl: null });
+  };
+
+  const handlePhotoUpload = async () => {
+    setAvatarMenuOpen(false);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== "granted") return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setSaving(true);
+    try {
+      const asset = result.assets[0];
+      const formData = new FormData();
+      formData.append("file", { uri: asset.uri, type: "image/jpeg", name: "avatar.jpg" } as any);
+      const token = await authStorage.getItem("auth_token");
+      const uploadRes = await fetch(`${baseUrl}/api/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { url } = await uploadRes.json();
+      setAvatarUrl(url);
+      await saveProfile({ avatarUrl: url });
+    } catch { /* silent */ } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setAvatarMenuOpen(false);
+    setAvatarUrl(null);
+    await saveProfile({ avatarUrl: null });
   };
 
   const handleBioSave = () => {
@@ -889,22 +931,60 @@ export default function ProfileScreen() {
         onClose={() => setMascotNamePickerOpen(false)}
       />
 
+      {/* Avatar choice modal */}
+      <Modal visible={avatarMenuOpen} transparent animationType="slide" onRequestClose={() => setAvatarMenuOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 }}>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: colors.foreground, marginBottom: 20 }}>Сменить аватар</Text>
+            <TouchableOpacity
+              onPress={handlePhotoUpload}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderRadius: 14, backgroundColor: colors.primary + "12", paddingHorizontal: 16, marginBottom: 10 }}
+            >
+              <Feather name="camera" size={20} color={colors.primary} />
+              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>Загрузить фото из галереи</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setAvatarMenuOpen(false); setAvatarPickerOpen(true); }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderRadius: 14, backgroundColor: colors.muted, paddingHorizontal: 16, marginBottom: 10 }}
+            >
+              <Feather name="smile" size={20} color={colors.foreground} />
+              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>Выбрать эмодзи</Text>
+            </TouchableOpacity>
+            {avatarUrl && (
+              <TouchableOpacity
+                onPress={handleRemovePhoto}
+                style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderRadius: 14, backgroundColor: "#fef2f2", paddingHorizontal: 16, marginBottom: 10 }}
+              >
+                <Feather name="trash-2" size={20} color={colors.destructive} />
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.destructive }}>Удалить фото</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => setAvatarMenuOpen(false)} style={{ paddingVertical: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 15, color: colors.mutedForeground }}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView contentContainerStyle={s.scroll}>
         {/* ── Шапка профиля ── */}
         <View style={s.header}>
-          <View style={s.avatarWrap}>
-            <View style={[s.avatar, { backgroundColor: avatarColor }]}>
-              <Text style={s.avatarEmoji}>{avatarEmoji}</Text>
-            </View>
-            {/* Online dot — always green since user is active */}
-            <View style={{
-              position: "absolute", bottom: 4, right: 4,
-              width: 16, height: 16, borderRadius: 8,
-              backgroundColor: "#22c55e",
-              borderWidth: 2.5, borderColor: colors.background,
-            }} />
-            <TouchableOpacity style={s.editAvatarBtn} onPress={() => setAvatarPickerOpen(true)}>
-              <Feather name="edit-2" size={13} color="#fff" />
+          <View style={{ position: "relative", marginBottom: 14 }}>
+            <AnimatedAvatar
+              size={90}
+              avatarColor={avatarColor}
+              avatarEmoji={avatarEmoji}
+              avatarUrl={avatarUrl}
+              animated={true}
+            />
+            <TouchableOpacity
+              style={[s.editAvatarBtn, { position: "absolute", bottom: 22, right: 22 }]}
+              onPress={() => setAvatarMenuOpen(true)}
+            >
+              {saving
+                ? <ActivityIndicator size={12} color="#fff" />
+                : <Feather name="edit-2" size={13} color="#fff" />
+              }
             </TouchableOpacity>
           </View>
 

@@ -35,6 +35,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
     name: usersTable.name,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     totalTimeMinutes: usersTable.totalTimeMinutes,
     loginStreak: usersTable.loginStreak,
@@ -64,7 +65,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
   const audioMap: Record<number, number> = {};
   for (const a of audioScoresRaw) audioMap[a.studentId] = Math.round(Number(a.avgScore) || 0);
 
-  type Entry = { userId: number; name: string; avatarEmoji: string | null; avatarColor: string | null; value: number; rank: number };
+  type Entry = { userId: number; name: string; avatarEmoji: string | null; avatarColor: string | null; avatarUrl: string | null; value: number; rank: number };
 
   const rank = (arr: typeof students, getValue: (s: typeof students[0]) => number): Entry[] =>
     [...arr]
@@ -74,6 +75,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
         name: s.name,
         avatarEmoji: s.avatarEmoji,
         avatarColor: s.avatarColor,
+        avatarUrl: s.avatarUrl,
         value: getValue(s),
         rank: i + 1,
       }));

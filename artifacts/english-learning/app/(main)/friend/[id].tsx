@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Image,
 } from "react-native";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,11 +33,13 @@ type FriendProfile = {
   username: string;
   avatarEmoji: string | null;
   avatarColor: string | null;
+  avatarUrl: string | null;
   knowledgeLevel: string | null;
   totalPoints: number;
   totalTimeMinutes: number;
   bio: string | null;
   age: number | null;
+  dateOfBirth: string | null;
   role: string;
   completedAssignments: number;
   isOnline?: boolean;
@@ -148,25 +151,14 @@ export default function FriendProfileScreen() {
           backgroundColor: colors.card, borderRadius: 20,
           borderWidth: 1, borderColor: colors.border, marginBottom: 16,
         }}>
-          {/* Avatar with online dot */}
-          <View style={{ position: "relative", marginBottom: 14 }}>
-            <View style={{
-              width: 90, height: 90, borderRadius: 45,
-              backgroundColor: avatarColor,
-              justifyContent: "center", alignItems: "center",
-              shadowColor: avatarColor, shadowOpacity: 0.35,
-              shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-            }}>
-              <Text style={{ fontSize: 44 }}>{avatarEmoji}</Text>
-            </View>
-            {/* Online indicator dot */}
-            <View style={{
-              position: "absolute", bottom: 4, right: 4,
-              width: 18, height: 18, borderRadius: 9,
-              backgroundColor: profile.isOnline ? "#22c55e" : "#94a3b8",
-              borderWidth: 3, borderColor: colors.card,
-            }} />
-          </View>
+          <AnimatedAvatar
+            size={90}
+            avatarColor={avatarColor}
+            avatarEmoji={avatarEmoji}
+            avatarUrl={profile.avatarUrl}
+            animated={profile.isOnline ?? false}
+            onlineDot={profile.isOnline ?? false}
+          />
 
           <Text style={{ fontSize: 22, fontWeight: "800", color: colors.foreground, marginBottom: 3 }}>
             {profile.name}

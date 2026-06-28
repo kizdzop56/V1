@@ -75,6 +75,7 @@ router.get("/users/:id", requireAuth, async (req, res) => {
     knowledgeLevel: user.knowledgeLevel,
     avatarEmoji: user.avatarEmoji,
     avatarColor: user.avatarColor,
+    avatarUrl: user.avatarUrl,
     bio: user.bio,
     totalPoints: user.totalPoints,
     totalTimeMinutes,
@@ -115,12 +116,13 @@ router.patch("/users/:id/profile", requireAuth, async (req, res) => {
     return;
   }
 
-  const { bio, avatarEmoji, avatarColor, name } = req.body;
+  const { bio, avatarEmoji, avatarColor, avatarUrl, name } = req.body;
 
   const updateData: Record<string, any> = { updatedAt: new Date() };
   if (bio !== undefined) updateData.bio = bio;
   if (avatarEmoji !== undefined) updateData.avatarEmoji = avatarEmoji;
   if (avatarColor !== undefined) updateData.avatarColor = avatarColor;
+  if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
   if (name !== undefined && name.trim()) updateData.name = name.trim();
 
   const [updated] = await db.update(usersTable)
@@ -135,6 +137,7 @@ router.patch("/users/:id/profile", requireAuth, async (req, res) => {
     bio: updated.bio,
     avatarEmoji: updated.avatarEmoji,
     avatarColor: updated.avatarColor,
+    avatarUrl: updated.avatarUrl,
     role: updated.role,
   });
 });

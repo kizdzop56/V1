@@ -22,6 +22,7 @@ export interface AuthUser {
   totalTimeMinutes?: number;
   avatarEmoji?: string;
   avatarColor?: string;
+  avatarUrl?: string | null;
   bio?: string;
   inviteCode?: string;
   createdAt: string;

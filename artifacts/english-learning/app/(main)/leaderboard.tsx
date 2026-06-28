@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, FlatList, ActivityIndicator, Platform,
-  TouchableOpacity, ScrollView,
+  TouchableOpacity, ScrollView, Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +23,7 @@ type CategoryEntry = {
   name: string;
   avatarEmoji: string | null;
   avatarColor: string | null;
+  avatarUrl: string | null;
   value: number;
   rank: number;
 };
@@ -139,9 +140,13 @@ export default function LeaderboardScreen() {
         <View style={{
           width: 38, height: 38, borderRadius: 19,
           backgroundColor: avatarBg,
+          overflow: "hidden",
           justifyContent: "center", alignItems: "center",
         }}>
-          <Text style={{ fontSize: 18 }}>{item.avatarEmoji ?? "🦁"}</Text>
+          {item.avatarUrl
+            ? <Image source={{ uri: item.avatarUrl }} style={{ width: 38, height: 38, borderRadius: 19 }} />
+            : <Text style={{ fontSize: 18 }}>{item.avatarEmoji ?? "🦁"}</Text>
+          }
         </View>
 
         {/* Name */}

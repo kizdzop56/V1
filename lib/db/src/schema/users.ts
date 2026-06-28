@@ -27,6 +27,7 @@ export const usersTable = pgTable("users", {
   bio: text("bio"),
   avatarEmoji: text("avatar_emoji").default("🦁"),
   avatarColor: text("avatar_color").default("#6366f1"),
+  avatarUrl: text("avatar_url"),
   totalTimeMinutes: integer("total_time_minutes").notNull().default(0),
   // Gamification
   xpLevel: integer("xp_level").notNull().default(1),
