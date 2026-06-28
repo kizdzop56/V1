@@ -984,10 +984,15 @@ export default function CalendarScreen() {
               ⚠ Конец раньше начала: {addStart} → {addEnd}
             </Text>
           )}
+          {addEnd > addStart && isPastSlot(selectedDate, addEnd) && (
+            <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+              ⚠ Это время уже прошло — слот не сохранится
+            </Text>
+          )}
           <TouchableOpacity
-            style={[s.primaryBtn, addEnd <= addStart && { opacity: 0.4 }]}
+            style={[s.primaryBtn, (addEnd <= addStart || (addEnd > addStart && isPastSlot(selectedDate, addEnd))) && { opacity: 0.4 }]}
             onPress={handleAddSlot}
-            disabled={saving || addEnd <= addStart}
+            disabled={saving || addEnd <= addStart || isPastSlot(selectedDate, addEnd)}
           >
             {saving
               ? <ActivityIndicator color="#fff" />
@@ -1065,6 +1070,11 @@ export default function CalendarScreen() {
               ⚠ Конец раньше начала: {crStart} → {crEnd}
             </Text>
           )}
+          {crEnd > crStart && isPastSlot(selectedDate, crEnd) && (
+            <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+              ⚠ Это время уже прошло — выберите будущее время
+            </Text>
+          )}
 
           <Text style={[s.timeLabel, { marginBottom: 8 }]}>Сообщение учителю (необязательно)</Text>
           <TextInput
@@ -1082,9 +1092,9 @@ export default function CalendarScreen() {
           )}
 
           <TouchableOpacity
-            style={[s.primaryBtn, { backgroundColor: "#8b5cf6" }, (crEnd <= crStart || !crTeacherId || crSaving) && { opacity: 0.4 }]}
+            style={[s.primaryBtn, { backgroundColor: "#8b5cf6" }, (crEnd <= crStart || isPastSlot(selectedDate, crEnd) || !crTeacherId || crSaving) && { opacity: 0.4 }]}
             onPress={handleSendCustomReq}
-            disabled={crEnd <= crStart || !crTeacherId || crSaving}
+            disabled={crEnd <= crStart || isPastSlot(selectedDate, crEnd) || !crTeacherId || crSaving}
           >
             {crSaving
               ? <ActivityIndicator color="#fff" />

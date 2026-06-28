@@ -9,6 +9,14 @@ import { requireAuth, getUser, isTeacher } from "../lib/auth";
 
 const router = Router();
 
+// ── Helpers ───────────────────────────────────────────────────────────
+/** Returns true if the date+time combination is strictly in the past (server UTC). */
+function isInPast(date: string, time: string): boolean {
+  const [h, m] = time.split(":").map(Number);
+  const dt = new Date(`${date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00Z`);
+  return dt.getTime() < Date.now();
+}
+
 // ── GET /calendar/slots?date=YYYY-MM-DD ───────────────────────────────
 // Teacher: own slots + booking info for selected date
 // Student: connected teachers' slots with status for current user
@@ -121,6 +129,8 @@ router.post("/calendar/slots", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "Укажите дату и время" });
   if (endTime <= startTime)
     return res.status(400).json({ error: "Конец должен быть позже начала" });
+  if (isInPast(date, endTime))
+    return res.status(400).json({ error: "Нельзя создать слот в прошедшем времени" });
 
   try {
     const [slot] = await db
@@ -165,6 +175,8 @@ router.post("/calendar/slots/:slotId/book", requireAuth, async (req, res) => {
     .from(calendarSlotsTable)
     .where(eq(calendarSlotsTable.id, slotId));
   if (!slot) return res.status(404).json({ error: "Слот не найден" });
+  if (isInPast(slot.date, slot.endTime))
+    return res.status(400).json({ error: "Нельзя записаться на уже прошедший слот" });
 
   const existingBookings = await db
     .select()
@@ -309,6 +321,8 @@ router.post("/calendar/custom-requests", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "Укажите учителя, дату и время" });
   if (endTime <= startTime)
     return res.status(400).json({ error: "Конец должен быть позже начала" });
+  if (isInPast(date, endTime))
+    return res.status(400).json({ error: "Нельзя предложить прошедшее время" });
 
   // Verify student is connected to this teacher
   const [link] = await db
