@@ -3,7 +3,7 @@ const colors = {
     text: "#0f172a",
     tint: "#6366f1",
 
-    background: "#f8fafc",
+    background: "#EDE8FF",
     foreground: "#0f172a",
 
     card: "#ffffff",
@@ -15,7 +15,7 @@ const colors = {
     secondary: "#e0e7ff",
     secondaryForeground: "#3730a3",
 
-    muted: "#f1f5f9",
+    muted: "#E2DAF8",
     mutedForeground: "#64748b",
 
     accent: "#f0fdf4",

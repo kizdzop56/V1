@@ -421,7 +421,7 @@ export default function CalendarScreen() {
     dc_mon: { fontSize: 8, color: colors.mutedForeground, lineHeight: 11 },
     dc_monA: { color: "#ffffffcc" },
 
-    scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 },
+    scroll: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 120 },
     historyLabel: {
       fontSize: 12, fontWeight: "700", color: colors.mutedForeground,
       textAlign: "center", marginVertical: 12, letterSpacing: 1,
