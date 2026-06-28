@@ -8,6 +8,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { useFonts } from "expo-font";
+import { Feather } from "@expo/vector-icons";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,9 +23,17 @@ const domain = process.env["EXPO_PUBLIC_DOMAIN"];
 setBaseUrl(domain ? `https://${domain}/api` : "/api");
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    ...Feather.font,
+  });
+
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
