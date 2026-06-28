@@ -75,8 +75,8 @@ function MainLayoutInner() {
           headerShown: false,
           tabBarStyle: {
             position: "absolute",
-            backgroundColor: isIOS ? "transparent" : colors.background,
-            borderTopWidth: isWeb ? 1 : 0,
+            backgroundColor: isIOS ? "transparent" : colors.muted,
+            borderTopWidth: 1,
             borderTopColor: colors.border,
             elevation: 0,
             ...(isWeb ? { height: 84 } : {}),
@@ -85,7 +85,7 @@ function MainLayoutInner() {
             isIOS ? (
               <BlurView intensity={100} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
             ) : isWeb ? (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.muted }]} />
             ) : null,
         }}
       >
