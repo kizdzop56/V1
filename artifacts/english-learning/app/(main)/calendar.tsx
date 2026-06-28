@@ -407,7 +407,7 @@ export default function CalendarScreen() {
     },
     badgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
 
-    datePicker: { paddingHorizontal: 16, paddingVertical: 6 },
+    datePicker: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 0 },
     dateChip: {
       alignItems: "center", justifyContent: "center",
       width: 46, height: 58,
