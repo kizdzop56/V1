@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View, Text, Image, TouchableOpacity, Modal, StyleSheet,
-  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -83,8 +82,7 @@ function BadgeDetailModal({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        {/* Stop event propagation so tapping the card doesn't close */}
-        <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+        <TouchableOpacity activeOpacity={1} style={styles.modalCard} onPress={() => {}}>
 
           {/* Badge */}
           <View
