@@ -1,14 +1,14 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { Platform, View, StyleSheet, Text } from "react-native";
-import { BlurView } from "expo-blur";
-import { useColorScheme } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useStartTimeSession, useEndTimeSession } from "@workspace/api-client-react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarBadgeProvider, useCalendarBadge } from "@/contexts/CalendarBadgeContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export const SESSION_START_KEY = "timer_session_start";
 
@@ -17,7 +17,6 @@ function StudentTimerManager() {
   const { mutate: endSession } = useEndTimeSession();
 
   useEffect(() => {
-    // Save session start timestamp so the live timer can restore elapsed time on re-mount
     const now = String(Date.now());
     AsyncStorage.setItem(SESSION_START_KEY, now);
     startSession(undefined);
@@ -33,7 +32,7 @@ function StudentTimerManager() {
 function CalendarTabIcon({ color }: { color: string }) {
   const { unreadCount } = useCalendarBadge();
   return (
-    <View style={{ width: 26, height: 26, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: 24, height: 24, alignItems: "center", justifyContent: "center" }}>
       <Feather name="calendar" size={22} color={color} />
       {unreadCount > 0 && (
         <View style={{
@@ -51,13 +50,118 @@ function CalendarTabIcon({ color }: { color: string }) {
   );
 }
 
+function CustomTabBar({ state, descriptors, navigation }: any) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+
+  const visibleRoutes = state.routes.filter(
+    (route: any) => descriptors[route.key].options.tabBarIcon !== undefined
+  );
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: "absolute",
+        bottom: Math.max(insets.bottom, 8) + 8,
+        left: 16,
+        right: 16,
+      }}
+    >
+      <View
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 28,
+          paddingVertical: 8,
+          paddingHorizontal: 4,
+          flexDirection: "row",
+          alignItems: "center",
+          shadowColor: "#6366f1",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.18,
+          shadowRadius: 20,
+          elevation: 16,
+        }}
+      >
+        {visibleRoutes.map((route: any) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.routes[state.index].key === route.key;
+
+          const label =
+            typeof options.tabBarLabel === "string"
+              ? options.tabBarLabel
+              : typeof options.title === "string"
+              ? options.title
+              : route.name;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              style={{ flex: 1, alignItems: "center", gap: 3 }}
+              onPress={onPress}
+              activeOpacity={0.7}
+            >
+              {isFocused ? (
+                <LinearGradient
+                  colors={["#7c3aed", "#818cf8"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    borderRadius: 18,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 50,
+                  }}
+                >
+                  {options.tabBarIcon?.({ color: "#ffffff", size: 22, focused: true })}
+                </LinearGradient>
+              ) : (
+                <View
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 50,
+                  }}
+                >
+                  {options.tabBarIcon?.({ color: colors.mutedForeground, size: 22, focused: false })}
+                </View>
+              )}
+              <Text
+                style={{
+                  fontSize: 9,
+                  fontWeight: isFocused ? "700" : "500",
+                  color: isFocused ? "#7c3aed" : colors.mutedForeground,
+                  letterSpacing: 0.1,
+                }}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function MainLayoutInner() {
   const { user } = useAuth();
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
 
   if (!user) return <Redirect href="/(auth)/login" />;
 
@@ -69,39 +173,21 @@ function MainLayoutInner() {
     <>
       {isStudent && <StudentTimerManager />}
       <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.mutedForeground,
           headerShown: false,
-          tabBarStyle: {
-            position: "absolute",
-            backgroundColor: isIOS ? "transparent" : colors.muted,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            elevation: 0,
-            ...(isWeb ? { height: 84 } : {}),
-          },
-          tabBarBackground: () =>
-            isIOS ? (
-              <BlurView intensity={100} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-            ) : isWeb ? (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.muted }]} />
-            ) : null,
         }}
       >
-        {/* Задания — для всех */}
         <Tabs.Screen
           name="assignments"
           options={{
-            title: isTeacher ? "Задания" : "Задания",
+            title: "Задания",
             tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} />,
           }}
         />
 
-        {/* История — скрыта */}
         <Tabs.Screen name="history" options={{ href: null }} />
 
-        {/* AI Чат — только ученики */}
         <Tabs.Screen
           name="voice-chat"
           options={isStudent
@@ -110,7 +196,6 @@ function MainLayoutInner() {
           }
         />
 
-        {/* Рейтинг — только ученики */}
         <Tabs.Screen
           name="leaderboard"
           options={isStudent
@@ -119,7 +204,6 @@ function MainLayoutInner() {
           }
         />
 
-        {/* Ученики — учитель или родитель */}
         <Tabs.Screen
           name="students"
           options={(isTeacher || isParent)
@@ -131,7 +215,6 @@ function MainLayoutInner() {
           }
         />
 
-        {/* Анализ — только учитель */}
         <Tabs.Screen
           name="analysis"
           options={isTeacher
@@ -140,7 +223,6 @@ function MainLayoutInner() {
           }
         />
 
-        {/* Календарь — учитель и ученик */}
         <Tabs.Screen
           name="calendar"
           options={(isTeacher || isStudent)
@@ -149,7 +231,6 @@ function MainLayoutInner() {
           }
         />
 
-        {/* Профиль — для всех */}
         <Tabs.Screen
           name="profile"
           options={{
@@ -158,7 +239,6 @@ function MainLayoutInner() {
           }}
         />
 
-        {/* Скрытые маршруты */}
         <Tabs.Screen name="student/[id]" options={{ href: null }} />
         <Tabs.Screen name="assignment/[id]" options={{ href: null }} />
         <Tabs.Screen name="create-assignment" options={{ href: null }} />
@@ -177,3 +257,4 @@ export default function MainLayout() {
     </CalendarBadgeProvider>
   );
 }
+
