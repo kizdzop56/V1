@@ -60,6 +60,11 @@ router.get("/users/:id", requireAuth, async (req, res) => {
     }
   }
 
+  const ONLINE_MS = 3 * 60 * 1000;
+  const isOnline = user.lastSeenAt
+    ? Date.now() - new Date(user.lastSeenAt).getTime() < ONLINE_MS
+    : false;
+
   res.json({
     id: user.id,
     username: user.username,
@@ -76,7 +81,18 @@ router.get("/users/:id", requireAuth, async (req, res) => {
     completedAssignments,
     averageScore,
     createdAt: user.createdAt,
+    lastSeenAt: user.lastSeenAt,
+    isOnline,
   });
+});
+
+// Heartbeat — updates lastSeenAt, used for online status
+router.post("/users/ping", requireAuth, async (req, res) => {
+  const user = getUser(req);
+  await db.update(usersTable)
+    .set({ lastSeenAt: new Date() })
+    .where(eq(usersTable.id, user.userId));
+  res.json({ ok: true });
 });
 
 // Update profile (bio, avatar)

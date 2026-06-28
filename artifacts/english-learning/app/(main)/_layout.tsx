@@ -1,28 +1,126 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, Platform } from "react-native";
+import { View, Text, TouchableOpacity, Platform, AppState } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useStartTimeSession, useEndTimeSession } from "@workspace/api-client-react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarBadgeProvider, useCalendarBadge } from "@/contexts/CalendarBadgeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import authStorage from "@/utils/authStorage";
 
 export const SESSION_START_KEY = "timer_session_start";
+
+const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
+  ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+  : "";
+
+async function pingServer() {
+  try {
+    const token = await authStorage.getItem("auth_token");
+    if (!token) return;
+    await fetch(`${BASE_URL}/api/users/ping`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+  } catch { /* silent */ }
+}
+
+async function endSessionDirect() {
+  try {
+    const token = await authStorage.getItem("auth_token");
+    if (!token) return;
+    await fetch(`${BASE_URL}/api/time-tracking/end`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+  } catch { /* silent */ }
+}
+
+async function startSessionDirect() {
+  try {
+    const token = await authStorage.getItem("auth_token");
+    if (!token) return;
+    await fetch(`${BASE_URL}/api/time-tracking/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+  } catch { /* silent */ }
+}
 
 function StudentTimerManager() {
   const { mutate: startSession } = useStartTimeSession();
   const { mutate: endSession } = useEndTimeSession();
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionActiveRef = useRef(false);
+
+  // Heartbeat + session start/end logic
+  const beginSession = useCallback(() => {
+    if (sessionActiveRef.current) return;
+    sessionActiveRef.current = true;
+    AsyncStorage.setItem(SESSION_START_KEY, String(Date.now()));
+    startSession(undefined);
+    pingServer();
+  }, [startSession]);
+
+  const finishSession = useCallback(() => {
+    if (!sessionActiveRef.current) return;
+    sessionActiveRef.current = false;
+    AsyncStorage.removeItem(SESSION_START_KEY);
+    endSession(undefined);
+  }, [endSession]);
 
   useEffect(() => {
-    const now = String(Date.now());
-    AsyncStorage.setItem(SESSION_START_KEY, now);
-    startSession(undefined);
+    // Start session immediately
+    beginSession();
+
+    // Heartbeat: ping every 60s to update lastSeenAt
+    heartbeatRef.current = setInterval(() => {
+      pingServer();
+    }, 60_000);
+
+    // Web: handle tab visibility change (fires when tab is hidden/closed)
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const onVisibilityChange = () => {
+        if (document.hidden) {
+          endSessionDirect();
+          sessionActiveRef.current = false;
+        } else {
+          startSessionDirect();
+          sessionActiveRef.current = true;
+          pingServer();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      // beforeunload: last resort for browser close
+      const onBeforeUnload = () => { endSessionDirect(); };
+      window.addEventListener("beforeunload", onBeforeUnload);
+
+      return () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("beforeunload", onBeforeUnload);
+        if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+        finishSession();
+      };
+    }
+
+    // Native: handle app going to background
+    const appStateSub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "background" || nextState === "inactive") {
+        finishSession();
+      } else if (nextState === "active") {
+        beginSession();
+        pingServer();
+      }
+    });
+
     return () => {
-      AsyncStorage.removeItem(SESSION_START_KEY);
-      endSession(undefined);
+      appStateSub.remove();
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      finishSession();
     };
   }, []);
 

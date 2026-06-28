@@ -39,6 +39,8 @@ type FriendProfile = {
   age: number | null;
   role: string;
   completedAssignments: number;
+  isOnline?: boolean;
+  lastSeenAt?: string | null;
 };
 
 function formatTime(minutes: number) {
@@ -146,22 +148,51 @@ export default function FriendProfileScreen() {
           backgroundColor: colors.card, borderRadius: 20,
           borderWidth: 1, borderColor: colors.border, marginBottom: 16,
         }}>
-          <View style={{
-            width: 90, height: 90, borderRadius: 45,
-            backgroundColor: avatarColor,
-            justifyContent: "center", alignItems: "center",
-            marginBottom: 14,
-            shadowColor: avatarColor, shadowOpacity: 0.35,
-            shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-          }}>
-            <Text style={{ fontSize: 44 }}>{avatarEmoji}</Text>
+          {/* Avatar with online dot */}
+          <View style={{ position: "relative", marginBottom: 14 }}>
+            <View style={{
+              width: 90, height: 90, borderRadius: 45,
+              backgroundColor: avatarColor,
+              justifyContent: "center", alignItems: "center",
+              shadowColor: avatarColor, shadowOpacity: 0.35,
+              shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+            }}>
+              <Text style={{ fontSize: 44 }}>{avatarEmoji}</Text>
+            </View>
+            {/* Online indicator dot */}
+            <View style={{
+              position: "absolute", bottom: 4, right: 4,
+              width: 18, height: 18, borderRadius: 9,
+              backgroundColor: profile.isOnline ? "#22c55e" : "#94a3b8",
+              borderWidth: 3, borderColor: colors.card,
+            }} />
           </View>
+
           <Text style={{ fontSize: 22, fontWeight: "800", color: colors.foreground, marginBottom: 3 }}>
             {profile.name}
           </Text>
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 8 }}>
             @{profile.username}
           </Text>
+
+          {/* Online status label */}
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 5,
+            backgroundColor: profile.isOnline ? "#dcfce7" : "rgba(220,210,255,0.4)",
+            paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
+            marginBottom: levelMeta ? 10 : 0,
+          }}>
+            <View style={{
+              width: 7, height: 7, borderRadius: 4,
+              backgroundColor: profile.isOnline ? "#16a34a" : "#94a3b8",
+            }} />
+            <Text style={{
+              fontSize: 12, fontWeight: "700",
+              color: profile.isOnline ? "#15803d" : "#64748b",
+            }}>
+              {profile.isOnline ? "В сети" : "Не в сети"}
+            </Text>
+          </View>
 
           {/* Level badge */}
           {levelMeta && (

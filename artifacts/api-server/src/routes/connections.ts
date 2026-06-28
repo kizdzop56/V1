@@ -493,6 +493,7 @@ router.get("/connections/friends/:userId/profile", requireAuth, async (req, res)
     bio: usersTable.bio,
     age: usersTable.age,
     role: usersTable.role,
+    lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(eq(usersTable.id, targetId));
 
   if (!user) { res.status(404).json({ error: "Пользователь не найден" }); return; }
@@ -502,7 +503,12 @@ router.get("/connections/friends/:userId/profile", requireAuth, async (req, res)
     .from(submissionsTable)
     .where(eq(submissionsTable.studentId, targetId));
 
-  res.json({ ...user, completedAssignments: subRows.length });
+  const ONLINE_MS = 3 * 60 * 1000;
+  const isOnline = user.lastSeenAt
+    ? Date.now() - new Date(user.lastSeenAt).getTime() < ONLINE_MS
+    : false;
+
+  res.json({ ...user, completedAssignments: subRows.length, isOnline });
 });
 
 export default router;

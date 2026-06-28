@@ -34,6 +34,7 @@ export const usersTable = pgTable("users", {
   loginStreak: integer("login_streak").notNull().default(0),
   lastLoginDate: date("last_login_date"),
   mascotName: text("mascot_name").default("Оливер"),
+  lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
