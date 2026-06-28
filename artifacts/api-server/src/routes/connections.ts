@@ -481,6 +481,70 @@ router.delete("/connections/friends/:id", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Student: get friendship status with a specific user ─────────────
+router.get("/connections/friends/status/:userId", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  const targetId = Number(req.params["userId"]);
+
+  const [row] = await db.select().from(friendshipsTable).where(
+    or(
+      and(eq(friendshipsTable.requesterId, caller.userId), eq(friendshipsTable.addresseeId, targetId)),
+      and(eq(friendshipsTable.requesterId, targetId), eq(friendshipsTable.addresseeId, caller.userId)),
+    )
+  );
+
+  if (!row) {
+    res.json({ status: "none" });
+    return;
+  }
+
+  if (row.status === "accepted") {
+    res.json({ status: "friends", friendshipId: row.id });
+    return;
+  }
+
+  const isSent = row.requesterId === caller.userId;
+  res.json({
+    status: isSent ? "pending_sent" : "pending_received",
+    friendshipId: row.id,
+  });
+});
+
+// ── Student: send friend request by userId (no invite code needed) ──
+router.post("/connections/friends/request-by-id", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  if (caller.role !== "student") {
+    res.status(403).json({ error: "Только ученики могут добавлять друзей" }); return;
+  }
+
+  const { userId } = req.body as { userId: number };
+  if (!userId) { res.status(400).json({ error: "userId обязателен" }); return; }
+
+  const [friend] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!friend) { res.status(404).json({ error: "Пользователь не найден" }); return; }
+  if (friend.role !== "student") { res.status(400).json({ error: "Этот пользователь не является учеником" }); return; }
+  if (friend.id === caller.userId) { res.status(400).json({ error: "Нельзя добавить самого себя" }); return; }
+
+  const [existing] = await db.select().from(friendshipsTable).where(
+    or(
+      and(eq(friendshipsTable.requesterId, caller.userId), eq(friendshipsTable.addresseeId, friend.id)),
+      and(eq(friendshipsTable.requesterId, friend.id), eq(friendshipsTable.addresseeId, caller.userId)),
+    )
+  );
+  if (existing) {
+    if (existing.status === "accepted") { res.status(400).json({ error: "Вы уже друзья" }); return; }
+    res.status(400).json({ error: "Запрос уже отправлен" }); return;
+  }
+
+  await db.insert(friendshipsTable).values({
+    requesterId: caller.userId,
+    addresseeId: friend.id,
+    status: "pending",
+  });
+
+  res.status(201).json({ status: "pending_sent" });
+});
+
 // ── Public profile of a friend (accepted only) ───────────────────────
 router.get("/connections/friends/:userId/profile", requireAuth, async (req, res) => {
   const caller = getUser(req);

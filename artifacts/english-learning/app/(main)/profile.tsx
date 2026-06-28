@@ -1357,7 +1357,21 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={s.logoutBtn} onPress={logout}>
+        <TouchableOpacity
+          style={s.logoutBtn}
+          onPress={() => {
+            const { Alert } = require("react-native");
+            Alert.alert(
+              "Выйти из аккаунта?",
+              "Вы уверены, что хотите выйти из профиля?",
+              [
+                { text: "Отмена", style: "cancel" },
+                { text: "Выйти", style: "destructive", onPress: logout },
+              ],
+              { cancelable: true }
+            );
+          }}
+        >
           <Text style={s.logoutText}>Выйти из аккаунта</Text>
         </TouchableOpacity>
       </ScrollView>

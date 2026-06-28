@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, Image,
+  ActivityIndicator, Platform,
 } from "react-native";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { LEVEL_META } from "@/contexts/AuthContext";
+import { useAuth, LEVEL_META } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
 import authStorage from "@/utils/authStorage";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
@@ -17,10 +17,15 @@ const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
-async function apiFetch(path: string) {
+async function apiFetch(path: string, opts?: RequestInit) {
   const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(opts?.headers ?? {}),
+    },
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Ошибка сервера");
@@ -46,6 +51,8 @@ type FriendProfile = {
   lastSeenAt?: string | null;
 };
 
+type FriendshipStatus = "none" | "pending_sent" | "pending_received" | "friends" | "loading";
+
 function formatTime(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -60,19 +67,82 @@ export default function FriendProfileScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const [profile, setProfile] = useState<FriendProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [friendStatus, setFriendStatus] = useState<FriendshipStatus>("loading");
+  const [friendshipId, setFriendshipId] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const isStudent = user?.role === "student";
+
+  const loadProfile = useCallback(async () => {
+    if (!friendId) return;
+    try {
+      const data = await apiFetch(`/api/users/${friendId}`);
+      setProfile(data);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [friendId]);
+
+  const loadFriendStatus = useCallback(async () => {
+    if (!friendId || !isStudent) return;
+    try {
+      const data = await apiFetch(`/api/connections/friends/status/${friendId}`);
+      setFriendStatus(data.status);
+      setFriendshipId(data.friendshipId ?? null);
+    } catch {
+      setFriendStatus("none");
+    }
+  }, [friendId, isStudent]);
 
   useEffect(() => {
-    if (!friendId) return;
-    // Use the general user endpoint — visible to any authenticated user (read-only)
-    apiFetch(`/api/users/${friendId}`)
-      .then(setProfile)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [friendId]);
+    loadProfile();
+    loadFriendStatus();
+  }, [loadProfile, loadFriendStatus]);
+
+  const handleSendRequest = async () => {
+    setActionLoading(true);
+    try {
+      await apiFetch("/api/connections/friends/request-by-id", {
+        method: "POST",
+        body: JSON.stringify({ userId: friendId }),
+      });
+      setFriendStatus("pending_sent");
+    } catch (e: any) {
+      /* silent */
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAccept = async () => {
+    if (!friendshipId) return;
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/connections/friends/${friendshipId}/accept`, { method: "PATCH" });
+      setFriendStatus("friends");
+    } catch { /* silent */ } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!friendshipId) return;
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/connections/friends/${friendshipId}`, { method: "DELETE" });
+      setFriendStatus("none");
+      setFriendshipId(null);
+    } catch { /* silent */ } finally {
+      setActionLoading(false);
+    }
+  };
 
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -97,7 +167,7 @@ export default function FriendProfileScreen() {
 
   if (error || !profile) {
     return (
-      <View style={[s.container]}>
+      <View style={s.container}>
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
             <Feather name="arrow-left" size={22} color={colors.foreground} />
@@ -133,6 +203,7 @@ export default function FriendProfileScreen() {
 
   const avatarColor = profile.avatarColor ?? "#6366f1";
   const avatarEmoji = profile.avatarEmoji ?? "🦁";
+  const isSelf = user?.id === friendId;
 
   return (
     <View style={s.container}>
@@ -140,7 +211,7 @@ export default function FriendProfileScreen() {
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Профиль друга</Text>
+        <Text style={s.headerTitle}>Профиль ученика</Text>
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -167,7 +238,6 @@ export default function FriendProfileScreen() {
             @{profile.username}
           </Text>
 
-          {/* Online status label */}
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 5,
             backgroundColor: profile.isOnline ? "#dcfce7" : "rgba(220,210,255,0.4)",
@@ -186,7 +256,6 @@ export default function FriendProfileScreen() {
             </Text>
           </View>
 
-          {/* Level badge */}
           {levelMeta && (
             <View style={{
               flexDirection: "row", alignItems: "center", gap: 6,
@@ -200,6 +269,19 @@ export default function FriendProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Friend request card (only students, not self) ── */}
+        {isStudent && !isSelf && profile.role === "student" && (
+          <FriendRequestCard
+            status={friendStatus}
+            name={profile.name}
+            loading={actionLoading}
+            onSend={handleSendRequest}
+            onAccept={handleAccept}
+            onDecline={handleDecline}
+            colors={colors}
+          />
+        )}
 
         {/* ── Bio ── */}
         {!!profile.bio && (
@@ -238,7 +320,6 @@ export default function FriendProfileScreen() {
           ))}
         </View>
 
-        {/* ── Achievements showcase (Steam-style, earned only) ── */}
         <AchievementsShowcase
           unlocked={unlocked}
           showLocked={false}
@@ -246,6 +327,160 @@ export default function FriendProfileScreen() {
         />
 
       </ScrollView>
+    </View>
+  );
+}
+
+function FriendRequestCard({
+  status, name, loading, onSend, onAccept, onDecline, colors,
+}: {
+  status: FriendshipStatus;
+  name: string;
+  loading: boolean;
+  onSend: () => void;
+  onAccept: () => void;
+  onDecline: () => void;
+  colors: any;
+}) {
+  if (status === "loading") return null;
+
+  if (status === "friends") {
+    return (
+      <View style={{
+        flexDirection: "row", alignItems: "center", gap: 12,
+        backgroundColor: "#dcfce7", borderRadius: 16, padding: 16,
+        borderWidth: 1.5, borderColor: "#86efac", marginBottom: 16,
+      }}>
+        <View style={{
+          width: 40, height: 40, borderRadius: 20,
+          backgroundColor: "#16a34a20",
+          justifyContent: "center", alignItems: "center",
+        }}>
+          <Feather name="user-check" size={20} color="#16a34a" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: "#15803d" }}>Вы друзья</Text>
+          <Text style={{ fontSize: 12, color: "#16a34a" }}>с {name}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === "pending_sent") {
+    return (
+      <View style={{
+        flexDirection: "row", alignItems: "center", gap: 12,
+        backgroundColor: "#fef9c3", borderRadius: 16, padding: 16,
+        borderWidth: 1.5, borderColor: "#fde047", marginBottom: 16,
+      }}>
+        <View style={{
+          width: 40, height: 40, borderRadius: 20,
+          backgroundColor: "#ca8a0420",
+          justifyContent: "center", alignItems: "center",
+        }}>
+          <Feather name="clock" size={20} color="#ca8a04" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: "#a16207" }}>Запрос отправлен</Text>
+          <Text style={{ fontSize: 12, color: "#ca8a04" }}>Ожидаем ответа от {name}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === "pending_received") {
+    return (
+      <View style={{
+        backgroundColor: colors.card, borderRadius: 16, padding: 16,
+        borderWidth: 1.5, borderColor: colors.primary + "50", marginBottom: 16,
+      }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <View style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: colors.primary + "15",
+            justifyContent: "center", alignItems: "center",
+          }}>
+            <Feather name="user-plus" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: "800", color: colors.foreground }}>
+              {name} хочет дружить
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+              Входящий запрос на дружбу
+            </Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <TouchableOpacity
+            onPress={onAccept}
+            disabled={loading}
+            style={{
+              flex: 1, backgroundColor: colors.primary, borderRadius: 12,
+              paddingVertical: 11, alignItems: "center",
+            }}
+          >
+            {loading
+              ? <ActivityIndicator size={16} color="#fff" />
+              : <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Принять</Text>
+            }
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onDecline}
+            disabled={loading}
+            style={{
+              flex: 1, backgroundColor: colors.muted, borderRadius: 12,
+              paddingVertical: 11, alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.mutedForeground }}>Отклонить</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{
+      backgroundColor: colors.card, borderRadius: 16, padding: 16,
+      borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+    }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <View style={{
+          width: 40, height: 40, borderRadius: 20,
+          backgroundColor: colors.primary + "12",
+          justifyContent: "center", alignItems: "center",
+        }}>
+          <Feather name="user-plus" size={20} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: colors.foreground }}>
+            Добавить в друзья
+          </Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+            Отправить запрос {name}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={onSend}
+        disabled={loading}
+        style={{
+          backgroundColor: colors.primary, borderRadius: 12,
+          paddingVertical: 12, alignItems: "center",
+          flexDirection: "row", justifyContent: "center", gap: 8,
+        }}
+      >
+        {loading
+          ? <ActivityIndicator size={16} color="#fff" />
+          : (
+            <>
+              <Feather name="user-plus" size={16} color="#fff" />
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Отправить запрос</Text>
+            </>
+          )
+        }
+      </TouchableOpacity>
     </View>
   );
 }
