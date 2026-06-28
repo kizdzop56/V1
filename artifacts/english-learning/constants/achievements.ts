@@ -10,10 +10,20 @@ export interface Achievement {
 }
 
 const BADGE_IMAGES = {
-  start: require("../assets/badges/start.jpeg"),
-  firstStep: require("../assets/badges/first-step.jpeg"),
-  firstPoints: require("../assets/badges/first-points.jpeg"),
-  loverOfKnowledge: require("../assets/badges/lover-of-knowledge.jpeg"),
+  start:           require("../assets/badges/start.jpeg"),
+  firstStep:       require("../assets/badges/first-step.jpeg"),
+  firstPoints:     require("../assets/badges/first-points.jpeg"),
+  loverOfKnowledge:require("../assets/badges/lover-of-knowledge.jpeg"),
+  champion:        require("../assets/badges/champion.png"),
+  scholar:         require("../assets/badges/scholar.png"),
+  streak:          require("../assets/badges/streak.png"),
+  lightning:       require("../assets/badges/lightning.png"),
+  voice:           require("../assets/badges/voice.png"),
+  master:          require("../assets/badges/master.png"),
+  perfect:         require("../assets/badges/perfect.png"),
+  time:            require("../assets/badges/time.png"),
+  diamond:         require("../assets/badges/diamond.png"),
+  earlyBird:       require("../assets/badges/early-bird.png"),
 };
 
 export interface AchievementStats {
@@ -65,6 +75,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "ten_tasks",
     emoji: "🏆",
+    image: BADGE_IMAGES.champion,
     title: "Отличник",
     description: "Выполнил 10 заданий",
     color: "#f59e0b",
@@ -74,6 +85,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "twenty_five_tasks",
     emoji: "💎",
+    image: BADGE_IMAGES.master,
     title: "Мастер заданий",
     description: "Выполнил 25 заданий",
     color: "#8b5cf6",
@@ -83,6 +95,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "fifty_tasks",
     emoji: "🚀",
+    image: BADGE_IMAGES.scholar,
     title: "Покоритель высот",
     description: "Выполнил 50 заданий",
     color: "#3b82f6",
@@ -92,6 +105,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "hundred_tasks",
     emoji: "🌟",
+    image: BADGE_IMAGES.diamond,
     title: "Легенда учёбы",
     description: "Выполнил 100 заданий",
     color: "#f59e0b",
@@ -103,6 +117,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "perfect_test",
     emoji: "💯",
+    image: BADGE_IMAGES.perfect,
     title: "Идеально!",
     description: "Получил 100% в задании",
     color: "#10b981",
@@ -112,6 +127,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "five_perfect",
     emoji: "🎯",
+    image: BADGE_IMAGES.perfect,
     title: "5 идеальных тестов",
     description: "5 раз получил 100% в заданиях",
     color: "#6366f1",
@@ -121,6 +137,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "ten_perfect",
     emoji: "🏅",
+    image: BADGE_IMAGES.perfect,
     title: "Перфекционист",
     description: "10 раз получил 100% в заданиях",
     color: "#f43f5e",
@@ -240,6 +257,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "streak_3",
     emoji: "🔥",
+    image: BADGE_IMAGES.streak,
     title: "Огонь!",
     description: "3 дня подряд в приложении",
     color: "#f97316",
@@ -249,6 +267,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "streak_7",
     emoji: "⚡",
+    image: BADGE_IMAGES.lightning,
     title: "Неделя без пауз",
     description: "7 дней подряд в приложении",
     color: "#eab308",
@@ -258,6 +277,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "streak_30",
     emoji: "🏆",
+    image: BADGE_IMAGES.champion,
     title: "Месяц силы",
     description: "30 дней подряд в приложении",
     color: "#f59e0b",
@@ -269,6 +289,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "early_bird",
     emoji: "🐦",
+    image: BADGE_IMAGES.earlyBird,
     title: "Ранняя пташка",
     description: "Занимался до 9 утра",
     color: "#f59e0b",
@@ -278,6 +299,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "early_bird_5",
     emoji: "🌅",
+    image: BADGE_IMAGES.earlyBird,
     title: "Жаворонок",
     description: "5 раз занимался до 9 утра",
     color: "#f97316",
@@ -289,6 +311,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "voice_first",
     emoji: "🎤",
+    image: BADGE_IMAGES.voice,
     title: "Первый диалог",
     description: "Провёл первый разговор с AI-тьютором",
     color: "#ec4899",
@@ -298,6 +321,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "voice_5",
     emoji: "🗣️",
+    image: BADGE_IMAGES.voice,
     title: "Болтун",
     description: "5 разговоров с AI-тьютором",
     color: "#a855f7",
@@ -307,6 +331,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "voice_10",
     emoji: "🎙️",
+    image: BADGE_IMAGES.voice,
     title: "Оратор",
     description: "10 разговоров с AI-тьютором",
     color: "#8b5cf6",
@@ -318,6 +343,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "xp_level_5",
     emoji: "🌟",
+    image: BADGE_IMAGES.lightning,
     title: "Уровень 5",
     description: "Достиг 5 уровня опыта",
     color: "#06b6d4",
@@ -327,6 +353,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "xp_level_10",
     emoji: "🏅",
+    image: BADGE_IMAGES.scholar,
     title: "Уровень 10",
     description: "Достиг 10 уровня опыта",
     color: "#ec4899",
@@ -336,6 +363,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "xp_level_20",
     emoji: "💎",
+    image: BADGE_IMAGES.master,
     title: "Уровень 20",
     description: "Достиг 20 уровня опыта",
     color: "#8b5cf6",
@@ -345,6 +373,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "xp_level_50",
     emoji: "👑",
+    image: BADGE_IMAGES.diamond,
     title: "Бог знаний",
     description: "Достиг максимального 50 уровня!",
     color: "#f59e0b",
@@ -356,6 +385,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "time_30",
     emoji: "⏱️",
+    image: BADGE_IMAGES.time,
     title: "Начало пути",
     description: "Провёл в приложении 30 минут",
     color: "#6366f1",
@@ -365,6 +395,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "time_120",
     emoji: "⏰",
+    image: BADGE_IMAGES.time,
     title: "Усердный ученик",
     description: "Провёл в приложении 2 часа",
     color: "#6366f1",
@@ -374,6 +405,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "time_600",
     emoji: "🕰️",
+    image: BADGE_IMAGES.time,
     title: "Настоящий марафонец",
     description: "Провёл в приложении 10 часов",
     color: "#6366f1",

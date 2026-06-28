@@ -6,3 +6,63 @@ id = "jy7bw6GRrr7uJHvsBrS2A"
 uri = "file://artifacts/english-learning/assets/images/icon.png"
 type = "image"
 title = "english learning owl icon"
+
+[[generated]]
+id = "FGDxB9mT2oNLHytXQOY4G"
+uri = "file://artifacts/english-learning/assets/badges/champion.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "k4XEOFtgS_J8rx90_4vnV"
+uri = "file://artifacts/english-learning/assets/badges/scholar.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WjIwwuTfr6K_sOKBB2mPI"
+uri = "file://artifacts/english-learning/assets/badges/streak.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "s2doE3tZEu8OfjeRG0w-U"
+uri = "file://artifacts/english-learning/assets/badges/lightning.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "tqGZc4IheM_GDQv8f1CYf"
+uri = "file://artifacts/english-learning/assets/badges/voice.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YuPdzbOLm1pGYmLGCS8l3"
+uri = "file://artifacts/english-learning/assets/badges/master.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "z4DhAwCbdhAFIaAtIBMGK"
+uri = "file://artifacts/english-learning/assets/badges/perfect.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ubRtapLiOp-k3l1AhtfuO"
+uri = "file://artifacts/english-learning/assets/badges/time.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "OR5yy2P1nVZ-dzhMB_Bmb"
+uri = "file://artifacts/english-learning/assets/badges/diamond.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_awll_UZVEeaGOJDpWLwy"
+uri = "file://artifacts/english-learning/assets/badges/early-bird.png"
+type = "image"
+title = "generated_image"

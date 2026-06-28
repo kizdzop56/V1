@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform,
+  ActivityIndicator, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { useColors } from "@/hooks/useColors";
 import { LEVEL_META } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
 import authStorage from "@/utils/authStorage";
+import { AchievementsShowcase } from "@/components/AchievementsShowcase";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -214,41 +215,12 @@ export default function FriendProfileScreen() {
           ))}
         </View>
 
-        {/* ── Achievements showcase ── */}
-        <View style={{
-          backgroundColor: colors.card, borderRadius: 16, padding: 16,
-          borderWidth: 1, borderColor: colors.border, marginBottom: 16,
-        }}>
-          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12 }}>
-            Витрина наград · {unlocked.length}/{ACHIEVEMENTS.length}
-          </Text>
-
-          {unlocked.length === 0 ? (
-            <View style={{ alignItems: "center", paddingVertical: 20, gap: 8 }}>
-              <Text style={{ fontSize: 32 }}>🏆</Text>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Пока нет наград</Text>
-            </View>
-          ) : (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-              {unlocked.map((a) => (
-                <View
-                  key={a.id}
-                  style={{
-                    backgroundColor: a.bgColor, borderRadius: 14, padding: 12,
-                    borderWidth: 1.5, borderColor: a.color + "40",
-                    width: "47%", alignItems: "flex-start",
-                  }}
-                >
-                  <Text style={{ fontSize: 28, marginBottom: 6 }}>{a.emoji}</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: a.color }}>{a.title}</Text>
-                  <Text style={{ fontSize: 11, marginTop: 2, color: a.color + "bb", lineHeight: 15 }}>
-                    {a.description}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
+        {/* ── Achievements showcase (Steam-style, earned only) ── */}
+        <AchievementsShowcase
+          unlocked={unlocked}
+          showLocked={false}
+          title="Витрина наград"
+        />
 
       </ScrollView>
     </View>

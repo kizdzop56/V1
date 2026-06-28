@@ -14,6 +14,7 @@ import { ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements, type Achi
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import authStorage from "@/utils/authStorage";
 import { XpLevelBar, LevelBadgesShowcase } from "@/components/XpLevelBar";
+import { AchievementsShowcase } from "@/components/AchievementsShowcase";
 import { MascotModal, FloatingMascot, MascotNamePicker, getMascotMessage } from "@/components/Mascot";
 import { AchievementToast } from "@/components/AchievementToast";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
@@ -1092,60 +1093,18 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* ── Витрина наград ── */}
+            {/* ── Витрина наград — Steam стиль ── */}
             <View style={s.section}>
-              <Text style={s.sectionTitle}>
-                Витрина наград · {unlocked.length}/{ACHIEVEMENTS.length}
-              </Text>
-
-              {/* Значки уровней */}
+              <Text style={s.sectionTitle}>Уровни XP</Text>
               <LevelBadgesShowcase currentLevel={achievementStats.xpLevel} />
-
-              {/* Разблокированные достижения */}
-              {unlocked.length > 0 && (
-                <View style={s.achieveGrid}>
-                  {unlocked.map((a) => (
-                    <View
-                      key={a.id}
-                      style={[s.achieveCard, { backgroundColor: a.bgColor, borderColor: a.color + "40" }]}
-                    >
-                      {a.image ? (
-                        <Image source={a.image} style={s.achieveBadgeImg} resizeMode="cover" />
-                      ) : (
-                        <Text style={s.achieveEmoji}>{a.emoji}</Text>
-                      )}
-                      <Text style={[s.achieveTitle, { color: a.color }]}>{a.title}</Text>
-                      <Text style={[s.achieveDesc, { color: a.color + "bb" }]}>{a.description}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Заблокированные (серые) */}
-              {locked.length > 0 && (
-                <>
-                  <Text style={[s.sectionTitle, { marginTop: 14, marginBottom: 10 }]}>
-                    Ещё не получены
-                  </Text>
-                  <View style={s.achieveGrid}>
-                    {locked.map((a) => (
-                      <View
-                        key={a.id}
-                        style={[s.achieveCard, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                      >
-                        {a.image ? (
-                          <Image source={a.image} style={[s.achieveBadgeImg, { opacity: 0.25 }]} resizeMode="cover" />
-                        ) : (
-                          <Text style={[s.achieveEmoji, { opacity: 0.3 }]}>{a.emoji}</Text>
-                        )}
-                        <Text style={[s.achieveTitle, { color: colors.mutedForeground }]}>{a.title}</Text>
-                        <Text style={[s.achieveDesc, { color: colors.mutedForeground }]}>{a.description}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
             </View>
+
+            <AchievementsShowcase
+              unlocked={unlocked}
+              locked={locked}
+              showLocked={true}
+              title="Витрина наград"
+            />
 
             {/* ── Маскот-помощник ── */}
             <View style={s.section}>
