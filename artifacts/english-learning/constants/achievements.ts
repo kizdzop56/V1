@@ -1,12 +1,20 @@
 export interface Achievement {
   id: string;
   emoji: string;
+  image?: any;
   title: string;
   description: string;
   color: string;
   bgColor: string;
   check: (stats: AchievementStats) => boolean;
 }
+
+const BADGE_IMAGES = {
+  start: require("../assets/badges/start.jpeg"),
+  firstStep: require("../assets/badges/first-step.jpeg"),
+  firstPoints: require("../assets/badges/first-points.jpeg"),
+  loverOfKnowledge: require("../assets/badges/lover-of-knowledge.jpeg"),
+};
 
 export interface AchievementStats {
   completedAssignments: number;
@@ -25,30 +33,33 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "welcome",
     emoji: "🎉",
-    title: "Добро пожаловать!",
+    image: BADGE_IMAGES.start,
+    title: "Старт!",
     description: "Создал аккаунт и начал учиться",
-    color: "#6366f1",
-    bgColor: "#ede9fe",
+    color: "#f59e0b",
+    bgColor: "#fef3c7",
     check: () => true,
   },
 
   // ─── Задания ───────────────────────────────────────────────────
   {
     id: "first_task",
-    emoji: "✅",
+    emoji: "👣",
+    image: BADGE_IMAGES.firstStep,
     title: "Первый шаг",
     description: "Выполнил первое задание",
-    color: "#10b981",
-    bgColor: "#d1fae5",
+    color: "#8b5cf6",
+    bgColor: "#ede9fe",
     check: ({ completedAssignments }) => completedAssignments >= 1,
   },
   {
     id: "five_tasks",
-    emoji: "📚",
+    emoji: "📖",
+    image: BADGE_IMAGES.loverOfKnowledge,
     title: "Любитель знаний",
     description: "Выполнил 5 заданий",
-    color: "#06b6d4",
-    bgColor: "#cffafe",
+    color: "#d97706",
+    bgColor: "#fef3c7",
     check: ({ completedAssignments }) => completedAssignments >= 5,
   },
   {
@@ -121,6 +132,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "points_10",
     emoji: "⭐",
+    image: BADGE_IMAGES.firstPoints,
     title: "Первые очки",
     description: "Набрал 10 очков",
     color: "#f59e0b",

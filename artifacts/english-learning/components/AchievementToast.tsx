@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Animated, StyleSheet } from "react-native";
+import { View, Text, Animated, StyleSheet, Image } from "react-native";
 import type { Achievement } from "@/constants/achievements";
 
 interface AchievementToastProps {
@@ -50,7 +50,11 @@ export function AchievementToast({ achievement, onHide }: AchievementToastProps)
       ]}
     >
       <View style={[styles.iconCircle, { backgroundColor: achievement.color + "20" }]}>
-        <Text style={styles.emoji}>{achievement.emoji}</Text>
+        {achievement.image ? (
+          <Image source={achievement.image} style={styles.badgeImg} resizeMode="cover" />
+        ) : (
+          <Text style={styles.emoji}>{achievement.emoji}</Text>
+        )}
       </View>
       <View style={styles.textArea}>
         <Text style={styles.label}>Новое достижение!</Text>
@@ -69,9 +73,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
   },
   iconCircle: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 52, height: 52, borderRadius: 26,
     justifyContent: "center", alignItems: "center",
+    overflow: "hidden",
   },
+  badgeImg: { width: 52, height: 52, borderRadius: 26 },
   emoji: { fontSize: 28 },
   textArea: { flex: 1 },
   label: { fontSize: 11, fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 },

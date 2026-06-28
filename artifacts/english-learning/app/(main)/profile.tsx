@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Platform, TextInput, Modal, FlatList, ActivityIndicator,
-  Clipboard,
+  Clipboard, Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -789,6 +789,7 @@ export default function ProfileScreen() {
       width: "47%", alignItems: "flex-start",
     },
     achieveEmoji: { fontSize: 28, marginBottom: 6 },
+    achieveBadgeImg: { width: 56, height: 56, borderRadius: 28, marginBottom: 6 },
     achieveTitle: { fontSize: 13, fontWeight: "700" },
     achieveDesc: { fontSize: 11, marginTop: 2, lineHeight: 15 },
 
@@ -1108,7 +1109,11 @@ export default function ProfileScreen() {
                       key={a.id}
                       style={[s.achieveCard, { backgroundColor: a.bgColor, borderColor: a.color + "40" }]}
                     >
-                      <Text style={s.achieveEmoji}>{a.emoji}</Text>
+                      {a.image ? (
+                        <Image source={a.image} style={s.achieveBadgeImg} resizeMode="cover" />
+                      ) : (
+                        <Text style={s.achieveEmoji}>{a.emoji}</Text>
+                      )}
                       <Text style={[s.achieveTitle, { color: a.color }]}>{a.title}</Text>
                       <Text style={[s.achieveDesc, { color: a.color + "bb" }]}>{a.description}</Text>
                     </View>
@@ -1128,7 +1133,11 @@ export default function ProfileScreen() {
                         key={a.id}
                         style={[s.achieveCard, { backgroundColor: colors.muted, borderColor: colors.border }]}
                       >
-                        <Text style={[s.achieveEmoji, { opacity: 0.3 }]}>{a.emoji}</Text>
+                        {a.image ? (
+                          <Image source={a.image} style={[s.achieveBadgeImg, { opacity: 0.25 }]} resizeMode="cover" />
+                        ) : (
+                          <Text style={[s.achieveEmoji, { opacity: 0.3 }]}>{a.emoji}</Text>
+                        )}
                         <Text style={[s.achieveTitle, { color: colors.mutedForeground }]}>{a.title}</Text>
                         <Text style={[s.achieveDesc, { color: colors.mutedForeground }]}>{a.description}</Text>
                       </View>
