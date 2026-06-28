@@ -4,7 +4,6 @@ import { View, Text, TouchableOpacity, Platform, AppState } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect, useRef, useCallback } from "react";
-import { useStartTimeSession, useEndTimeSession } from "@workspace/api-client-react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarBadgeProvider, useCalendarBadge } from "@/contexts/CalendarBadgeContext";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,110 +16,93 @@ const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
-async function pingServer() {
-  try {
-    const token = await authStorage.getItem("auth_token");
-    if (!token) return;
-    await fetch(`${BASE_URL}/api/users/ping`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    });
-  } catch { /* silent */ }
-}
-
-async function endSessionDirect() {
-  try {
-    const token = await authStorage.getItem("auth_token");
-    if (!token) return;
-    await fetch(`${BASE_URL}/api/time-tracking/end`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    });
-  } catch { /* silent */ }
-}
-
-async function startSessionDirect() {
-  try {
-    const token = await authStorage.getItem("auth_token");
-    if (!token) return;
-    await fetch(`${BASE_URL}/api/time-tracking/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    });
-  } catch { /* silent */ }
-}
-
 function StudentTimerManager() {
-  const { mutate: startSession } = useStartTimeSession();
-  const { mutate: endSession } = useEndTimeSession();
+  // Cache token in a ref so cleanup functions (which can't be async) can use it synchronously
+  const tokenRef = useRef<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionActiveRef = useRef(false);
 
-  // Heartbeat + session start/end logic
-  const beginSession = useCallback(() => {
+  // Raw fetch helpers — use keepalive:true so they complete even on page close/unmount
+  const rawPost = useCallback((path: string) => {
+    const token = tokenRef.current;
+    if (!token) return;
+    fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      keepalive: true,
+    }).catch(() => {});
+  }, []);
+
+  const startNow = useCallback(() => {
     if (sessionActiveRef.current) return;
     sessionActiveRef.current = true;
     AsyncStorage.setItem(SESSION_START_KEY, String(Date.now()));
-    startSession(undefined);
-    pingServer();
-  }, [startSession]);
+    rawPost("/api/time-tracking/start");
+    rawPost("/api/users/ping");
+  }, [rawPost]);
 
-  const finishSession = useCallback(() => {
+  const endNow = useCallback(() => {
     if (!sessionActiveRef.current) return;
     sessionActiveRef.current = false;
     AsyncStorage.removeItem(SESSION_START_KEY);
-    endSession(undefined);
-  }, [endSession]);
+    rawPost("/api/time-tracking/end");
+  }, [rawPost]);
 
   useEffect(() => {
-    // Start session immediately
-    beginSession();
+    // Load token first, then start session
+    authStorage.getItem("auth_token").then((t) => {
+      tokenRef.current = t;
+      startNow();
+    });
 
-    // Heartbeat: ping every 60s to update lastSeenAt
+    // Heartbeat every 60s
     heartbeatRef.current = setInterval(() => {
-      pingServer();
+      const token = tokenRef.current;
+      if (token) {
+        fetch(`${BASE_URL}/api/users/ping`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          keepalive: true,
+        }).catch(() => {});
+      }
     }, 60_000);
 
-    // Web: handle tab visibility change (fires when tab is hidden/closed)
     if (Platform.OS === "web" && typeof document !== "undefined") {
       const onVisibilityChange = () => {
         if (document.hidden) {
-          endSessionDirect();
-          sessionActiveRef.current = false;
+          endNow();
         } else {
-          startSessionDirect();
-          sessionActiveRef.current = true;
-          pingServer();
+          startNow();
         }
       };
       document.addEventListener("visibilitychange", onVisibilityChange);
 
-      // beforeunload: last resort for browser close
-      const onBeforeUnload = () => { endSessionDirect(); };
+      // keepalive ensures this fires even on tab/browser close
+      const onBeforeUnload = () => { endNow(); };
       window.addEventListener("beforeunload", onBeforeUnload);
 
       return () => {
         document.removeEventListener("visibilitychange", onVisibilityChange);
         window.removeEventListener("beforeunload", onBeforeUnload);
         if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-        finishSession();
+        // Direct fetch (not React Query) so it is NOT cancelled on unmount
+        endNow();
       };
     }
 
-    // Native: handle app going to background
+    // Native: handle app backgrounding
     const appStateSub = AppState.addEventListener("change", (nextState) => {
       if (nextState === "background" || nextState === "inactive") {
-        finishSession();
+        endNow();
       } else if (nextState === "active") {
-        beginSession();
-        pingServer();
+        startNow();
       }
     });
 
     return () => {
       appStateSub.remove();
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      finishSession();
+      endNow();
     };
   }, []);
 

@@ -182,9 +182,16 @@ router.get("/connections/student/teachers", requireAuth, async (req, res) => {
     id: usersTable.id, name: usersTable.name, username: usersTable.username,
     avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor,
     role: usersTable.role, totalPoints: usersTable.totalPoints,
+    lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(inArray(usersTable.id, ids));
 
-  res.json(teachers);
+  const ONLINE_MS = 3 * 60 * 1000;
+  res.json(teachers.map((t) => ({
+    ...t,
+    isOnline: t.lastSeenAt
+      ? Date.now() - new Date(t.lastSeenAt).getTime() < ONLINE_MS
+      : false,
+  })));
 });
 
 // ── Student: get incoming teacher requests ───────────────────────────
@@ -412,9 +419,16 @@ router.get("/connections/friends", requireAuth, async (req, res) => {
     avatarColor: usersTable.avatarColor,
     totalPoints: usersTable.totalPoints,
     knowledgeLevel: usersTable.knowledgeLevel,
+    lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(inArray(usersTable.id, otherIds));
 
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const ONLINE_MS = 3 * 60 * 1000;
+  const userMap = Object.fromEntries(users.map((u) => [u.id, {
+    ...u,
+    isOnline: u.lastSeenAt
+      ? Date.now() - new Date(u.lastSeenAt).getTime() < ONLINE_MS
+      : false,
+  }]));
 
   const result = rows.map((r) => {
     const otherId = r.requesterId === caller.userId ? r.addresseeId : r.requesterId;

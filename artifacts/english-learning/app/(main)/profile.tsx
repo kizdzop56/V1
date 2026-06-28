@@ -178,7 +178,7 @@ async function apiFetch(path: string, opts?: RequestInit) {
 
 type FriendRow = {
   friendshipId: number;
-  user: { id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null; totalPoints: number };
+  user: { id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null; totalPoints: number; isOnline?: boolean };
   status: "pending" | "accepted";
   direction: "sent" | "received";
 };
@@ -187,7 +187,7 @@ type FriendRow = {
 type TeacherItem = {
   id: number; name: string; username: string;
   avatarEmoji: string | null; avatarColor: string | null;
-  role: string; totalPoints: number;
+  role: string; totalPoints: number; isOnline?: boolean;
 };
 
 function FriendsModal({
@@ -333,12 +333,22 @@ function FriendsModal({
                       onPress={() => { onClose(); onOpenFriend(f.user.id); }}
                       style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
-                      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
+                      <View style={{ position: "relative" }}>
+                        <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
+                          <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
+                        </View>
+                        <View style={{
+                          position: "absolute", bottom: 0, right: 0,
+                          width: 13, height: 13, borderRadius: 7,
+                          backgroundColor: f.user.isOnline ? "#22c55e" : "#94a3b8",
+                          borderWidth: 2, borderColor: colors.card,
+                        }} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
-                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>⭐ {f.user.totalPoints} очков</Text>
+                        <Text style={{ fontSize: 12, color: f.user.isOnline ? "#16a34a" : colors.mutedForeground }}>
+                          {f.user.isOnline ? "В сети" : `⭐ ${f.user.totalPoints} очков`}
+                        </Text>
                       </View>
                       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                       <TouchableOpacity
@@ -380,12 +390,22 @@ function FriendsModal({
                           onPress={() => { onClose(); onOpenFriend(t.id); }}
                           style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
                         >
-                          <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ fontSize: 20 }}>{t.avatarEmoji ?? "🎓"}</Text>
+                          <View style={{ position: "relative" }}>
+                            <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
+                              <Text style={{ fontSize: 20 }}>{t.avatarEmoji ?? "🎓"}</Text>
+                            </View>
+                            <View style={{
+                              position: "absolute", bottom: 0, right: 0,
+                              width: 13, height: 13, borderRadius: 7,
+                              backgroundColor: t.isOnline ? "#22c55e" : "#94a3b8",
+                              borderWidth: 2, borderColor: colors.card,
+                            }} />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>🎓 Учитель</Text>
+                            <Text style={{ fontSize: 12, color: t.isOnline ? "#16a34a" : colors.mutedForeground }}>
+                              {t.isOnline ? "В сети" : "🎓 Учитель"}
+                            </Text>
                           </View>
                           <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                         </TouchableOpacity>
