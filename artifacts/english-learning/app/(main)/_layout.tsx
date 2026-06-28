@@ -291,6 +291,14 @@ function MainLayoutInner() {
         />
 
         <Tabs.Screen
+          name="timer"
+          options={isStudent
+            ? { title: "Таймер", tabBarIcon: ({ color }) => <Feather name="clock" size={22} color={color} /> }
+            : { href: null }
+          }
+        />
+
+        <Tabs.Screen
           name="students"
           options={(isTeacher || isParent)
             ? {

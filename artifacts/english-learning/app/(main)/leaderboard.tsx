@@ -19,18 +19,13 @@ const MEDAL_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
 type CategoryKey = "points" | "time" | "tests" | "audio" | "streak";
 type Scope = "all" | "friends" | "age";
 
-type AgeGroup = {
-  label: string;
-  icon: string;
-  ageMin: number | null;
-  ageMax: number | null;
-};
+type AgeGroup = { label: string; ageMin: number | null; ageMax: number | null };
 
 const AGE_GROUPS: AgeGroup[] = [
-  { label: "До 12 лет",  icon: "🧒", ageMin: null, ageMax: 12  },
-  { label: "13–15 лет",  icon: "🧑", ageMin: 13,   ageMax: 15  },
-  { label: "16–18 лет",  icon: "👦", ageMin: 16,   ageMax: 18  },
-  { label: "18+ лет",    icon: "🧑‍🎓", ageMin: 19, ageMax: null },
+  { label: "До 12 лет", ageMin: null, ageMax: 12 },
+  { label: "13–15 лет", ageMin: 13,   ageMax: 15 },
+  { label: "16–18 лет", ageMin: 16,   ageMax: 18 },
+  { label: "18+ лет",   ageMin: 19,   ageMax: null },
 ];
 
 type CategoryEntry = {
@@ -53,52 +48,17 @@ const CATEGORIES: {
   formatValue: (v: number) => string;
   subtitle: string;
 }[] = [
-  {
-    key: "points",
-    label: "Очки",
-    icon: "star",
-    color: "#f59e0b",
-    formatValue: (v) => `${v} ⭐`,
-    subtitle: "Общий рейтинг по очкам опыта",
-  },
-  {
-    key: "time",
-    label: "Время",
-    icon: "clock",
-    color: "#6366f1",
-    formatValue: (v) => v >= 60 ? `${Math.floor(v / 60)} ч ${v % 60} мин` : `${v} мин`,
-    subtitle: "Кто больше всего занимался в приложении",
-  },
-  {
-    key: "tests",
-    label: "Тесты",
-    icon: "check-circle",
-    color: "#10b981",
-    formatValue: (v) => v > 0 ? `${v}%` : "—",
-    subtitle: "Средний балл по письменным тестам",
-  },
-  {
-    key: "audio",
-    label: "Аудирование",
-    icon: "headphones",
-    color: "#8b5cf6",
-    formatValue: (v) => v > 0 ? `${v}%` : "—",
-    subtitle: "Средний балл по аудио-заданиям",
-  },
-  {
-    key: "streak",
-    label: "Серия",
-    icon: "zap",
-    color: "#ef4444",
-    formatValue: (v) => v === 1 ? "1 день" : v >= 2 && v <= 4 ? `${v} дня` : `${v} дней`,
-    subtitle: "Серия ежедневных входов в приложение",
-  },
+  { key: "points", label: "Очки",       icon: "star",        color: "#f59e0b", formatValue: (v) => `${v} ⭐`,                                          subtitle: "Рейтинг по очкам опыта" },
+  { key: "time",   label: "Время",      icon: "clock",       color: "#6366f1", formatValue: (v) => v >= 60 ? `${Math.floor(v/60)} ч ${v%60} м` : `${v} м`, subtitle: "Кто больше занимался" },
+  { key: "tests",  label: "Тесты",      icon: "check-circle",color: "#10b981", formatValue: (v) => v > 0 ? `${v}%` : "—",                              subtitle: "Средний балл по тестам" },
+  { key: "audio",  label: "Аудирование",icon: "headphones",  color: "#8b5cf6", formatValue: (v) => v > 0 ? `${v}%` : "—",                              subtitle: "Балл по аудио-заданиям" },
+  { key: "streak", label: "Серия",      icon: "zap",         color: "#ef4444", formatValue: (v) => v === 1 ? "1 день" : v <= 4 ? `${v} дня` : `${v} дней`, subtitle: "Серия ежедневных входов" },
 ];
 
-const SCOPE_OPTIONS: { key: Scope; label: string; icon: keyof typeof Feather.glyphMap; color: string; desc: string }[] = [
-  { key: "all",     label: "Все ученики", icon: "globe",    color: "#6366f1", desc: "Рейтинг всех" },
-  { key: "friends", label: "Друзья",      icon: "users",    color: "#10b981", desc: "Среди друзей" },
-  { key: "age",     label: "По возрасту", icon: "bar-chart-2", color: "#f59e0b", desc: "Возрастная группа" },
+const SCOPE_OPTIONS: { key: Scope; label: string; icon: keyof typeof Feather.glyphMap; color: string }[] = [
+  { key: "all",     label: "Все ученики", icon: "globe",       color: "#6366f1" },
+  { key: "friends", label: "Друзья",      icon: "users",       color: "#10b981" },
+  { key: "age",     label: "По возрасту", icon: "bar-chart-2", color: "#f59e0b" },
 ];
 
 export default function LeaderboardScreen() {
@@ -127,9 +87,7 @@ export default function LeaderboardScreen() {
     setLoading(true);
     try {
       const token = await authStorage.getItem("auth_token");
-      const res = await fetch(buildUrl(s, ag), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(buildUrl(s, ag), { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setData(await res.json());
     } catch { /* silent */ } finally { setLoading(false); }
   }, [buildUrl]);
@@ -146,7 +104,7 @@ export default function LeaderboardScreen() {
   const entries = data?.[activeKey] ?? [];
   const myEntry = entries.find(e => e.userId === user?.id);
 
-  const scopeSubtitle =
+  const subtitle =
     scope === "friends" ? "Среди ваших друзей" :
     scope === "age"     ? `Возраст: ${activeAgeGroup.label}` :
     activeCat.subtitle;
@@ -174,26 +132,21 @@ export default function LeaderboardScreen() {
             : <Text style={{ fontSize: 15, fontWeight: "800", color: colors.mutedForeground }}>#{item.rank}</Text>
           }
         </View>
-
         <View style={{
-          width: 38, height: 38, borderRadius: 19,
-          backgroundColor: avatarBg, overflow: "hidden",
-          justifyContent: "center", alignItems: "center",
+          width: 38, height: 38, borderRadius: 19, backgroundColor: avatarBg,
+          overflow: "hidden", justifyContent: "center", alignItems: "center",
         }}>
           {item.avatarUrl
             ? <Image source={{ uri: item.avatarUrl }} style={{ width: 38, height: 38, borderRadius: 19 }} />
             : <Text style={{ fontSize: 18 }}>{item.avatarEmoji ?? "🦁"}</Text>
           }
         </View>
-
         <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
           {item.name}{isMe ? " (Я)" : ""}
         </Text>
-
         <Text style={{ fontSize: 15, fontWeight: "800", color: isMe ? activeCat.color : colors.foreground }}>
           {activeCat.formatValue(item.value)}
         </Text>
-
         {!isMe && <Feather name="chevron-right" size={14} color={colors.mutedForeground} />}
       </View>
     );
@@ -208,6 +161,7 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+
       {/* ── Header ── */}
       <View style={{
         paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
@@ -216,11 +170,19 @@ export default function LeaderboardScreen() {
         <Text style={{ fontSize: 26, fontWeight: "800", color: colors.foreground, marginBottom: 2 }}>
           Рейтинг
         </Text>
-        <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{scopeSubtitle}</Text>
+        <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{subtitle}</Text>
       </View>
 
-      {/* ── Scope selector (3 big cards) ── */}
-      <View style={{ flexDirection: "row", paddingHorizontal: 16, gap: 8, paddingBottom: 12 }}>
+      {/* ── Scope pills (horizontal scroll, fixed height) ── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0, flexShrink: 0 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16, paddingBottom: 10,
+          gap: 8, flexDirection: "row", alignItems: "center",
+        }}
+      >
         {SCOPE_OPTIONS.map(opt => {
           const active = opt.key === scope;
           return (
@@ -229,37 +191,33 @@ export default function LeaderboardScreen() {
               onPress={() => setScope(opt.key)}
               activeOpacity={0.78}
               style={{
-                flex: 1, alignItems: "center", paddingVertical: 10, paddingHorizontal: 6,
-                borderRadius: 14, borderWidth: 1.5,
+                flexDirection: "row", alignItems: "center", gap: 7,
+                paddingHorizontal: 16, paddingVertical: 9,
+                borderRadius: 22,
                 backgroundColor: active ? opt.color : colors.card,
+                borderWidth: 1.5,
                 borderColor: active ? opt.color : colors.border,
               }}
             >
-              <View style={{
-                width: 32, height: 32, borderRadius: 16,
-                backgroundColor: active ? "rgba(255,255,255,0.22)" : opt.color + "18",
-                justifyContent: "center", alignItems: "center",
-                marginBottom: 4,
-              }}>
-                <Feather name={opt.icon} size={16} color={active ? "#fff" : opt.color} />
-              </View>
-              <Text style={{
-                fontSize: 11, fontWeight: "800", textAlign: "center",
-                color: active ? "#fff" : colors.foreground,
-              }} numberOfLines={1}>
+              <Feather name={opt.icon} size={15} color={active ? "#fff" : opt.color} />
+              <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.foreground }}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
-      {/* ── Age group picker (when scope === "age") ── */}
+      {/* ── Age group pills (only when scope === "age") ── */}
       {scope === "age" && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8, flexDirection: "row" }}
+          style={{ flexGrow: 0, flexShrink: 0 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16, paddingBottom: 10,
+            gap: 8, flexDirection: "row", alignItems: "center",
+          }}
         >
           {AGE_GROUPS.map(ag => {
             const active = ag.label === activeAgeGroup.label;
@@ -270,17 +228,14 @@ export default function LeaderboardScreen() {
                 activeOpacity={0.78}
                 style={{
                   flexDirection: "row", alignItems: "center", gap: 6,
-                  paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                  paddingHorizontal: 14, paddingVertical: 8,
+                  borderRadius: 22,
                   backgroundColor: active ? "#f59e0b" : colors.card,
                   borderWidth: 1.5,
                   borderColor: active ? "#f59e0b" : colors.border,
                 }}
               >
-                <Text style={{ fontSize: 15 }}>{ag.icon}</Text>
-                <Text style={{
-                  fontSize: 13, fontWeight: "700",
-                  color: active ? "#fff" : colors.mutedForeground,
-                }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
                   {ag.label}
                 </Text>
               </TouchableOpacity>
@@ -293,7 +248,11 @@ export default function LeaderboardScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 8, flexDirection: "row" }}
+        style={{ flexGrow: 0, flexShrink: 0 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16, paddingBottom: 12,
+          gap: 8, flexDirection: "row", alignItems: "center",
+        }}
       >
         {CATEGORIES.map(cat => {
           const active = cat.key === activeKey;
@@ -304,7 +263,8 @@ export default function LeaderboardScreen() {
               onPress={() => setActiveKey(cat.key)}
               style={{
                 flexDirection: "row", alignItems: "center", gap: 6,
-                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                paddingHorizontal: 14, paddingVertical: 8,
+                borderRadius: 22,
                 backgroundColor: active ? cat.color : colors.card,
                 borderWidth: 1.5,
                 borderColor: active ? cat.color : colors.border,
@@ -322,7 +282,7 @@ export default function LeaderboardScreen() {
       {/* ── My position card ── */}
       {myEntry && (
         <View style={{
-          marginHorizontal: 20, marginBottom: 14, padding: 14,
+          marginHorizontal: 20, marginBottom: 12, padding: 14,
           backgroundColor: activeCat.color + "14", borderRadius: 16,
           borderWidth: 1.5, borderColor: activeCat.color + "40",
           flexDirection: "row", alignItems: "center", gap: 12,
@@ -358,7 +318,7 @@ export default function LeaderboardScreen() {
           <Feather name="award" size={48} color={colors.mutedForeground} />
           <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>
             {scope === "friends" ? "Нет друзей в рейтинге" :
-             scope === "age"     ? `Нет учеников в группе «${activeAgeGroup.label}»` :
+             scope === "age"     ? `Нет учеников — «${activeAgeGroup.label}»` :
              "Пока никого нет"}
           </Text>
           {scope === "friends" && (
@@ -372,10 +332,7 @@ export default function LeaderboardScreen() {
           data={entries}
           keyExtractor={e => String(e.userId)}
           renderItem={renderItem}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingBottom: insets.bottom + 100,
-          }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100 }}
         />
       )}
     </View>
