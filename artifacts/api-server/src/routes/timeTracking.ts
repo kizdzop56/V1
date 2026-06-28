@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { timeSessionsTable, usersTable } from "@workspace/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { requireAuth, getUser } from "../lib/auth";
 
 const router = Router();
@@ -21,12 +21,10 @@ router.post("/time-tracking/start", requireAuth, async (req, res) => {
       .where(eq(timeSessionsTable.id, session.id));
   }
 
-  // Persist closed session time to user record so it survives app kills
+  // Persist closed session time atomically (no race condition)
   if (accumulatedMinutes > 0) {
-    const [u] = await db.select({ t: usersTable.totalTimeMinutes })
-      .from(usersTable).where(eq(usersTable.id, user.userId));
     await db.update(usersTable)
-      .set({ totalTimeMinutes: (u?.t ?? 0) + accumulatedMinutes })
+      .set({ totalTimeMinutes: sql`${usersTable.totalTimeMinutes} + ${accumulatedMinutes}` })
       .where(eq(usersTable.id, user.userId));
   }
 
@@ -51,12 +49,10 @@ router.post("/time-tracking/end", requireAuth, async (req, res) => {
     .set({ endedAt: new Date(), durationMinutes })
     .where(eq(timeSessionsTable.id, openSession.id));
 
-  // Persist accumulated session minutes to user record so they're saved on logout
+  // Persist accumulated session minutes atomically (no race condition)
   if (durationMinutes > 0) {
-    const [u] = await db.select({ t: usersTable.totalTimeMinutes })
-      .from(usersTable).where(eq(usersTable.id, user.userId));
     await db.update(usersTable)
-      .set({ totalTimeMinutes: (u?.t ?? 0) + durationMinutes })
+      .set({ totalTimeMinutes: sql`${usersTable.totalTimeMinutes} + ${durationMinutes}` })
       .where(eq(usersTable.id, user.userId));
   }
 

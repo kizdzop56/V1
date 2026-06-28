@@ -610,11 +610,14 @@ export default function ProfileScreen() {
   );
   const { data: timeStats } = useGetStudentTimeStats(
     user?.id || 0,
-    { query: { enabled: isStudent && !!user?.id } as any }
+    // refetchInterval keeps the timer live (API already includes open-session elapsed)
+    { query: { enabled: isStudent && !!user?.id, refetchInterval: 10_000 } as any }
   );
 
   const completedCount = submissions?.length ?? 0;
-  const totalMinutes = (timeStats?.totalMinutes ?? 0) + Math.floor(sessionSeconds / 60);
+  // timeStats.totalMinutes already includes open-session elapsed time from the server.
+  // Do NOT add sessionSeconds here — that would double-count the current session.
+  const totalMinutes = timeStats?.totalMinutes ?? 0;
   const levelMeta = user?.knowledgeLevel ? LEVEL_META[user.knowledgeLevel] : null;
 
   // ── Load gamification stats & claim daily login on focus ──────────

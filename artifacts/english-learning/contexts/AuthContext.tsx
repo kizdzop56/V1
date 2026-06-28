@@ -67,8 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (newToken: string, newUser: AuthUser) => {
     await authStorage.setItem("auth_token", newToken);
     await authStorage.setItem("auth_user", JSON.stringify(newUser));
-    // Clear stale cache so profile/time data is freshly fetched after login
-    queryClient.clear();
+    // Invalidate stale cache so data is refetched after login (keeps old values visible while loading)
+    queryClient.invalidateQueries();
     setToken(newToken);
     setUser(newUser);
   }, []);
