@@ -13,7 +13,7 @@ import { Feather } from "@expo/vector-icons";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
   },

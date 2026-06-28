@@ -107,9 +107,16 @@ router.get("/connections/teacher/students", requireAuth, async (req, res) => {
     avatarColor: usersTable.avatarColor,
     totalPoints: usersTable.totalPoints,
     inviteCode: usersTable.inviteCode,
+    lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(inArray(usersTable.id, ids));
 
-  res.json(students);
+  const ONLINE_MS = 3 * 60 * 1000;
+  res.json(students.map((s) => ({
+    ...s,
+    isOnline: s.lastSeenAt
+      ? Date.now() - new Date(s.lastSeenAt).getTime() < ONLINE_MS
+      : false,
+  })));
 });
 
 // ── Teacher: get pending outgoing requests ───────────────────────────

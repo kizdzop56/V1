@@ -875,6 +875,13 @@ export default function ProfileScreen() {
             <View style={[s.avatar, { backgroundColor: avatarColor }]}>
               <Text style={s.avatarEmoji}>{avatarEmoji}</Text>
             </View>
+            {/* Online dot — always green since user is active */}
+            <View style={{
+              position: "absolute", bottom: 4, right: 4,
+              width: 16, height: 16, borderRadius: 8,
+              backgroundColor: "#22c55e",
+              borderWidth: 2.5, borderColor: colors.background,
+            }} />
             <TouchableOpacity style={s.editAvatarBtn} onPress={() => setAvatarPickerOpen(true)}>
               <Feather name="edit-2" size={13} color="#fff" />
             </TouchableOpacity>
@@ -882,6 +889,17 @@ export default function ProfileScreen() {
 
           <Text style={s.name}>{user.name}</Text>
           <Text style={s.username}>@{user.username}</Text>
+
+          {/* Online status badge */}
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 5,
+            backgroundColor: "#dcfce7",
+            paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20,
+            marginBottom: 6,
+          }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#16a34a" }} />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#15803d" }}>В сети</Text>
+          </View>
 
           <View style={s.badgeRow}>
             {/* Роль */}

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import authStorage from "@/utils/authStorage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { queryClient } from "@/app/_layout";
 
 export type KnowledgeLevel =
   | "starter"
@@ -66,6 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (newToken: string, newUser: AuthUser) => {
     await authStorage.setItem("auth_token", newToken);
     await authStorage.setItem("auth_user", JSON.stringify(newUser));
+    // Clear stale cache so profile/time data is freshly fetched after login
+    queryClient.clear();
     setToken(newToken);
     setUser(newUser);
   }, []);

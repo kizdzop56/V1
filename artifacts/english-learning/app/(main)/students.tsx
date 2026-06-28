@@ -39,6 +39,7 @@ type PersonItem = {
   knowledgeLevel: string | null;
   totalPoints: number;
   inviteCode: string | null;
+  isOnline?: boolean;
 };
 
 function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRemove: () => void; onPress: () => void; colors: any }) {
@@ -56,12 +57,20 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
         flexDirection: "row", alignItems: "center", gap: 12,
       }}
     >
-      <View style={{
-        width: 48, height: 48, borderRadius: 24,
-        backgroundColor: item.avatarColor ?? "#6366f1",
-        justifyContent: "center", alignItems: "center",
-      }}>
-        <Text style={{ fontSize: 24 }}>{item.avatarEmoji ?? "🦁"}</Text>
+      <View style={{ position: "relative" }}>
+        <View style={{
+          width: 48, height: 48, borderRadius: 24,
+          backgroundColor: item.avatarColor ?? "#6366f1",
+          justifyContent: "center", alignItems: "center",
+        }}>
+          <Text style={{ fontSize: 24 }}>{item.avatarEmoji ?? "🦁"}</Text>
+        </View>
+        <View style={{
+          position: "absolute", bottom: 1, right: 1,
+          width: 14, height: 14, borderRadius: 7,
+          backgroundColor: item.isOnline ? "#22c55e" : "#94a3b8",
+          borderWidth: 2, borderColor: colors.card,
+        }} />
       </View>
 
       <View style={{ flex: 1 }}>
