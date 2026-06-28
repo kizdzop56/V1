@@ -23,13 +23,17 @@ export const usersTable = pgTable("users", {
   knowledgeLevel: knowledgeLevelEnum("knowledge_level"),
   parentId: integer("parent_id"),
   totalPoints: integer("total_points").notNull().default(0),
-  // Unique invite code (6 chars, e.g. "A3X9K2")
   inviteCode: text("invite_code").unique(),
-  // Profile extras
   bio: text("bio"),
   avatarEmoji: text("avatar_emoji").default("🦁"),
   avatarColor: text("avatar_color").default("#6366f1"),
   totalTimeMinutes: integer("total_time_minutes").notNull().default(0),
+  // Gamification
+  xpLevel: integer("xp_level").notNull().default(1),
+  dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(15),
+  loginStreak: integer("login_streak").notNull().default(0),
+  lastLoginDate: date("last_login_date"),
+  mascotName: text("mascot_name").default("Оливер"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

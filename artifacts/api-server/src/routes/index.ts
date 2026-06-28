@@ -10,6 +10,7 @@ import leaderboardRouter from "./leaderboard";
 import uploadRouter from "./upload";
 import connectionsRouter from "./connections";
 import calendarRouter from "./calendar";
+import gamificationRouter from "./gamification";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(leaderboardRouter);
 router.use(uploadRouter);
 router.use(connectionsRouter);
 router.use(calendarRouter);
+router.use(gamificationRouter);
 
 export default router;

@@ -1,0 +1,1 @@
+- [Gamification system](gamification.md) — full XP/achievements/mascot system added; key schema, API routes, and frontend hooks/components documented.

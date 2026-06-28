@@ -11,6 +11,8 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin, LEVEL_META } from "@/contexts/AuthContext";
 import type { Assignment } from "@workspace/api-client-react";
 import authStorage from "@/utils/authStorage";
+import { DailyGoalBar } from "@/components/DailyGoalBar";
+import { useGamification } from "@/hooks/useGamification";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -242,6 +244,13 @@ export default function AssignmentsScreen() {
   const levelMeta = user?.knowledgeLevel ? LEVEL_META[user.knowledgeLevel] : null;
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // Gamification: daily goal bar
+  const { stats: gamStats, loadStats, updateDailyGoal } = useGamification();
+
+  useFocusEffect(useCallback(() => {
+    if (isStudent) loadStats();
+  }, [isStudent, loadStats]));
 
   const loadMyTasks = useCallback(async () => {
     if (!isStudent) return;
@@ -637,6 +646,15 @@ export default function AssignmentsScreen() {
               Уровень: {levelMeta.labelRu} ({levelMeta.label})
             </Text>
           </View>
+        )}
+
+        {/* Daily Goal Bar — students only */}
+        {isStudent && gamStats && (
+          <DailyGoalBar
+            todayMinutes={gamStats.todayMinutes}
+            goalMinutes={gamStats.dailyGoalMinutes}
+            onGoalChange={updateDailyGoal}
+          />
         )}
 
         {/* Mode toggle */}

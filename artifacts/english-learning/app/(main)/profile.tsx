@@ -8,11 +8,16 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin, LEVEL_META, type AuthUser } from "@/contexts/AuthContext";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useGetStudentSubmissions, useGetStudentTimeStats } from "@workspace/api-client-react";
 import { ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements, type AchievementStats } from "@/constants/achievements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import authStorage from "@/utils/authStorage";
+import { XpLevelBar, LevelBadgesShowcase } from "@/components/XpLevelBar";
+import { MascotModal, FloatingMascot, MascotNamePicker, getMascotMessage } from "@/components/Mascot";
+import { AchievementToast } from "@/components/AchievementToast";
+import { DailyGoalBar } from "@/components/DailyGoalBar";
+import { useGamification } from "@/hooks/useGamification";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Ученик", parent: "Родитель", teacher: "Учитель", admin: "Администратор",
@@ -510,6 +515,17 @@ export default function ProfileScreen() {
     teacher: { id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null; role: string };
   }>>([]);
 
+  // ── Gamification ──────────────────────────────────────────────────
+  const {
+    stats: gamStats, dailyLoginResult, toastAchievement,
+    loadStats, claimDailyLogin, unlockAchievements, saveMascotName, hideToast,
+  } = useGamification();
+
+  const [mascotVisible, setMascotVisible] = useState(false);
+  const [mascotMsg, setMascotMsg] = useState({ message: "", mood: "wave" as any });
+  const [mascotNamePickerOpen, setMascotNamePickerOpen] = useState(false);
+  const [dailyLoginShown, setDailyLoginShown] = useState(false);
+
   const isStudent = user?.role === "student";
   const isTeacher = isTeacherOrAdmin(user?.role ?? "");
 
@@ -580,11 +596,60 @@ export default function ProfileScreen() {
   const totalMinutes = (timeStats?.totalMinutes ?? 0) + Math.floor(sessionSeconds / 60);
   const levelMeta = user?.knowledgeLevel ? LEVEL_META[user.knowledgeLevel] : null;
 
+  // ── Load gamification stats & claim daily login on focus ──────────
+  useFocusEffect(
+    useCallback(() => {
+      if (!isStudent) return;
+      loadStats();
+    }, [isStudent, loadStats])
+  );
+
+  useEffect(() => {
+    if (!isStudent || dailyLoginShown) return;
+    const runDailyLogin = async () => {
+      const result = await claimDailyLogin();
+      if (!result) return;
+      setDailyLoginShown(true);
+      if (!result.alreadyClaimed) {
+        const msg = getMascotMessage("daily_login", { streak: result.loginStreak, points: result.pointsAwarded });
+        setMascotMsg(msg);
+        setMascotVisible(true);
+      }
+    };
+    runDailyLogin();
+  }, [isStudent, dailyLoginShown, claimDailyLogin]);
+
+  // ── Sync & unlock achievements when stats load ────────────────────
+  useEffect(() => {
+    if (!gamStats || !isStudent) return;
+    const stats: AchievementStats = {
+      completedAssignments: gamStats.completedAssignments,
+      totalPoints: gamStats.totalPoints,
+      knowledgeLevel: user?.knowledgeLevel ?? null,
+      totalTimeMinutes: gamStats.totalTimeMinutes,
+      voiceChatSessions: gamStats.voiceChatSessions,
+      loginStreak: gamStats.loginStreak,
+      perfectScoreCount: gamStats.perfectScoreCount,
+      xpLevel: gamStats.xpLevel,
+      earlyBirdSessions: gamStats.earlyBirdSessions,
+    };
+    const unlcked = getUnlockedAchievements(stats).map(a => a.id);
+    const newOnes = unlcked.filter(id => !gamStats.unlockedAchievementIds.includes(id));
+    if (newOnes.length > 0) {
+      unlockAchievements(newOnes);
+    }
+  }, [gamStats, isStudent, user?.knowledgeLevel, unlockAchievements]);
+
   const achievementStats: AchievementStats = {
-    completedAssignments: completedCount,
-    totalPoints: user?.totalPoints ?? 0,
+    completedAssignments: gamStats?.completedAssignments ?? completedCount,
+    totalPoints: gamStats?.totalPoints ?? user?.totalPoints ?? 0,
     knowledgeLevel: user?.knowledgeLevel ?? null,
-    totalTimeMinutes: totalMinutes,
+    totalTimeMinutes: gamStats?.totalTimeMinutes ?? totalMinutes,
+    voiceChatSessions: gamStats?.voiceChatSessions ?? 0,
+    loginStreak: gamStats?.loginStreak ?? 0,
+    perfectScoreCount: gamStats?.perfectScoreCount ?? 0,
+    xpLevel: gamStats?.xpLevel ?? 1,
+    earlyBirdSessions: gamStats?.earlyBirdSessions ?? 0,
   };
   const unlocked = getUnlockedAchievements(achievementStats);
   const locked = getLockedAchievements(achievementStats);
@@ -763,6 +828,24 @@ export default function ProfileScreen() {
         />
       )}
 
+      {/* ── Achievement Toast ── */}
+      <AchievementToast achievement={toastAchievement} onHide={hideToast} />
+
+      {/* ── Mascot modals ── */}
+      <MascotModal
+        visible={mascotVisible}
+        mood={mascotMsg.mood}
+        message={mascotMsg.message}
+        mascotName={gamStats?.mascotName ?? "Оливер"}
+        onClose={() => setMascotVisible(false)}
+      />
+      <MascotNamePicker
+        visible={mascotNamePickerOpen}
+        currentName={gamStats?.mascotName ?? "Оливер"}
+        onSave={(name) => saveMascotName(name)}
+        onClose={() => setMascotNamePickerOpen(false)}
+      />
+
       <ScrollView contentContainerStyle={s.scroll}>
         {/* ── Шапка профиля ── */}
         <View style={s.header}>
@@ -933,12 +1016,12 @@ export default function ProfileScreen() {
               <View style={s.statsRow}>
                 <View style={s.statCard}>
                   <Feather name="star" size={22} color="#f59e0b" />
-                  <Text style={s.statValue}>{user.totalPoints}</Text>
+                  <Text style={s.statValue}>{achievementStats.totalPoints}</Text>
                   <Text style={s.statLabel}>Очки</Text>
                 </View>
                 <View style={s.statCard}>
                   <Feather name="check-circle" size={22} color="#10b981" />
-                  <Text style={s.statValue}>{completedCount}</Text>
+                  <Text style={s.statValue}>{achievementStats.completedAssignments}</Text>
                   <Text style={s.statLabel}>Заданий</Text>
                 </View>
                 <View style={s.statCard}>
@@ -946,8 +1029,30 @@ export default function ProfileScreen() {
                   <Text style={s.statValue}>{unlocked.length}</Text>
                   <Text style={s.statLabel}>Наград</Text>
                 </View>
+                <View style={s.statCard}>
+                  <Text style={{ fontSize: 20 }}>🔥</Text>
+                  <Text style={s.statValue}>{achievementStats.loginStreak}</Text>
+                  <Text style={s.statLabel}>Стрик</Text>
+                </View>
               </View>
             </View>
+
+            {/* XP Level Bar */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Уровень опыта</Text>
+              <XpLevelBar totalPoints={achievementStats.totalPoints} />
+            </View>
+
+            {/* Daily Goal */}
+            {gamStats && (
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Ежедневная цель</Text>
+                <DailyGoalBar
+                  todayMinutes={gamStats.todayMinutes}
+                  goalMinutes={gamStats.dailyGoalMinutes}
+                />
+              </View>
+            )}
 
             {/* Таймер времени */}
             <View style={s.section}>
@@ -992,7 +1097,10 @@ export default function ProfileScreen() {
                 Витрина наград · {unlocked.length}/{ACHIEVEMENTS.length}
               </Text>
 
-              {/* Разблокированные */}
+              {/* Значки уровней */}
+              <LevelBadgesShowcase currentLevel={achievementStats.xpLevel} />
+
+              {/* Разблокированные достижения */}
               {unlocked.length > 0 && (
                 <View style={s.achieveGrid}>
                   {unlocked.map((a) => (
@@ -1028,6 +1136,38 @@ export default function ProfileScreen() {
                   </View>
                 </>
               )}
+            </View>
+
+            {/* ── Маскот-помощник ── */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Маскот-помощник</Text>
+              <View style={[s.levelCard, { backgroundColor: "#ede9fe", borderColor: "#8b5cf640" }]}>
+                <View style={[s.levelIcon, { backgroundColor: "#8b5cf620" }]}>
+                  <Text style={{ fontSize: 30 }}>🦉</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.levelTitle, { color: "#6366f1" }]}>{gamStats?.mascotName ?? "Оливер"}</Text>
+                  <Text style={[s.levelSub, { color: colors.mutedForeground }]}>Твой помощник в учёбе</Text>
+                </View>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const msg = getMascotMessage("idle");
+                      setMascotMsg(msg);
+                      setMascotVisible(true);
+                    }}
+                    style={{ backgroundColor: "#ede9fe", borderRadius: 10, padding: 8, borderWidth: 1, borderColor: "#8b5cf640" }}
+                  >
+                    <Text style={{ fontSize: 16 }}>💬</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setMascotNamePickerOpen(true)}
+                    style={{ backgroundColor: "#ede9fe", borderRadius: 10, padding: 8, borderWidth: 1, borderColor: "#8b5cf640" }}
+                  >
+                    <Feather name="edit-2" size={16} color="#6366f1" />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             {/* ── Друзья ── */}
@@ -1104,6 +1244,15 @@ export default function ProfileScreen() {
           <Text style={s.logoutText}>Выйти из аккаунта</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Floating mascot button for students */}
+      {isStudent && (
+        <FloatingMascot
+          mascotName={gamStats?.mascotName ?? "Оливер"}
+          message={getMascotMessage("idle").message}
+          mood="wave"
+        />
+      )}
     </View>
   );
 }

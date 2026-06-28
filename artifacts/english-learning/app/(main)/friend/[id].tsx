@@ -117,6 +117,11 @@ export default function FriendProfileScreen() {
     totalPoints: profile.totalPoints,
     knowledgeLevel: profile.knowledgeLevel,
     totalTimeMinutes: profile.totalTimeMinutes ?? 0,
+    voiceChatSessions: 0,
+    loginStreak: 0,
+    perfectScoreCount: 0,
+    xpLevel: 0,
+    earlyBirdSessions: 0,
   };
   const unlocked = getUnlockedAchievements(achievementStats);
 
