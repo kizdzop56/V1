@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Platform } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect } from "react";
@@ -70,7 +70,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     >
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "rgba(255,255,255,0.62)",
           borderRadius: 28,
           paddingVertical: 8,
           paddingHorizontal: 4,
@@ -81,6 +81,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           shadowOpacity: 0.18,
           shadowRadius: 20,
           elevation: 16,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.8)",
+          ...(Platform.OS === "web"
+            ? { backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }
+            : {}),
         }}
       >
         {visibleRoutes.map((route: any) => {
