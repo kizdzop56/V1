@@ -9,6 +9,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import authStorage from "@/utils/authStorage";
 import ConfirmModal from "@/components/ConfirmModal";
+import { useCalendarBadge } from "@/contexts/CalendarBadgeContext";
 
 // ── API helper ────────────────────────────────────────────────────────
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
@@ -193,6 +194,7 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
+  const { markSeen } = useCalendarBadge();
 
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [slots, setSlots] = useState<TeacherSlot[] | StudentSlot[]>([]);
@@ -231,6 +233,7 @@ export default function CalendarScreen() {
   const [crEndM, setCrEndM] = useState("00");
   const [crNote, setCrNote] = useState("");
   const [crSaving, setCrSaving] = useState(false);
+  const [crError, setCrError] = useState<string | null>(null);
 
   // ── Data loading ────────────────────────────────────────────────────
   const loadSlots = useCallback(async (date: string) => {
@@ -361,6 +364,7 @@ export default function CalendarScreen() {
     const endTime   = `${crEndH}:${crEndM}`;
     if (endTime <= startTime) return;
     setCrSaving(true);
+    setCrError(null);
     try {
       await apiFetch("/api/calendar/custom-requests", {
         method: "POST",
@@ -368,8 +372,9 @@ export default function CalendarScreen() {
       });
       setShowCustomReq(false);
       await loadCustomRequests();
-    } catch (e: any) { /* silent */ }
-    finally { setCrSaving(false); }
+    } catch (e: any) {
+      setCrError(e?.message ?? "Не удалось отправить запрос. Убедитесь, что вы подключены к учителю.");
+    } finally { setCrSaving(false); }
   };
 
   // ── Styles ──────────────────────────────────────────────────────────
@@ -1070,6 +1075,12 @@ export default function CalendarScreen() {
             multiline returnKeyType="done"
           />
 
+          {crError && (
+            <View style={{ backgroundColor: "#fee2e2", borderRadius: 10, padding: 10, marginBottom: 10 }}>
+              <Text style={{ color: "#dc2626", fontSize: 13, textAlign: "center" }}>⚠ {crError}</Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[s.primaryBtn, { backgroundColor: "#8b5cf6" }, (crEnd <= crStart || !crTeacherId || crSaving) && { opacity: 0.4 }]}
             onPress={handleSendCustomReq}
@@ -1136,7 +1147,7 @@ export default function CalendarScreen() {
           <Feather name="calendar" size={14} color={activeTab === "schedule" ? colors.primary : colors.mutedForeground} />
           <Text style={[s.tabText, activeTab === "schedule" && s.tabTextActive]}>Расписание</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.tab, activeTab === "requests" && s.tabActive]} onPress={() => { setActiveTab("requests"); loadBookings(); loadCustomRequests(); }}>
+        <TouchableOpacity style={[s.tab, activeTab === "requests" && s.tabActive]} onPress={() => { setActiveTab("requests"); loadBookings(); loadCustomRequests(); if (isTeacherRole) markSeen(); }}>
           <Feather name={isTeacherRole ? "inbox" : "list"} size={14} color={activeTab === "requests" ? colors.primary : colors.mutedForeground} />
           <Text style={[s.tabText, activeTab === "requests" && s.tabTextActive]}>
             {isTeacherRole ? "Запросы" : "Мои записи"}

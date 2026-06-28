@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { Platform, View, StyleSheet } from "react-native";
+import { Platform, View, StyleSheet, Text } from "react-native";
 import { BlurView } from "expo-blur";
 import { useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
@@ -8,6 +8,7 @@ import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useStartTimeSession, useEndTimeSession } from "@workspace/api-client-react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CalendarBadgeProvider, useCalendarBadge } from "@/contexts/CalendarBadgeContext";
 
 export const SESSION_START_KEY = "timer_session_start";
 
@@ -29,7 +30,28 @@ function StudentTimerManager() {
   return null;
 }
 
-export default function MainLayout() {
+function CalendarTabIcon({ color }: { color: string }) {
+  const { unreadCount } = useCalendarBadge();
+  return (
+    <View style={{ width: 26, height: 26, alignItems: "center", justifyContent: "center" }}>
+      <Feather name="calendar" size={22} color={color} />
+      {unreadCount > 0 && (
+        <View style={{
+          position: "absolute", top: -4, right: -6,
+          backgroundColor: "#ef4444", borderRadius: 8,
+          minWidth: 16, height: 16, paddingHorizontal: 3,
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800", lineHeight: 14 }}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function MainLayoutInner() {
   const { user } = useAuth();
   const colors = useColors();
   const colorScheme = useColorScheme();
@@ -122,7 +144,7 @@ export default function MainLayout() {
         <Tabs.Screen
           name="calendar"
           options={(isTeacher || isStudent)
-            ? { title: "Календарь", tabBarIcon: ({ color }) => <Feather name="calendar" size={22} color={color} /> }
+            ? { title: "Календарь", tabBarIcon: ({ color }) => <CalendarTabIcon color={color} /> }
             : { href: null }
           }
         />
@@ -145,5 +167,13 @@ export default function MainLayout() {
         <Tabs.Screen name="submission-review/[id]" options={{ href: null }} />
       </Tabs>
     </>
+  );
+}
+
+export default function MainLayout() {
+  return (
+    <CalendarBadgeProvider>
+      <MainLayoutInner />
+    </CalendarBadgeProvider>
   );
 }
