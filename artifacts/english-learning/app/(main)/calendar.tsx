@@ -79,7 +79,7 @@ function formatDate(dateStr: string | null) {
 
 // Wheel picker data
 const HOURS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
 const WHEEL_ITEM_H = 52;
 const WHEEL_VISIBLE = 5;
@@ -442,11 +442,9 @@ export default function CalendarScreen() {
                 {pending.length > 0 && (
                   <View style={s.badge}><Text style={s.badgeText}>{pending.length}</Text></View>
                 )}
-                {!isBusy && (
-                  <TouchableOpacity onPress={() => handleDeleteSlot(slot.id)} style={{ padding: 4 }}>
-                    <Feather name="trash-2" size={17} color={colors.mutedForeground} />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity onPress={() => handleDeleteSlot(slot.id)} style={{ padding: 4 }}>
+                  <Feather name="trash-2" size={17} color={colors.mutedForeground} />
+                </TouchableOpacity>
               </View>
 
               {confirmed && (
@@ -667,6 +665,11 @@ export default function CalendarScreen() {
             </View>
           </View>
 
+          {addEnd <= addStart && (
+            <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+              ⚠ Конец раньше начала: {addStart} → {addEnd}
+            </Text>
+          )}
           <TouchableOpacity
             style={[s.primaryBtn, addEnd <= addStart && { opacity: 0.4 }]}
             onPress={handleAddSlot}
@@ -723,7 +726,7 @@ export default function CalendarScreen() {
           <Feather name="calendar" size={14} color={activeTab === "schedule" ? colors.primary : colors.mutedForeground} />
           <Text style={[s.tabText, activeTab === "schedule" && s.tabTextActive]}>Расписание</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.tab, activeTab === "requests" && s.tabActive]} onPress={() => setActiveTab("requests")}>
+        <TouchableOpacity style={[s.tab, activeTab === "requests" && s.tabActive]} onPress={() => { setActiveTab("requests"); loadBookings(); }}>
           <Feather name={isTeacherRole ? "inbox" : "list"} size={14} color={activeTab === "requests" ? colors.primary : colors.mutedForeground} />
           <Text style={[s.tabText, activeTab === "requests" && s.tabTextActive]}>
             {isTeacherRole ? "Запросы" : "Мои записи"}
