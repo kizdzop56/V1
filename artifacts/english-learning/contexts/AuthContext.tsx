@@ -71,11 +71,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // End session and mark offline BEFORE clearing token (token must be valid for these requests)
+    if (token) {
+      const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
+        ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+        : "";
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+      try {
+        await Promise.all([
+          fetch(`${BASE_URL}/api/time-tracking/end`, { method: "POST", headers }),
+          fetch(`${BASE_URL}/api/users/offline`, { method: "POST", headers }),
+        ]);
+      } catch { /* silent */ }
+    }
     await authStorage.removeItem("auth_token");
     await authStorage.removeItem("auth_user");
     setToken(null);
     setUser(null);
-  }, []);
+  }, [token]);
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>

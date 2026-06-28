@@ -75,12 +75,24 @@ router.get("/students/:id/time", requireAuth, async (req, res) => {
   const sessions = await db.select().from(timeSessionsTable)
     .where(eq(timeSessionsTable.studentId, studentId));
 
-  const sessionMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
-  const totalMinutes = (user?.totalTimeMinutes ?? 0) + sessionMinutes;
-  const todayMinutes = sessions.filter(s => s.startedAt >= todayStart)
-    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
-  const weekMinutes = sessions.filter(s => s.startedAt >= weekStart)
-    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+  // totalTimeMinutes already includes all closed-session minutes (persisted by endSession).
+  // Only add elapsed time from the current open session to avoid double-counting.
+  const openSession = sessions.find(s => s.endedAt === null);
+  const openMinutes = openSession
+    ? Math.floor((Date.now() - openSession.startedAt.getTime()) / 60000)
+    : 0;
+  const totalMinutes = (user?.totalTimeMinutes ?? 0) + openMinutes;
+
+  // Today/week: use closed sessions that already have durationMinutes, plus open session if within range
+  const closedSessions = sessions.filter(s => s.endedAt !== null);
+  const todayMinutes = closedSessions
+    .filter(s => s.startedAt >= todayStart)
+    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0)
+    + (openSession && openSession.startedAt >= todayStart ? openMinutes : 0);
+  const weekMinutes = closedSessions
+    .filter(s => s.startedAt >= weekStart)
+    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0)
+    + (openSession && openSession.startedAt >= weekStart ? openMinutes : 0);
 
   res.json({ totalMinutes, todayMinutes, weekMinutes, sessions });
 });

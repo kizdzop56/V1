@@ -95,6 +95,15 @@ router.post("/users/ping", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Mark user as offline on logout (clears lastSeenAt)
+router.post("/users/offline", requireAuth, async (req, res) => {
+  const user = getUser(req);
+  await db.update(usersTable)
+    .set({ lastSeenAt: null })
+    .where(eq(usersTable.id, user.userId));
+  res.json({ ok: true });
+});
+
 // Update profile (bio, avatar)
 router.patch("/users/:id/profile", requireAuth, async (req, res) => {
   const caller = getUser(req);
