@@ -1,72 +1,138 @@
-import React from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View, Text, FlatList, ActivityIndicator, Platform,
+  TouchableOpacity, ScrollView,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGetLeaderboard } from "@workspace/api-client-react";
-import type { LeaderboardEntry } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
+import authStorage from "@/utils/authStorage";
+
+const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
+  ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+  : "";
 
 const MEDAL_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
+
+type CategoryKey = "points" | "time" | "tests" | "audio" | "streak";
+
+type CategoryEntry = {
+  userId: number;
+  name: string;
+  avatarEmoji: string | null;
+  avatarColor: string | null;
+  value: number;
+  rank: number;
+};
+
+type CategoriesData = Record<CategoryKey, CategoryEntry[]>;
+
+const CATEGORIES: {
+  key: CategoryKey;
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+  formatValue: (v: number) => string;
+  subtitle: string;
+}[] = [
+  {
+    key: "points",
+    label: "Очки",
+    icon: "star",
+    color: "#f59e0b",
+    formatValue: (v) => `${v} ⭐`,
+    subtitle: "Общий рейтинг по очкам опыта",
+  },
+  {
+    key: "time",
+    label: "Время",
+    icon: "clock",
+    color: "#6366f1",
+    formatValue: (v) => v >= 60 ? `${Math.floor(v / 60)} ч ${v % 60} мин` : `${v} мин`,
+    subtitle: "Кто больше всего занимался в приложении",
+  },
+  {
+    key: "tests",
+    label: "Тесты",
+    icon: "check-circle",
+    color: "#10b981",
+    formatValue: (v) => v > 0 ? `${v}%` : "—",
+    subtitle: "Средний балл по письменным тестам",
+  },
+  {
+    key: "audio",
+    label: "Аудирование",
+    icon: "headphones",
+    color: "#8b5cf6",
+    formatValue: (v) => v > 0 ? `${v}%` : "—",
+    subtitle: "Средний балл по аудио-заданиям",
+  },
+  {
+    key: "streak",
+    label: "Серия",
+    icon: "zap",
+    color: "#ef4444",
+    formatValue: (v) => v === 1 ? "1 день" : v >= 2 && v <= 4 ? `${v} дня` : `${v} дней`,
+    subtitle: "Серия ежедневных входов в приложение",
+  },
+];
 
 export default function LeaderboardScreen() {
   const colors = useColors();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { data: leaderboard, isLoading } = useGetLeaderboard();
 
-  const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-      paddingHorizontal: 20, paddingBottom: 16,
-    },
-    title: { fontSize: 26, fontWeight: "800", color: colors.foreground, marginBottom: 4 },
-    subtitle: { fontSize: 14, color: colors.mutedForeground },
-    myCard: {
-      marginHorizontal: 20, marginBottom: 16, padding: 16,
-      backgroundColor: colors.primary + "15", borderRadius: 16,
-      borderWidth: 1.5, borderColor: colors.primary + "40",
-      flexDirection: "row", alignItems: "center", gap: 12,
-    },
-    myCardText: { fontSize: 14, fontWeight: "700", color: colors.primary },
-    myCardPoints: { fontSize: 22, fontWeight: "800", color: colors.primary },
-    myCardLabel: { fontSize: 12, color: colors.mutedForeground },
-    list: { paddingHorizontal: 20, paddingBottom: insets.bottom + 90 },
-    item: {
-      flexDirection: "row", alignItems: "center", gap: 14,
-      backgroundColor: colors.card, borderRadius: 14, padding: 14,
-      marginBottom: 8, borderWidth: 1, borderColor: colors.border,
-    },
-    itemMe: { borderColor: colors.primary, backgroundColor: colors.secondary },
-    rank: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
-    rankText: { fontSize: 16, fontWeight: "800" },
-    name: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground },
-    pointsBox: { alignItems: "flex-end" },
-    points: { fontSize: 16, fontWeight: "800", color: colors.foreground },
-    completed: { fontSize: 12, color: colors.mutedForeground },
-    empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-    emptyText: { fontSize: 16, color: colors.mutedForeground },
-  });
+  const [data, setData] = useState<CategoriesData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeKey, setActiveKey] = useState<CategoryKey>("points");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const myEntry = leaderboard?.find(e => e.userId === user?.id);
+  const load = useCallback(async () => {
+    try {
+      const token = await authStorage.getItem("auth_token");
+      const res = await fetch(`${BASE_URL}/api/leaderboard/categories`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setData(await res.json());
+    } catch { /* silent */ } finally { setLoading(false); }
+  }, []);
 
-  const renderItem = ({ item }: { item: LeaderboardEntry & { avatarEmoji?: string | null; avatarColor?: string | null } }) => {
+  useEffect(() => {
+    load();
+    intervalRef.current = setInterval(load, 60_000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [load]);
+
+  const activeCat = CATEGORIES.find(c => c.key === activeKey)!;
+  const entries = data?.[activeKey] ?? [];
+  const myEntry = entries.find(e => e.userId === user?.id);
+
+  const renderItem = ({ item }: { item: CategoryEntry }) => {
     const isMe = item.userId === user?.id;
     const medalColor = MEDAL_COLORS[item.rank - 1];
-    const avatarBg = (item as any).avatarColor ?? "#6366f1";
-    const avatarEmoji = (item as any).avatarEmoji ?? "🦁";
+    const avatarBg = item.avatarColor ?? "#6366f1";
 
-    const content = (
-      <View style={[styles.item, isMe && styles.itemMe]}>
-        <View style={[styles.rank, { backgroundColor: medalColor ? medalColor + "20" : colors.muted }]}>
-          {item.rank <= 3 ? (
-            <Feather name="award" size={18} color={medalColor} />
-          ) : (
-            <Text style={[styles.rankText, { color: colors.mutedForeground }]}>#{item.rank}</Text>
-          )}
+    const card = (
+      <View style={{
+        flexDirection: "row", alignItems: "center", gap: 12,
+        backgroundColor: isMe ? activeCat.color + "12" : colors.card,
+        borderRadius: 14, padding: 14, marginBottom: 8,
+        borderWidth: isMe ? 1.5 : 1,
+        borderColor: isMe ? activeCat.color + "50" : colors.border,
+      }}>
+        {/* Rank */}
+        <View style={{
+          width: 34, height: 34, borderRadius: 17,
+          justifyContent: "center", alignItems: "center",
+          backgroundColor: medalColor ? medalColor + "20" : colors.muted,
+        }}>
+          {item.rank <= 3
+            ? <Feather name="award" size={18} color={medalColor} />
+            : <Text style={{ fontSize: 15, fontWeight: "800", color: colors.mutedForeground }}>#{item.rank}</Text>
+          }
         </View>
 
         {/* Avatar */}
@@ -75,66 +141,129 @@ export default function LeaderboardScreen() {
           backgroundColor: avatarBg,
           justifyContent: "center", alignItems: "center",
         }}>
-          <Text style={{ fontSize: 18 }}>{avatarEmoji}</Text>
+          <Text style={{ fontSize: 18 }}>{item.avatarEmoji ?? "🦁"}</Text>
         </View>
 
-        <Text style={styles.name} numberOfLines={1}>
+        {/* Name */}
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
           {item.name}{isMe ? " (Я)" : ""}
         </Text>
-        <View style={styles.pointsBox}>
-          <Text style={styles.points}>{item.totalPoints} ⭐</Text>
-          <Text style={styles.completed}>{item.completedAssignments} заданий</Text>
-        </View>
-        {!isMe && <Feather name="chevron-right" size={16} color={colors.mutedForeground} />}
+
+        {/* Value */}
+        <Text style={{
+          fontSize: 15, fontWeight: "800",
+          color: isMe ? activeCat.color : colors.foreground,
+        }}>
+          {activeCat.formatValue(item.value)}
+        </Text>
+
+        {!isMe && <Feather name="chevron-right" size={14} color={colors.mutedForeground} />}
       </View>
     );
 
-    if (isMe) return content;
-
+    if (isMe) return card;
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => router.push(`/(main)/friend/${item.userId}` as any)}
-      >
-        {content}
+      <TouchableOpacity activeOpacity={0.72} onPress={() => router.push(`/(main)/friend/${item.userId}` as any)}>
+        {card}
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Рейтинг</Text>
-        <Text style={styles.subtitle}>Топ учеников — нажми на любого, чтобы посмотреть профиль</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Header */}
+      <View style={{
+        paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
+        paddingHorizontal: 20, paddingBottom: 12,
+      }}>
+        <Text style={{ fontSize: 26, fontWeight: "800", color: colors.foreground, marginBottom: 2 }}>
+          Рейтинг
+        </Text>
+        <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+          {activeCat.subtitle}
+        </Text>
       </View>
 
+      {/* Category tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 8, flexDirection: "row" }}
+      >
+        {CATEGORIES.map(cat => {
+          const active = cat.key === activeKey;
+          return (
+            <TouchableOpacity
+              key={cat.key}
+              activeOpacity={0.75}
+              onPress={() => setActiveKey(cat.key)}
+              style={{
+                flexDirection: "row", alignItems: "center", gap: 6,
+                paddingHorizontal: 14, paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: active ? cat.color : colors.card,
+                borderWidth: 1.5,
+                borderColor: active ? cat.color : colors.border,
+              }}
+            >
+              <Feather name={cat.icon} size={14} color={active ? "#fff" : colors.mutedForeground} />
+              <Text style={{
+                fontSize: 13, fontWeight: "700",
+                color: active ? "#fff" : colors.mutedForeground,
+              }}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* My position card */}
       {myEntry && (
-        <View style={styles.myCard}>
-          <Feather name="star" size={28} color={colors.primary} />
+        <View style={{
+          marginHorizontal: 20, marginBottom: 14, padding: 14,
+          backgroundColor: activeCat.color + "14", borderRadius: 16,
+          borderWidth: 1.5, borderColor: activeCat.color + "40",
+          flexDirection: "row", alignItems: "center", gap: 12,
+        }}>
+          <View style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: activeCat.color + "25",
+            justifyContent: "center", alignItems: "center",
+          }}>
+            <Feather name={activeCat.icon} size={20} color={activeCat.color} />
+          </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.myCardLabel}>Моё место</Text>
-            <Text style={styles.myCardText}>#{myEntry.rank} — {user?.name}</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Моё место</Text>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: activeCat.color }}>
+              #{myEntry.rank} — {user?.name}
+            </Text>
           </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={styles.myCardPoints}>{myEntry.totalPoints} ⭐</Text>
-            <Text style={styles.myCardLabel}>очков</Text>
-          </View>
+          <Text style={{ fontSize: 22, fontWeight: "900", color: activeCat.color }}>
+            {activeCat.formatValue(myEntry.value)}
+          </Text>
         </View>
       )}
 
-      {isLoading ? (
-        <View style={styles.empty}><ActivityIndicator color={colors.primary} size="large" /></View>
-      ) : !leaderboard?.length ? (
-        <View style={styles.empty}>
+      {/* List */}
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={activeCat.color} size="large" />
+        </View>
+      ) : entries.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 12 }}>
           <Feather name="award" size={48} color={colors.mutedForeground} />
-          <Text style={styles.emptyText}>Пока никого нет</Text>
+          <Text style={{ fontSize: 16, color: colors.mutedForeground }}>Пока никого нет</Text>
         </View>
       ) : (
         <FlatList
-          data={leaderboard}
+          data={entries}
           keyExtractor={e => String(e.userId)}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 100,
+          }}
         />
       )}
     </View>

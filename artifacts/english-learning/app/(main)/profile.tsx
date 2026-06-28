@@ -20,6 +20,24 @@ import { AchievementToast } from "@/components/AchievementToast";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
 import { useGamification } from "@/hooks/useGamification";
 
+function calcAge(dateOfBirth: string | null): number | null {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age > 0 ? age : null;
+}
+
+function ageWord(n: number): string {
+  if (n >= 11 && n <= 14) return `${n} лет`;
+  const mod = n % 10;
+  if (mod === 1) return `${n} год`;
+  if (mod >= 2 && mod <= 4) return `${n} года`;
+  return `${n} лет`;
+}
+
 const ROLE_LABELS: Record<string, string> = {
   student: "Ученик", parent: "Родитель", teacher: "Учитель", admin: "Администратор",
 };
@@ -909,6 +927,16 @@ export default function ProfileScreen() {
             <View style={[s.badge, { backgroundColor: avatarColor + "20" }]}>
               <Text style={[s.badgeText, { color: avatarColor }]}>{ROLE_LABELS[user.role]}</Text>
             </View>
+            {/* Возраст (если есть дата рождения) */}
+            {(() => {
+              const age = calcAge(user.dateOfBirth);
+              return age !== null ? (
+                <View style={[s.badge, { backgroundColor: "#0ea5e918" }]}>
+                  <Feather name="calendar" size={12} color="#0ea5e9" />
+                  <Text style={[s.badgeText, { color: "#0ea5e9" }]}>{ageWord(age)}</Text>
+                </View>
+              ) : null;
+            })()}
             {/* Уровень (только ученик) */}
             {levelMeta && (
               <View style={[s.badge, { backgroundColor: levelMeta.color + "18" }]}>
