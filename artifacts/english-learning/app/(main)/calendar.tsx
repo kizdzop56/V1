@@ -197,6 +197,9 @@ export default function CalendarScreen() {
   // Delete confirm
   const [deleteSlotId, setDeleteSlotId] = useState<number | null>(null);
 
+  // Bookings filter (student)
+  const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("all");
+
   // Add-slot modal (teacher)
   const [showAdd, setShowAdd] = useState(false);
   const [addStartH, setAddStartH] = useState("09");
@@ -337,15 +340,16 @@ export default function CalendarScreen() {
 
     datePicker: { paddingHorizontal: 16, paddingVertical: 6 },
     dateChip: {
-      alignItems: "center", paddingHorizontal: 8, paddingVertical: 5,
-      borderRadius: 12, marginHorizontal: 3, minWidth: 46, backgroundColor: colors.muted,
+      alignItems: "center", justifyContent: "center",
+      width: 46, height: 58,
+      borderRadius: 12, marginHorizontal: 3, backgroundColor: colors.muted,
     },
     dateChipActive: { backgroundColor: colors.primary },
-    dc_day: { fontSize: 9, fontWeight: "600", color: colors.mutedForeground, marginBottom: 1 },
+    dc_day: { fontSize: 9, fontWeight: "600", color: colors.mutedForeground },
     dc_dayA: { color: "#fff" },
-    dc_num: { fontSize: 15, fontWeight: "800", color: colors.foreground },
+    dc_num: { fontSize: 15, fontWeight: "800", color: colors.foreground, lineHeight: 18 },
     dc_numA: { color: "#fff" },
-    dc_mon: { fontSize: 8, color: colors.mutedForeground, marginTop: 1 },
+    dc_mon: { fontSize: 8, color: colors.mutedForeground, lineHeight: 11 },
     dc_monA: { color: "#ffffffcc" },
 
     scroll: { padding: 20, paddingBottom: 120 },
@@ -353,6 +357,15 @@ export default function CalendarScreen() {
       fontSize: 12, fontWeight: "700", color: colors.mutedForeground,
       textAlign: "center", marginVertical: 12, letterSpacing: 1,
     },
+    filterChip: {
+      paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+      backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primary + "18", borderColor: colors.primary,
+    },
+    filterChipText: { fontSize: 12, fontWeight: "600", color: colors.mutedForeground },
+    filterChipTextActive: { color: colors.primary },
     emptyBox: { alignItems: "center", paddingVertical: 48, gap: 12 },
     emptyEmoji: { fontSize: 42 },
     emptyText: { fontSize: 15, color: colors.mutedForeground, textAlign: "center", lineHeight: 22 },
@@ -670,38 +683,59 @@ export default function CalendarScreen() {
 
   // ── Student: my bookings tab ────────────────────────────────────────
   const renderStudentBookings = () => {
+    const FILTERS: { key: "all"|"pending"|"confirmed"|"rejected"; label: string }[] = [
+      { key: "all",      label: "Все"         },
+      { key: "pending",  label: "В ожидании"  },
+      { key: "confirmed",label: "Выполнено"   },
+      { key: "rejected", label: "Отклонённые" },
+    ];
+
     const sorted = [...bookings].sort((a, b) => {
       const da = (a.date ?? "") + (a.startTime ?? "");
       const db = (b.date ?? "") + (b.startTime ?? "");
       return da.localeCompare(db);
     });
-    const upcoming = sorted.filter((b) => !isPastSlot(b.date ?? "", b.endTime ?? ""));
-    const past     = sorted.filter((b) =>  isPastSlot(b.date ?? "", b.endTime ?? ""));
 
-    const renderBookingCard = (b: BookingRow, dimmed = false) => {
+    const filtered = bookingFilter === "all"
+      ? sorted
+      : sorted.filter((b) => b.status === bookingFilter);
+
+    const upcoming = filtered.filter((b) => !isPastSlot(b.date ?? "", b.endTime ?? ""));
+    const past     = filtered.filter((b) =>  isPastSlot(b.date ?? "", b.endTime ?? ""));
+
+    const renderBookingCard = (b: BookingRow, isPast: boolean) => {
       const cfg = BOOKING_CFG[b.status as keyof typeof BOOKING_CFG];
+      const isRejected = b.status === "rejected";
+      // Rejected bookings always shown prominently in red, never treated as generic "Завершено"
+      const cardColor = isRejected ? "#ef4444" : isPast ? colors.border : (cfg?.color ?? colors.border);
+      const iconColor = isRejected ? "#ef4444" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.primary);
+      const statusLabel = isRejected ? "Отклонено" : isPast ? "Завершено" : (cfg?.label ?? b.status);
+      const statusColor = isRejected ? "#ef4444" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.mutedForeground);
       return (
         <View
           key={b.id}
           style={[
             s.reqCard,
-            { borderLeftWidth: 4, borderLeftColor: dimmed ? colors.border : (cfg?.color ?? colors.border) },
-            dimmed && { opacity: 0.5 },
+            { borderLeftWidth: 4, borderLeftColor: cardColor },
+            isPast && !isRejected && { opacity: 0.5 },
           ]}
         >
           <View style={s.reqTop}>
-            <View style={[s.reqAvatar, { backgroundColor: (dimmed ? colors.mutedForeground : (cfg?.color ?? colors.primary)) + "20" }]}>
-              <Feather name={cfg?.icon ?? "calendar"} size={18} color={dimmed ? colors.mutedForeground : (cfg?.color ?? colors.primary)} />
+            <View style={[s.reqAvatar, { backgroundColor: iconColor + "20" }]}>
+              <Feather name={cfg?.icon ?? "calendar"} size={18} color={iconColor} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.reqName}>{b.teacherName ?? "Учитель"}</Text>
               <Text style={s.reqTime}>{formatDate(b.date)}, {b.startTime} – {b.endTime}</Text>
             </View>
-            <Text style={[s.statusLabel, { color: dimmed ? colors.mutedForeground : (cfg?.color ?? colors.mutedForeground) }]}>
-              {dimmed ? "Завершено" : (cfg?.label ?? b.status)}
-            </Text>
+            <Text style={[s.statusLabel, { color: statusColor }]}>{statusLabel}</Text>
           </View>
           {b.note ? <Text style={s.reqNote}>«{b.note}»</Text> : null}
+          {isRejected && (
+            <Text style={{ fontSize: 12, color: "#ef4444", marginHorizontal: 12, marginBottom: 10, fontStyle: "italic" }}>
+              Учитель отклонил вашу запись
+            </Text>
+          )}
         </View>
       );
     };
@@ -711,20 +745,36 @@ export default function CalendarScreen() {
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
+        {/* Filter chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {FILTERS.map((f) => {
+              const active = bookingFilter === f.key;
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  onPress={() => setBookingFilter(f.key)}
+                  style={[s.filterChip, active && s.filterChipActive]}
+                >
+                  <Text style={[s.filterChipText, active && s.filterChipTextActive]}>{f.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+
         {upcoming.length === 0 && past.length === 0 && (
           <View style={s.emptyBox}>
             <Text style={s.emptyEmoji}>📝</Text>
-            <Text style={s.emptyText}>Нет записей{"\n"}Перейдите в расписание и запишитесь к учителю</Text>
-          </View>
-        )}
-        {upcoming.length === 0 && past.length > 0 && (
-          <View style={s.emptyBox}>
-            <Text style={s.emptyEmoji}>✅</Text>
-            <Text style={s.emptyText}>Все занятия завершены</Text>
+            <Text style={s.emptyText}>
+              {bookingFilter === "all"
+                ? "Нет записей\nПерейдите в расписание и запишитесь к учителю"
+                : "Нет записей с таким статусом"}
+            </Text>
           </View>
         )}
 
-        {upcoming.map((b) => renderBookingCard(b))}
+        {upcoming.map((b) => renderBookingCard(b, false))}
 
         {past.length > 0 && (
           <>
