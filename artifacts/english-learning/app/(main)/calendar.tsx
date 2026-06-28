@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, TextInput, RefreshControl, Modal, Alert,
@@ -56,12 +56,15 @@ type BookingRow = {
 const DAY_SHORT = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 const MONTH_SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function todayStr() { return localDateStr(); }
 
 function getDates(count = 35) {
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   });
 }
 function dateLabel(dateStr: string) {
@@ -74,12 +77,81 @@ function formatDate(dateStr: string | null) {
   return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
 }
 
-// Half-hour intervals 07:00 – 21:30
-const TIME_SLOTS = Array.from({ length: 30 }, (_, i) => {
-  const h = Math.floor(i / 2) + 7;
-  const m = i % 2 === 0 ? "00" : "30";
-  return `${String(h).padStart(2, "0")}:${m}`;
-});
+// Wheel picker data
+const HOURS   = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+
+const WHEEL_ITEM_H = 52;
+const WHEEL_VISIBLE = 5;
+
+// ── WheelColumn ───────────────────────────────────────────────────────
+// Scrollable drum-roll column — iOS style
+type WheelColumnProps = {
+  items: string[]; value: string; onChange: (v: string) => void;
+  fg: string; muted: string; hlColor: string;
+};
+function WheelColumn({ items, value, onChange, fg, muted, hlColor }: WheelColumnProps) {
+  const ref = useRef<ScrollView>(null);
+
+  const scrollTo = (i: number, animated = true) =>
+    ref.current?.scrollTo({ y: i * WHEEL_ITEM_H, animated });
+
+  // Scroll to current value on mount (without animation)
+  useEffect(() => {
+    const i = items.indexOf(value);
+    if (i >= 0) setTimeout(() => scrollTo(i, false), 50);
+  }, []);
+
+  return (
+    <View style={{ width: 70, height: WHEEL_ITEM_H * WHEEL_VISIBLE, overflow: "hidden" }}>
+      {/* Selection highlight bar */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: WHEEL_ITEM_H * 2, height: WHEEL_ITEM_H,
+          left: 0, right: 0, zIndex: 1,
+          backgroundColor: hlColor,
+          borderRadius: 10,
+        }}
+      />
+      <ScrollView
+        ref={ref}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={WHEEL_ITEM_H}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingVertical: WHEEL_ITEM_H * 2 }}
+        onMomentumScrollEnd={(e) => {
+          const i = Math.round(e.nativeEvent.contentOffset.y / WHEEL_ITEM_H);
+          const clamped = Math.max(0, Math.min(i, items.length - 1));
+          onChange(items[clamped]);
+        }}
+        scrollEventThrottle={16}
+      >
+        {items.map((item, i) => {
+          const sel = item === value;
+          return (
+            <TouchableOpacity
+              key={item}
+              style={{ height: WHEEL_ITEM_H, justifyContent: "center", alignItems: "center" }}
+              onPress={() => { onChange(item); scrollTo(i); }}
+              activeOpacity={0.7}
+            >
+              <Text style={{
+                fontSize: sel ? 28 : 20,
+                fontWeight: sel ? "700" : "400",
+                color: sel ? fg : muted,
+                opacity: sel ? 1 : 0.55,
+              }}>
+                {item}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
 
 const STATUS_CFG = {
   available:    { label: "Свободно",      color: "#10b981", icon: "circle"       as const },
@@ -111,8 +183,10 @@ export default function CalendarScreen() {
 
   // Add-slot modal (teacher)
   const [showAdd, setShowAdd] = useState(false);
-  const [addStart, setAddStart] = useState("09:00");
-  const [addEnd, setAddEnd] = useState("10:00");
+  const [addStartH, setAddStartH] = useState("09");
+  const [addStartM, setAddStartM] = useState("00");
+  const [addEndH, setAddEndH] = useState("10");
+  const [addEndM, setAddEndM] = useState("00");
   const [saving, setSaving] = useState(false);
 
   // Book-slot modal (student)
@@ -151,7 +225,7 @@ export default function CalendarScreen() {
     try {
       await apiFetch("/api/calendar/slots", {
         method: "POST",
-        body: JSON.stringify({ date: selectedDate, startTime: addStart, endTime: addEnd }),
+        body: JSON.stringify({ date: selectedDate, startTime: `${addStartH}:${addStartM}`, endTime: `${addEndH}:${addEndM}` }),
       });
       setShowAdd(false);
       await loadSlots(selectedDate);
@@ -291,17 +365,9 @@ export default function CalendarScreen() {
       alignSelf: "center", marginBottom: 18,
     },
     sheetTitle: { fontSize: 18, fontWeight: "800", color: colors.foreground, marginBottom: 18 },
-    timeRow: { flexDirection: "row", gap: 12, marginBottom: 16 },
-    timePicker: { flex: 1 },
-    timeLabel: { fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
-    timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-    tChip: {
-      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
-      backgroundColor: colors.muted, borderWidth: 1.5, borderColor: "transparent",
-    },
-    tChipA: { borderColor: colors.primary, backgroundColor: colors.primary + "18" },
-    tChipText: { fontSize: 12, fontWeight: "600", color: colors.mutedForeground },
-    tChipTextA: { color: colors.primary, fontWeight: "700" },
+    timeLabel: { fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5, textAlign: "center" },
+    wheelRow: { flexDirection: "row", alignItems: "center" },
+    wheelColon: { fontSize: 32, fontWeight: "700", color: colors.foreground, marginHorizontal: 2, lineHeight: WHEEL_ITEM_H * WHEEL_VISIBLE },
     primaryBtn: {
       backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15,
       alignItems: "center", marginTop: 12,
@@ -550,45 +616,62 @@ export default function CalendarScreen() {
   };
 
   // ── Add-slot modal (teacher) ────────────────────────────────────────
+  const addStart = `${addStartH}:${addStartM}`;
+  const addEnd   = `${addEndH}:${addEndM}`;
   const renderAddSlotModal = () => (
     <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
       <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setShowAdd(false)}>
         <TouchableOpacity style={s.sheet} activeOpacity={1}>
           <View style={s.handle} />
           <Text style={s.sheetTitle}>Добавить слот — {formatDate(selectedDate)}</Text>
-          <View style={s.timeRow}>
-            <View style={s.timePicker}>
+
+          {/* Time pickers row */}
+          <View style={{ flexDirection: "row", justifyContent: "space-around", marginBottom: 20 }}>
+            {/* Start time */}
+            <View style={{ alignItems: "center" }}>
               <Text style={s.timeLabel}>Начало</Text>
-              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                <View style={s.timeGrid}>
-                  {TIME_SLOTS.map((t) => (
-                    <TouchableOpacity
-                      key={t} style={[s.tChip, addStart === t && s.tChipA]}
-                      onPress={() => { setAddStart(t); if (addEnd <= t) setAddEnd(TIME_SLOTS[TIME_SLOTS.indexOf(t) + 1] ?? t); }}
-                    >
-                      <Text style={[s.tChipText, addStart === t && s.tChipTextA]}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <View style={s.wheelRow}>
+                <WheelColumn
+                  items={HOURS} value={addStartH} onChange={setAddStartH}
+                  fg={colors.foreground} muted={colors.mutedForeground}
+                  hlColor={colors.primary + "28"}
+                />
+                <Text style={s.wheelColon}>:</Text>
+                <WheelColumn
+                  items={MINUTES} value={addStartM} onChange={setAddStartM}
+                  fg={colors.foreground} muted={colors.mutedForeground}
+                  hlColor={colors.primary + "28"}
+                />
+              </View>
             </View>
-            <View style={s.timePicker}>
+
+            {/* Divider */}
+            <View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 4 }} />
+
+            {/* End time */}
+            <View style={{ alignItems: "center" }}>
               <Text style={s.timeLabel}>Конец</Text>
-              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                <View style={s.timeGrid}>
-                  {TIME_SLOTS.filter((t) => t > addStart).map((t) => (
-                    <TouchableOpacity
-                      key={t} style={[s.tChip, addEnd === t && s.tChipA]}
-                      onPress={() => setAddEnd(t)}
-                    >
-                      <Text style={[s.tChipText, addEnd === t && s.tChipTextA]}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <View style={s.wheelRow}>
+                <WheelColumn
+                  items={HOURS} value={addEndH} onChange={setAddEndH}
+                  fg={colors.foreground} muted={colors.mutedForeground}
+                  hlColor={colors.primary + "28"}
+                />
+                <Text style={s.wheelColon}>:</Text>
+                <WheelColumn
+                  items={MINUTES} value={addEndM} onChange={setAddEndM}
+                  fg={colors.foreground} muted={colors.mutedForeground}
+                  hlColor={colors.primary + "28"}
+                />
+              </View>
             </View>
           </View>
-          <TouchableOpacity style={[s.primaryBtn, addEnd <= addStart && { opacity: 0.4 }]} onPress={handleAddSlot} disabled={saving || addEnd <= addStart}>
+
+          <TouchableOpacity
+            style={[s.primaryBtn, addEnd <= addStart && { opacity: 0.4 }]}
+            onPress={handleAddSlot}
+            disabled={saving || addEnd <= addStart}
+          >
             {saving
               ? <ActivityIndicator color="#fff" />
               : <Text style={s.primaryBtnText}>Добавить {addStart} – {addEnd}</Text>
