@@ -17,6 +17,21 @@ const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
 const MEDAL_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
 
 type CategoryKey = "points" | "time" | "tests" | "audio" | "streak";
+type Scope = "all" | "friends" | "age";
+
+type AgeGroup = {
+  label: string;
+  icon: string;
+  ageMin: number | null;
+  ageMax: number | null;
+};
+
+const AGE_GROUPS: AgeGroup[] = [
+  { label: "До 12 лет",  icon: "🧒", ageMin: null, ageMax: 12  },
+  { label: "13–15 лет",  icon: "🧑", ageMin: 13,   ageMax: 15  },
+  { label: "16–18 лет",  icon: "👦", ageMin: 16,   ageMax: 18  },
+  { label: "18+ лет",    icon: "🧑‍🎓", ageMin: 19, ageMax: null },
+];
 
 type CategoryEntry = {
   userId: number;
@@ -80,36 +95,61 @@ const CATEGORIES: {
   },
 ];
 
+const SCOPE_OPTIONS: { key: Scope; label: string; icon: keyof typeof Feather.glyphMap; color: string; desc: string }[] = [
+  { key: "all",     label: "Все ученики", icon: "globe",    color: "#6366f1", desc: "Рейтинг всех" },
+  { key: "friends", label: "Друзья",      icon: "users",    color: "#10b981", desc: "Среди друзей" },
+  { key: "age",     label: "По возрасту", icon: "bar-chart-2", color: "#f59e0b", desc: "Возрастная группа" },
+];
+
 export default function LeaderboardScreen() {
   const colors = useColors();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const [scope, setScope] = useState<Scope>("all");
+  const [activeAgeGroup, setActiveAgeGroup] = useState<AgeGroup>(AGE_GROUPS[0]);
+  const [activeKey, setActiveKey] = useState<CategoryKey>("points");
   const [data, setData] = useState<CategoriesData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeKey, setActiveKey] = useState<CategoryKey>("points");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = useCallback(async () => {
+  const buildUrl = useCallback((s: Scope, ag: AgeGroup) => {
+    const params = new URLSearchParams({ scope: s });
+    if (s === "age") {
+      if (ag.ageMin !== null) params.set("ageMin", String(ag.ageMin));
+      if (ag.ageMax !== null) params.set("ageMax", String(ag.ageMax));
+    }
+    return `${BASE_URL}/api/leaderboard/categories?${params.toString()}`;
+  }, []);
+
+  const load = useCallback(async (s: Scope, ag: AgeGroup) => {
+    setLoading(true);
     try {
       const token = await authStorage.getItem("auth_token");
-      const res = await fetch(`${BASE_URL}/api/leaderboard/categories`, {
+      const res = await fetch(buildUrl(s, ag), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setData(await res.json());
     } catch { /* silent */ } finally { setLoading(false); }
-  }, []);
+  }, [buildUrl]);
 
   useEffect(() => {
-    load();
-    intervalRef.current = setInterval(load, 60_000);
+    load(scope, activeAgeGroup);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => load(scope, activeAgeGroup), 60_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [load]);
+  }, [scope, activeAgeGroup, load]);
 
   const activeCat = CATEGORIES.find(c => c.key === activeKey)!;
+  const activeScope = SCOPE_OPTIONS.find(s => s.key === scope)!;
   const entries = data?.[activeKey] ?? [];
   const myEntry = entries.find(e => e.userId === user?.id);
+
+  const scopeSubtitle =
+    scope === "friends" ? "Среди ваших друзей" :
+    scope === "age"     ? `Возраст: ${activeAgeGroup.label}` :
+    activeCat.subtitle;
 
   const renderItem = ({ item }: { item: CategoryEntry }) => {
     const isMe = item.userId === user?.id;
@@ -124,7 +164,6 @@ export default function LeaderboardScreen() {
         borderWidth: isMe ? 1.5 : 1,
         borderColor: isMe ? activeCat.color + "50" : colors.border,
       }}>
-        {/* Rank */}
         <View style={{
           width: 34, height: 34, borderRadius: 17,
           justifyContent: "center", alignItems: "center",
@@ -136,11 +175,9 @@ export default function LeaderboardScreen() {
           }
         </View>
 
-        {/* Avatar */}
         <View style={{
           width: 38, height: 38, borderRadius: 19,
-          backgroundColor: avatarBg,
-          overflow: "hidden",
+          backgroundColor: avatarBg, overflow: "hidden",
           justifyContent: "center", alignItems: "center",
         }}>
           {item.avatarUrl
@@ -149,16 +186,11 @@ export default function LeaderboardScreen() {
           }
         </View>
 
-        {/* Name */}
         <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
           {item.name}{isMe ? " (Я)" : ""}
         </Text>
 
-        {/* Value */}
-        <Text style={{
-          fontSize: 15, fontWeight: "800",
-          color: isMe ? activeCat.color : colors.foreground,
-        }}>
+        <Text style={{ fontSize: 15, fontWeight: "800", color: isMe ? activeCat.color : colors.foreground }}>
           {activeCat.formatValue(item.value)}
         </Text>
 
@@ -176,20 +208,88 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={{
         paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-        paddingHorizontal: 20, paddingBottom: 12,
+        paddingHorizontal: 20, paddingBottom: 8,
       }}>
         <Text style={{ fontSize: 26, fontWeight: "800", color: colors.foreground, marginBottom: 2 }}>
           Рейтинг
         </Text>
-        <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
-          {activeCat.subtitle}
-        </Text>
+        <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{scopeSubtitle}</Text>
       </View>
 
-      {/* Category tabs */}
+      {/* ── Scope selector (3 big cards) ── */}
+      <View style={{ flexDirection: "row", paddingHorizontal: 16, gap: 8, paddingBottom: 12 }}>
+        {SCOPE_OPTIONS.map(opt => {
+          const active = opt.key === scope;
+          return (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => setScope(opt.key)}
+              activeOpacity={0.78}
+              style={{
+                flex: 1, alignItems: "center", paddingVertical: 10, paddingHorizontal: 6,
+                borderRadius: 14, borderWidth: 1.5,
+                backgroundColor: active ? opt.color : colors.card,
+                borderColor: active ? opt.color : colors.border,
+              }}
+            >
+              <View style={{
+                width: 32, height: 32, borderRadius: 16,
+                backgroundColor: active ? "rgba(255,255,255,0.22)" : opt.color + "18",
+                justifyContent: "center", alignItems: "center",
+                marginBottom: 4,
+              }}>
+                <Feather name={opt.icon} size={16} color={active ? "#fff" : opt.color} />
+              </View>
+              <Text style={{
+                fontSize: 11, fontWeight: "800", textAlign: "center",
+                color: active ? "#fff" : colors.foreground,
+              }} numberOfLines={1}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* ── Age group picker (when scope === "age") ── */}
+      {scope === "age" && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8, flexDirection: "row" }}
+        >
+          {AGE_GROUPS.map(ag => {
+            const active = ag.label === activeAgeGroup.label;
+            return (
+              <TouchableOpacity
+                key={ag.label}
+                onPress={() => setActiveAgeGroup(ag)}
+                activeOpacity={0.78}
+                style={{
+                  flexDirection: "row", alignItems: "center", gap: 6,
+                  paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                  backgroundColor: active ? "#f59e0b" : colors.card,
+                  borderWidth: 1.5,
+                  borderColor: active ? "#f59e0b" : colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 15 }}>{ag.icon}</Text>
+                <Text style={{
+                  fontSize: 13, fontWeight: "700",
+                  color: active ? "#fff" : colors.mutedForeground,
+                }}>
+                  {ag.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* ── Subcategory tabs ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -204,18 +304,14 @@ export default function LeaderboardScreen() {
               onPress={() => setActiveKey(cat.key)}
               style={{
                 flexDirection: "row", alignItems: "center", gap: 6,
-                paddingHorizontal: 14, paddingVertical: 8,
-                borderRadius: 20,
+                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
                 backgroundColor: active ? cat.color : colors.card,
                 borderWidth: 1.5,
                 borderColor: active ? cat.color : colors.border,
               }}
             >
               <Feather name={cat.icon} size={14} color={active ? "#fff" : colors.mutedForeground} />
-              <Text style={{
-                fontSize: 13, fontWeight: "700",
-                color: active ? "#fff" : colors.mutedForeground,
-              }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
                 {cat.label}
               </Text>
             </TouchableOpacity>
@@ -223,7 +319,7 @@ export default function LeaderboardScreen() {
         })}
       </ScrollView>
 
-      {/* My position card */}
+      {/* ── My position card ── */}
       {myEntry && (
         <View style={{
           marginHorizontal: 20, marginBottom: 14, padding: 14,
@@ -239,7 +335,9 @@ export default function LeaderboardScreen() {
             <Feather name={activeCat.icon} size={20} color={activeCat.color} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Моё место</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+              Моё место · {activeScope.label}
+            </Text>
             <Text style={{ fontSize: 15, fontWeight: "700", color: activeCat.color }}>
               #{myEntry.rank} — {user?.name}
             </Text>
@@ -250,7 +348,7 @@ export default function LeaderboardScreen() {
         </View>
       )}
 
-      {/* List */}
+      {/* ── List ── */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator color={activeCat.color} size="large" />
@@ -258,7 +356,16 @@ export default function LeaderboardScreen() {
       ) : entries.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 12 }}>
           <Feather name="award" size={48} color={colors.mutedForeground} />
-          <Text style={{ fontSize: 16, color: colors.mutedForeground }}>Пока никого нет</Text>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>
+            {scope === "friends" ? "Нет друзей в рейтинге" :
+             scope === "age"     ? `Нет учеников в группе «${activeAgeGroup.label}»` :
+             "Пока никого нет"}
+          </Text>
+          {scope === "friends" && (
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
+              Добавьте друзей через профиль другого ученика
+            </Text>
+          )}
         </View>
       ) : (
         <FlatList

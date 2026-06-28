@@ -79,7 +79,11 @@ export default function FriendProfileScreen() {
   const isStudent = user?.role === "student";
 
   const loadProfile = useCallback(async () => {
-    if (!friendId) return;
+    if (!friendId) {
+      setError("Неверный ID пользователя");
+      setLoading(false);
+      return;
+    }
     try {
       const data = await apiFetch(`/api/users/${friendId}`);
       setProfile(data);
