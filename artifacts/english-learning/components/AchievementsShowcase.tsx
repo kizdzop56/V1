@@ -385,7 +385,7 @@ export function AchievementsShowcase({
 }
 
 const styles = StyleSheet.create({
-  container: { borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1 },
+  container: { borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, overflow: "hidden" },
 
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },

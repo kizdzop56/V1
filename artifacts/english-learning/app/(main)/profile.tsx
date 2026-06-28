@@ -1213,7 +1213,9 @@ export default function ProfileScreen() {
                   <Feather name="clock" size={24} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.timerValue}>{formatTime(totalMinutes)}</Text>
+                  <Text style={s.timerValue}>
+                    {formatTime(gamStats?.totalTimeMinutes ?? totalMinutes)}
+                  </Text>
                   <Text style={s.timerLabel}>
                     Сегодня: {formatSessionTime(sessionSeconds)} в этой сессии
                   </Text>
