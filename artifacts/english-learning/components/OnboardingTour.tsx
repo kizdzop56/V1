@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
 import authStorage from "@/utils/authStorage";
-import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const PAD = Math.min(SCREEN_W * 0.06, 28);
@@ -42,66 +41,40 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const accent   = "#8b5cf6";
-  const cardW    = Math.min(SCREEN_W - 40, 420);
-  const mascotW  = Math.round(cardW * 0.65);
-  const mascotH  = Math.round(mascotW * 16 / 9);
-  const overlap  = Math.round(mascotH * 0.30);
-  const cardTopPad = overlap + 8;
+  const accent = "#8b5cf6";
+  const cardW  = Math.min(SCREEN_W - 40, 420);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
-      <View style={styles.overlay}>
-        <Animated.View style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}>
+      {/* No backdrop — card floats over the live app */}
+      <View style={styles.overlay} pointerEvents="box-none">
+        <Animated.View
+          style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}
+          pointerEvents="auto"
+        >
+          {/* Glass card — only the rectangle with text */}
+          <Animated.View
+            style={[
+              styles.glassPanel,
+              {
+                // @ts-ignore web backdropFilter
+                backdropFilter: "blur(24px) saturate(1.3)",
+                WebkitBackdropFilter: "blur(24px) saturate(1.3)",
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <Text style={styles.stepTitle}>Привет! Я {mascotName}! 👋</Text>
+            <View style={styles.bubble}>
+              <Text style={styles.bubbleText}>
+                Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
+              </Text>
+            </View>
 
-          {/* Mascot floats above panel */}
-          <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} style={{ zIndex: 2 }} />
-
-          {/* Content panel */}
-          <View style={[styles.container, { width: cardW, marginTop: -overlap, paddingTop: cardTopPad }]}>
-
-            {/* Big name on intro slide */}
-            <Text
-              style={[
-                styles.nameLabel,
-                {
-                  color: "#c084fc",
-                  // @ts-ignore web gradient
-                  backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                },
-              ]}
-            >
-              {mascotName}
-            </Text>
-
-            {/* Glass content panel */}
-            <Animated.View
-              style={[
-                styles.glassPanel,
-                {
-                  // @ts-ignore web backdropFilter
-                  backdropFilter: "blur(22px) saturate(1.4)",
-                  WebkitBackdropFilter: "blur(22px) saturate(1.4)",
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
-            >
-              <Text style={styles.stepTitle}>Привет! Я {mascotName}! 👋</Text>
-              <View style={styles.bubble}>
-                <Text style={styles.bubbleText}>
-                  Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
-                </Text>
-              </View>
-            </Animated.View>
-
-            {/* Single button */}
             <TouchableOpacity style={[styles.nextBtn, { backgroundColor: accent }]} onPress={handleFinish}>
               <Text style={styles.nextText}>Давай! 🚀</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </Animated.View>
       </View>
     </Modal>
@@ -111,32 +84,22 @@ export function OnboardingTour({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "#000000aa",
     justifyContent: "center",
     alignItems: "center",
     padding: PAD,
   },
-  container: {
-    borderRadius: 28,
-    padding: PAD,
-    alignItems: "center",
-  },
-  nameLabel: {
-    textAlign: "center",
-    fontSize: 30,
-    fontWeight: "700",
-    marginBottom: 6,
-    letterSpacing: 0.3,
-  },
   glassPanel: {
     width: "100%",
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.10)",
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "rgba(139,92,246,0.75)",
+    backgroundColor: "rgba(42,36,60,0.82)",
+    padding: 22,
     alignItems: "center",
+    shadowColor: "#8b5cf6",
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 18,
   },
   stepTitle: {
     fontSize: 20,
