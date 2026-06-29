@@ -1,19 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
-import { Image } from "expo-image";
-import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
+import { WavingMascot, MASCOT_RATIO } from "@/components/WavingMascot";
 import authStorage from "@/utils/authStorage";
 
-const { width: SCREEN_W } = Dimensions.get("window");
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
-
-// Transparent animated WebP (white bg flood-filled out, alpha preserved).
-// expo-image autoplays animated WebP with transparency on web + native.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const WAVE_WEBP = require("../assets/images/mascot_wave.webp");
 
 interface OnboardingTourProps {
   visible: boolean;
@@ -28,7 +22,6 @@ export function OnboardingTour({
 }: OnboardingTourProps) {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -48,11 +41,15 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const cardW   = Math.min(SCREEN_W - 32, 400);
-  // mascot_wave.webp is 672x544 (landscape) — keep its true ratio so it
-  // isn't letterboxed into a tall box and rendered tiny.
-  const mascotW = cardW;
-  const mascotH = Math.round(mascotW * (544 / 672));
+  const cardW = Math.min(SCREEN_W - 40, 380);
+  // Mascot nearly fills the screen, capped so the text still fits.
+  let mascotW = Math.min(SCREEN_W - 12, 460);
+  let mascotH = Math.round(mascotW / MASCOT_RATIO);
+  const maxH = SCREEN_H * 0.56;
+  if (mascotH > maxH) {
+    mascotH = Math.round(maxH);
+    mascotW = Math.round(mascotH * MASCOT_RATIO);
+  }
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
@@ -60,22 +57,13 @@ export function OnboardingTour({
         <Animated.View
           style={[
             styles.content,
-            { width: cardW, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Mascot — transparent animated WebP (autoplays everywhere).
-              Falls back to the static PNG mascot if it fails to load. */}
-          {imgFailed ? (
-            <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} />
-          ) : (
-            <Image
-              source={WAVE_WEBP}
-              style={{ width: mascotW, height: mascotH }}
-              contentFit="contain"
-              autoplay
-              onError={() => setImgFailed(true)}
-            />
-          )}
+          {/* Mascot — transparent waving animation, large. */}
+          <View style={{ marginBottom: -8 }}>
+            <WavingMascot width={mascotW} height={mascotH} />
+          </View>
 
           {/* Name */}
           <Text
@@ -101,6 +89,7 @@ export function OnboardingTour({
             style={[
               styles.bubble,
               {
+                width: cardW,
                 // @ts-ignore web
                 boxShadow: "0 0 16px rgba(168,85,247,0.7), 0 0 5px rgba(168,85,247,0.4)",
               },
@@ -113,7 +102,7 @@ export function OnboardingTour({
           </View>
 
           {/* CTA */}
-          <TouchableOpacity style={styles.btn} onPress={handleFinish} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.btn, { width: cardW }]} onPress={handleFinish} activeOpacity={0.85}>
             <Text style={styles.btnText}>Давай! 🚀</Text>
           </TouchableOpacity>
         </Animated.View>

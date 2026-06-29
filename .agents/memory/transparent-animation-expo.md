@@ -27,4 +27,16 @@ The subject (a snow-leopard mascot) is **white-furred on a near-white background
 
 **Gotcha:** this env's `ffmpeg`/`ffprobe` **cannot decode** animated WebP ("image data not found"). Verify frame count/alpha with **ImageMagick** instead (`magick identify mascot.webp | wc -l`, `magick "mascot.webp[N]" out.png`). ~100 frames ≈ 1.6 MB; fine for a one-time onboarding.
 
-**Aspect-ratio gotcha:** the assembled `mascot_wave.webp` is **landscape 672x544**, not portrait. If the `<Image>` box is given a portrait ratio (e.g. `mascotW * 16/9`) with `contentFit="contain"`, the mascot gets letterboxed into a tall box and renders tiny with dead vertical space. Always size the box to the asset's true ratio: `mascotH = mascotW * (544/672)`. Check actual dims with `magick identify` before hardcoding a ratio.
+**Aspect-ratio gotcha:** size the `<Image>`/box to the asset's **true ratio** with `contentFit="contain"`, else it letterboxes into a tall box and renders tiny. Check dims with `magick identify` before hardcoding a ratio.
+
+## Make the subject fill the frame (perceived "bigger" + "higher quality")
+A background-removed frame often has the subject surrounded by huge transparent padding. On screen the box scales to the *padded* frame, so the subject looks small and the padding wastes resolution — reads as "low quality / too small." Fix by **cropping every frame to the content bbox** before encoding:
+- Find a generous bbox covering the subject across all frames (sample a few `magick identify -format "%@"` / trim previews), pad it a little, then `magick in.png -crop WxH+X+Y +repage out.png` on every frame (parallel `xargs -P`).
+- Re-encode the cropped frames. Result: same display box now shows the subject edge-to-edge → much bigger and crisper at the same on-screen size, no source upscaling needed.
+- Quality also improves by bumping `-q:v` (e.g. 78 → 88) and **speed** by raising `-framerate` (25 → 33). A ~100-frame cropped q88 WebP ≈ 2.2 MB — fine for one-time onboarding.
+
+## Web flicker / color-flash fix: render a raw `<img>`, not `expo-image`
+**Symptom:** on the Expo **web** build, an animated WebP shown via `expo-image` flashes/loses its colors+pattern for a fraction of a second (a spinner appears) — often **each loop**, because expo-image re-enters its loading state.
+**Fix:** in a shared component, branch on `Platform.OS === "web"` and render a plain DOM image:
+`React.createElement("img", { src: RNImage.resolveAssetSource(require("...webp")).uri, style: {...} })`. The browser loops the WebP natively with no loading-state flash. Keep `expo-image` (with `autoplay`) on **native**, and fall back to the static PNG (`AnimatedMascotImage`) on error. `RNImage.resolveAssetSource(require(...)).uri` is a valid bundled-asset URL in Expo/react-native-web (if it ever isn't, use `expo-asset` `Asset.fromModule(...).uri`).
+**Layout note:** when the mascot is intentionally much larger than the text, don't give the wrapping `content` View a fixed width — let it size to the (large) mascot, center it, and constrain the text card/bubble/button to their own `cardW` instead. APNG was rejected as an alternative (8–16 MB).
