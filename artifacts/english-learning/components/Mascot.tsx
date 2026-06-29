@@ -20,10 +20,10 @@ const MOOD_EMOJIS: Record<MascotMood, string> = {
 const MOOD_TO_POSE: Record<MascotMood, MascotPose> = {
   happy:     "happy",
   celebrate: "celebrate",
-  sad:       "think",     // no sad pose → think is calm/low-energy
+  sad:       "sit",       // sitting quietly
   thinking:  "think",
   wave:      "wave",
-  sleep:     "think",     // no sleep pose → think is quiet
+  sleep:     "lie",       // lying down = sleep/rest
 };
 
 // Keep the static image for the name-picker mini preview
@@ -93,10 +93,28 @@ export function MascotModal({
           <TouchableOpacity activeOpacity={1}>
             {/* ── Mascot — static, parts animate on their own ── */}
             <View style={styles.mascotArea}>
-              <AnimatedMascotImage pose={pose} width={150} height={210} />
+              <AnimatedMascotImage
+                pose={pose}
+                width={pose === "lie" ? 240 : 150}
+                height={pose === "lie" ? 135 : 210}
+              />
               <View style={[styles.moodBadge, { backgroundColor: bgColor, borderColor }]}>
                 <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood]}</Text>
-                <Text style={[styles.mascotName, { color: borderColor }]}>{mascotName}</Text>
+                <Text
+                  style={[
+                    styles.mascotName,
+                    {
+                      color: "#8b5cf6",
+                      // @ts-ignore web gradient text
+                      backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    },
+                  ]}
+                >
+                  {mascotName}
+                </Text>
               </View>
             </View>
 

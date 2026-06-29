@@ -1294,7 +1294,21 @@ export default function ProfileScreen() {
                   <Text style={{ fontSize: 30 }}>🦉</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.levelTitle, { color: "#6366f1" }]}>{gamStats?.mascotName ?? "Снежа"}</Text>
+                  <Text
+                    style={[
+                      s.levelTitle,
+                      {
+                        color: "#8b5cf6",
+                        // @ts-ignore web gradient text
+                        backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      },
+                    ]}
+                  >
+                    {gamStats?.mascotName ?? "Снежа"}
+                  </Text>
                   <Text style={[s.levelSub, { color: colors.mutedForeground }]}>Твой помощник в учёбе</Text>
                 </View>
                 <View style={{ flexDirection: "row", gap: 8 }}>

@@ -1,19 +1,20 @@
 /**
  * AnimatedMascotImage
  *
- * Renders the mascot PNG with an SVG overlay that provides:
- *  - Eye blinking (anime-style curved lines fade in/out)
- *  - Ear wiggle (tiny overlay triangles rotate occasionally)
- *  - Tail swing  (a separate curved path that oscillates)
+ * Renders the mascot PNG image with two subtle animations:
+ *  1. Slow breathing pulse (very slight scale 1.0 ↔ 1.008, period ~3 s)
+ *  2. Eye blink: light-grey eyelid ellipses + anime closed-eye arcs appear
+ *     for ~160 ms every 3–5 s
  *
- * The mascot IMAGE itself is completely static — no bounce/jump.
+ * The mascot IMAGE is unchanged — no part-specific SVG drawings on top.
+ * The SVG overlay only activates during the brief blink and is transparent otherwise.
  */
 
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef } from "react";
 import { View, Image, Animated, StyleSheet } from "react-native";
-import Svg, { Path, G, Ellipse } from "react-native-svg";
+import Svg, { Path, Ellipse } from "react-native-svg";
 
-// ─── Pose registry ──────────────────────────────────────────────────────────
+// ─── Pose registry ────────────────────────────────────────────────────────────
 export type MascotPose =
   | "wave"
   | "celebrate"
@@ -22,7 +23,23 @@ export type MascotPose =
   | "excited"
   | "curious"
   | "point"
-  | "laugh";
+  | "laugh"
+  | "sit"
+  | "lie";
+
+/** Aspect ratio width:height for each pose */
+const POSE_RATIO: Record<MascotPose, number> = {
+  wave:      9 / 16,
+  celebrate: 9 / 16,
+  think:     9 / 16,
+  happy:     9 / 16,
+  excited:   9 / 16,
+  curious:   9 / 16,
+  point:     9 / 16,
+  laugh:     9 / 16,
+  sit:       9 / 16,
+  lie:       16 / 9,
+};
 
 const IMAGES: Record<MascotPose, any> = {
   wave:      require("../assets/images/mascot_full.png"),
@@ -33,246 +50,146 @@ const IMAGES: Record<MascotPose, any> = {
   curious:   require("../assets/images/mascot_curious.png"),
   point:     require("../assets/images/mascot_point.png"),
   laugh:     require("../assets/images/mascot_laugh.png"),
+  sit:       require("../assets/images/mascot_sit.png"),
+  lie:       require("../assets/images/mascot_lie.png"),
 };
 
-// Eye and ear overlay positions as a fraction of the rendered image size.
-// (cx, cy) = centre of each eye; (ex, ey) = half-widths used for the arc.
-// These are calibrated to match the generated chibi images (9:16 aspect ratio).
-interface EyeConfig {
-  lx: number; ly: number; // left-eye centre (0–1)
-  rx: number; ry: number; // right-eye centre
-  ew: number; eh: number; // half-width & half-height of closed-eye arc
-  // ear pivot points (fractional of image size)
-  earL: { px: number; py: number };
-  earR: { px: number; py: number };
-  // tail base pivot (fractional)
-  tail:  { px: number; py: number; len: number; startAngle: number };
-}
+/**
+ * Eye positions as fraction of the rendered image (width × height).
+ * lcx/lcy = left-eye centre, rcx/rcy = right-eye centre.
+ * erx = horizontal half-width, ery = vertical half-height of the eyelid ellipse.
+ *
+ * Calibrated by visual inspection of each 9:16 image at approx. w=200 h=356.
+ * Portrait poses share similar face proportions, so values are close.
+ */
+interface EyePos { lcx: number; lcy: number; rcx: number; rcy: number; erx: number; ery: number; }
 
-const EYE_CONFIG: Record<MascotPose, EyeConfig> = {
-  wave:      { lx:.365, ly:.265, rx:.56, ry:.265, ew:.072, eh:.038, earL:{px:.29,py:.10}, earR:{px:.70,py:.10}, tail:{px:.72,py:.80,len:.18,startAngle:-20} },
-  celebrate: { lx:.355, ly:.265, rx:.56, ry:.265, ew:.076, eh:.042, earL:{px:.27,py:.09}, earR:{px:.72,py:.09}, tail:{px:.75,py:.82,len:.16,startAngle:10} },
-  think:     { lx:.355, ly:.295, rx:.555, ry:.295, ew:.076, eh:.040, earL:{px:.26,py:.08}, earR:{px:.72,py:.08}, tail:{px:.70,py:.85,len:.20,startAngle:-25} },
-  happy:     { lx:.365, ly:.275, rx:.57, ry:.275, ew:.072, eh:.038, earL:{px:.29,py:.10}, earR:{px:.71,py:.10}, tail:{px:.72,py:.78,len:.17,startAngle:-15} },
-  excited:   { lx:.355, ly:.255, rx:.565, ry:.255, ew:.078, eh:.042, earL:{px:.27,py:.09}, earR:{px:.72,py:.09}, tail:{px:.73,py:.81,len:.16,startAngle:15} },
-  curious:   { lx:.365, ly:.270, rx:.57, ry:.270, ew:.072, eh:.038, earL:{px:.29,py:.10}, earR:{px:.71,py:.10}, tail:{px:.71,py:.82,len:.18,startAngle:-20} },
-  point:     { lx:.375, ly:.265, rx:.575, ry:.265, ew:.072, eh:.037, earL:{px:.29,py:.09}, earR:{px:.71,py:.09}, tail:{px:.72,py:.80,len:.17,startAngle:-18} },
-  laugh:     { lx:.370, ly:.265, rx:.575, ry:.265, ew:.074, eh:.038, earL:{px:.28,py:.09}, earR:{px:.71,py:.09}, tail:{px:.72,py:.82,len:.17,startAngle:-20} },
+const EYE: Record<MascotPose, EyePos> = {
+  wave:      { lcx:.365, lcy:.270, rcx:.565, rcy:.270, erx:.090, ery:.048 },
+  celebrate: { lcx:.350, lcy:.255, rcx:.560, rcy:.255, erx:.095, ery:.052 },
+  think:     { lcx:.355, lcy:.290, rcx:.555, rcy:.290, erx:.090, ery:.048 },
+  happy:     { lcx:.365, lcy:.275, rcx:.565, rcy:.275, erx:.090, ery:.048 },
+  excited:   { lcx:.355, lcy:.255, rcx:.560, rcy:.255, erx:.095, ery:.052 },
+  curious:   { lcx:.360, lcy:.268, rcx:.563, rcy:.268, erx:.090, ery:.048 },
+  point:     { lcx:.373, lcy:.268, rcx:.573, rcy:.268, erx:.090, ery:.047 },
+  laugh:     { lcx:.368, lcy:.265, rcx:.570, rcy:.265, erx:.090, ery:.047 },
+  sit:       { lcx:.368, lcy:.290, rcx:.568, rcy:.290, erx:.092, ery:.048 },
+  // lie is landscape; eyes are in the left side of image
+  lie:       { lcx:.275, lcy:.430, rcx:.415, rcy:.410, erx:.075, ery:.070 },
 };
 
-// ─── Animated SVG wrappers ───────────────────────────────────────────────────
-const AnimatedG = Animated.createAnimatedComponent(G);
-
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
   pose?: MascotPose;
+  /** Explicit width; height is derived from pose aspect ratio if not provided */
   width?: number;
   height?: number;
   style?: any;
 }
 
-export function AnimatedMascotImage({ pose = "wave", width = 200, height = 280, style }: Props) {
-  const cfg = EYE_CONFIG[pose];
+// ─── Component ────────────────────────────────────────────────────────────────
+export function AnimatedMascotImage({ pose = "wave", width = 200, height, style }: Props) {
+  const ratio  = POSE_RATIO[pose];
+  const imgW   = width;
+  const imgH   = height ?? Math.round(width / ratio);
 
-  // ── Animation values ──────────────────────────────────────────────────────
-  const blinkOpacity = useRef(new Animated.Value(0)).current;
-  const earLRotate   = useRef(new Animated.Value(0)).current;
-  const earRRotate   = useRef(new Animated.Value(0)).current;
-  const tailAngle    = useRef(new Animated.Value(cfg.tail.startAngle)).current;
+  const eyePos = EYE[pose];
+  const breathe   = useRef(new Animated.Value(1)).current;
+  const blinkOpac = useRef(new Animated.Value(0)).current;
+
+  // ── Breathing pulse ────────────────────────────────────────────────────────
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathe, { toValue: 1.007, duration: 1800, useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 1,     duration: 1800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
   // ── Blink loop ─────────────────────────────────────────────────────────────
-  const startBlinkLoop = useCallback(() => {
-    const blink = Animated.sequence([
-      Animated.delay(2800 + Math.random() * 1800),
-      Animated.timing(blinkOpacity, { toValue: 1, duration: 80,  useNativeDriver: true }),
-      Animated.delay(60),
-      Animated.timing(blinkOpacity, { toValue: 0, duration: 80,  useNativeDriver: true }),
-      // occasional double-blink
-      ...(Math.random() > 0.6 ? [
-        Animated.delay(120),
-        Animated.timing(blinkOpacity, { toValue: 1, duration: 70, useNativeDriver: true }),
-        Animated.delay(50),
-        Animated.timing(blinkOpacity, { toValue: 0, duration: 70, useNativeDriver: true }),
-      ] : []),
-    ]);
-    Animated.loop(blink).start();
-  }, [blinkOpacity]);
-
-  // ── Ear wiggle loop ────────────────────────────────────────────────────────
-  const startEarLoop = useCallback(() => {
-    const wiggle = (anim: Animated.Value, dir: 1 | -1) =>
-      Animated.sequence([
-        Animated.delay(3500 + Math.random() * 2500),
-        Animated.timing(anim, { toValue: dir * 10, duration: 140, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0,        duration: 140, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: dir * 7,  duration: 120, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0,        duration: 120, useNativeDriver: true }),
-      ]);
-    Animated.loop(wiggle(earLRotate,  1)).start();
-    Animated.loop(wiggle(earRRotate, -1)).start();
-  }, [earLRotate, earRRotate]);
-
-  // ── Tail swing loop ────────────────────────────────────────────────────────
-  const startTailLoop = useCallback(() => {
-    const swing = Animated.loop(
-      Animated.sequence([
-        Animated.timing(tailAngle, { toValue: cfg.tail.startAngle + 28, duration: 900, useNativeDriver: true }),
-        Animated.timing(tailAngle, { toValue: cfg.tail.startAngle - 8,  duration: 900, useNativeDriver: true }),
-      ])
-    );
-    swing.start();
-  }, [tailAngle, cfg.tail.startAngle]);
-
   useEffect(() => {
-    startBlinkLoop();
-    startEarLoop();
-    startTailLoop();
+    let running = true;
+    const schedule = () => {
+      if (!running) return;
+      const delay = 2600 + Math.random() * 2000;
+      setTimeout(() => {
+        if (!running) return;
+        Animated.sequence([
+          Animated.timing(blinkOpac, { toValue: 1, duration: 70,  useNativeDriver: true }),
+          Animated.delay(55),
+          Animated.timing(blinkOpac, { toValue: 0, duration: 70,  useNativeDriver: true }),
+          // occasional double blink
+          ...( Math.random() > 0.55 ? [
+            Animated.delay(110),
+            Animated.timing(blinkOpac, { toValue: 1, duration: 60, useNativeDriver: true }),
+            Animated.delay(45),
+            Animated.timing(blinkOpac, { toValue: 0, duration: 60, useNativeDriver: true }),
+          ] : [] ),
+        ]).start(() => schedule());
+      }, delay);
+    };
+    schedule();
+    return () => { running = false; };
   }, [pose]);
 
-  // ── Derived pixel sizes ────────────────────────────────────────────────────
-  const lx = cfg.lx * width;
-  const ly = cfg.ly * height;
-  const rx = cfg.rx * width;
-  const ry = cfg.ry * height;
-  const ew = cfg.ew * width;
-  const eh = cfg.eh * height;
+  // ── Derived eye pixel positions ────────────────────────────────────────────
+  const lx  = eyePos.lcx * imgW;
+  const ly  = eyePos.lcy * imgH;
+  const rx  = eyePos.rcx * imgW;
+  const ry  = eyePos.rcy * imgH;
+  const erx = eyePos.erx * imgW;   // horizontal half-width of eyelid
+  const ery = eyePos.ery * imgW;   // vertical half-height (relative to width for consistency)
 
-  // closed-eye arc: a horizontal "∪" (convex downward = lid closing)
-  const makeEyeArc = (cx: number, cy: number) =>
-    `M ${cx - ew} ${cy} Q ${cx} ${cy - eh * 2.5} ${cx + ew} ${cy}`;
+  // Closed-eye arc: convex upward — looks like lid closing from top
+  // Drawn from left edge → through top of arc → right edge
+  const arcL = `M ${lx - erx} ${ly} Q ${lx} ${ly - ery * 2.2} ${lx + erx} ${ly}`;
+  const arcR = `M ${rx - erx} ${ry} Q ${rx} ${ry - ery * 2.2} ${rx + erx} ${ry}`;
 
-  // ear overlay triangle paths (tiny, in SVG coords)
-  const earLx = cfg.earL.px * width;
-  const earLy = cfg.earL.py * height;
-  const earRx = cfg.earR.px * width;
-  const earRy = cfg.earR.py * height;
-  const earSz = width * 0.055;
-
-  // tail arc (drawn in local coordinates so rotation works around pivot)
-  const tx = cfg.tail.px * width;
-  const ty = cfg.tail.py * height;
-  const tLen = cfg.tail.len * height;
-  const tailPath = `M 0 0 Q ${width * 0.06} ${-tLen * 0.5} ${width * 0.04} ${-tLen}`;
+  // Eyelid fill colour: close match to the leopard's light fur
+  const lidFill = "#dedad2";
 
   return (
-    <View style={[{ width, height }, style]}>
-      {/* ── Base mascot image (completely static) ── */}
+    <Animated.View
+      style={[
+        { width: imgW, height: imgH },
+        style,
+        { transform: [{ scale: breathe }] },
+      ]}
+    >
+      {/* ── Clean PNG image — untouched ── */}
       <Image
         source={IMAGES[pose]}
-        style={{ width, height, resizeMode: "contain" }}
+        style={{ width: imgW, height: imgH, resizeMode: "contain" }}
       />
 
-      {/* ── SVG animation overlay ── */}
-      <Svg
-        width={width}
-        height={height}
-        style={StyleSheet.absoluteFill}
+      {/* ── Blink overlay — only visible for ~195 ms during a blink ── */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { opacity: blinkOpac }]}
         pointerEvents="none"
       >
-        {/* ── Tail (rotates around tail-base pivot) ── */}
-        <AnimatedG
-          style={{
-            transform: [
-              { translateX: tx },
-              { translateY: ty },
-              { rotate: tailAngle.interpolate({ inputRange: [-45, 45], outputRange: ["-45deg", "45deg"] }) },
-              { translateX: -tx },
-              { translateY: -ty },
-            ],
-          }}
-        >
-          {/* Tail body — covers the static tail to replace it with animated one */}
+        <Svg width={imgW} height={imgH}>
+          {/* Left eye eyelid */}
+          <Ellipse cx={lx} cy={ly} rx={erx + 1} ry={ery + 4} fill={lidFill} />
           <Path
-            d={`M ${tx} ${ty} Q ${tx + width * 0.08} ${ty - tLen * 0.4} ${tx + width * 0.05} ${ty - tLen}`}
-            stroke="#9e9896"
-            strokeWidth={width * 0.046}
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* Tail tip (darker stripe) */}
-          <Ellipse
-            cx={tx + width * 0.04}
-            cy={ty - tLen}
-            rx={width * 0.028}
-            ry={width * 0.032}
-            fill="#3a3530"
-          />
-        </AnimatedG>
-
-        {/* ── Left ear wiggle overlay ── */}
-        <AnimatedG
-          style={{
-            transform: [
-              { translateX: earLx },
-              { translateY: earLy },
-              { rotate: earLRotate.interpolate({ inputRange: [-15, 15], outputRange: ["-15deg", "15deg"] }) },
-              { translateX: -earLx },
-              { translateY: -earLy },
-            ],
-          }}
-        >
-          <Path
-            d={`M ${earLx - earSz} ${earLy + earSz} L ${earLx} ${earLy - earSz * 0.6} L ${earLx + earSz} ${earLy + earSz * 0.2} Z`}
-            fill="#d8d4c8"
-            stroke="#555"
-            strokeWidth={1}
-          />
-          {/* Inner ear pink */}
-          <Path
-            d={`M ${earLx - earSz * 0.5} ${earLy + earSz * 0.5} L ${earLx} ${earLy - earSz * 0.1} L ${earLx + earSz * 0.5} ${earLy + earSz * 0.25} Z`}
-            fill="#f0b8b8"
-          />
-        </AnimatedG>
-
-        {/* ── Right ear wiggle overlay ── */}
-        <AnimatedG
-          style={{
-            transform: [
-              { translateX: earRx },
-              { translateY: earRy },
-              { rotate: earRRotate.interpolate({ inputRange: [-15, 15], outputRange: ["-15deg", "15deg"] }) },
-              { translateX: -earRx },
-              { translateY: -earRy },
-            ],
-          }}
-        >
-          <Path
-            d={`M ${earRx - earSz} ${earRy + earSz * 0.2} L ${earRx} ${earRy - earSz * 0.6} L ${earRx + earSz} ${earRy + earSz} Z`}
-            fill="#d8d4c8"
-            stroke="#555"
-            strokeWidth={1}
-          />
-          <Path
-            d={`M ${earRx - earSz * 0.5} ${earRy + earSz * 0.25} L ${earRx} ${earRy - earSz * 0.1} L ${earRx + earSz * 0.5} ${earRy + earSz * 0.5} Z`}
-            fill="#f0b8b8"
-          />
-        </AnimatedG>
-
-        {/* ── Eye blink overlay (anime-style closed arcs) ── */}
-        <AnimatedG style={{ opacity: blinkOpacity }}>
-          {/* Left eye fill (hides open eye) */}
-          <Ellipse cx={lx} cy={ly} rx={ew + 2} ry={eh + 6} fill="#dddad0" />
-          {/* Left closed-eye arc */}
-          <Path
-            d={makeEyeArc(lx, ly + 1)}
-            stroke="#3a3530"
-            strokeWidth={eh * 1.4}
+            d={arcL}
+            stroke="#2a2420"
+            strokeWidth={ery * 1.6}
             strokeLinecap="round"
             fill="none"
           />
 
-          {/* Right eye fill */}
-          <Ellipse cx={rx} cy={ry} rx={ew + 2} ry={eh + 6} fill="#dddad0" />
-          {/* Right closed-eye arc */}
+          {/* Right eye eyelid */}
+          <Ellipse cx={rx} cy={ry} rx={erx + 1} ry={ery + 4} fill={lidFill} />
           <Path
-            d={makeEyeArc(rx, ry + 1)}
-            stroke="#3a3530"
-            strokeWidth={eh * 1.4}
+            d={arcR}
+            stroke="#2a2420"
+            strokeWidth={ery * 1.6}
             strokeLinecap="round"
             fill="none"
           />
-        </AnimatedG>
-      </Svg>
-    </View>
+        </Svg>
+      </Animated.View>
+    </Animated.View>
   );
 }

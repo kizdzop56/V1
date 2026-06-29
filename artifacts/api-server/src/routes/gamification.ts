@@ -132,7 +132,7 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
     earlyBirdSessions,
     unlockedAchievementIds: dbAchievements.map(a => a.achievementId),
     totalTimeMinutes: userData.totalTimeMinutes,
-    mascotName: userData.mascotName ?? "Оливер",
+    mascotName: (userData.mascotName && userData.mascotName !== "Оливер") ? userData.mascotName : "Снежа",
   });
 });
 

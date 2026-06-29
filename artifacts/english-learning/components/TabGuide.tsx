@@ -59,7 +59,7 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     title: "Календарь",
     description:
       "Все занятия и задания по дням. Ты всегда будешь знать, что нужно сдать и когда — никаких неожиданностей и пропущенных дедлайнов!",
-    mascotPose: "happy",
+    mascotPose: "sit",
     accentColor: "#10b981",
   },
   profile: {
@@ -170,7 +170,21 @@ export function TabGuide({
               { backgroundColor: accent + "20", borderColor: accent + "40" },
             ]}
           >
-            <Text style={[styles.nameText, { color: accent }]}>{mascotName}</Text>
+            <Text
+              style={[
+                styles.nameText,
+                {
+                  color: "#8b5cf6",
+                  // @ts-ignore web gradient text
+                  backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              ]}
+            >
+              {mascotName}
+            </Text>
           </View>
 
           {/* ── Speech bubble ── */}

@@ -114,3 +114,15 @@ id = "wv-EXRMynpTif1uErxDDS"
 uri = "file://artifacts/english-learning/assets/images/mascot_laugh.png"
 type = "image"
 title = "chibi snow leopard mascot laughing"
+
+[[generated]]
+id = "PvTNeX9DUpKsYF7JbebQW"
+uri = "file://artifacts/english-learning/assets/images/mascot_sit.png"
+type = "image"
+title = "chibi snow leopard mascot sitting"
+
+[[generated]]
+id = "3X0h6OkvOuLZbPrybVCht"
+uri = "file://artifacts/english-learning/assets/images/mascot_lie.png"
+type = "image"
+title = "chibi snow leopard mascot lying down"

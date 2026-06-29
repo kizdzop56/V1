@@ -40,7 +40,7 @@ const TOUR_STEPS: TourStep[] = [
     message:
       "Говори по-английски с AI! Он исправит ошибки, объяснит грамматику и поможет улучшить произношение. Это как живой разговор!",
     emoji: "🎤",
-    pose: "think",
+    pose: "sit",
     accentColor: "#06b6d4",
   },
   {
@@ -70,9 +70,9 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Ты готов! 🎉",
     message:
-      "Всё, что нужно — знаешь! Начни с первого задания и набери как можно больше XP. Я всегда буду рядом. Удачи! 🚀",
+      "Всё, что нужно — знаешь! Начни с первого задания и набери как можно больше XP. Я всегда буду рядом. Отдыхай и учись! 🚀",
     emoji: "🎉",
-    pose: "celebrate",
+    pose: "lie",
     accentColor: "#a855f7",
   },
 ];
@@ -139,8 +139,10 @@ export function OnboardingTour({
   const borderColor = accent;
 
   const cardW   = Math.min(SCREEN_W - 40, 420);
-  const mascotW = cardW * 0.55;
-  const mascotH = mascotW * (16 / 9);
+  // lie pose is landscape (16:9); all others are portrait (9:16)
+  const isLandscape = current.pose === "lie";
+  const mascotW = isLandscape ? cardW * 0.88 : cardW * 0.55;
+  const mascotH = isLandscape ? Math.round(mascotW * 9 / 16) : Math.round(mascotW * 16 / 9);
 
   return (
     <Modal
@@ -165,8 +167,22 @@ export function OnboardingTour({
             />
           </View>
 
-          {/* Name label */}
-          <Text style={[styles.nameLabel, { color: accent }]}>{mascotName}</Text>
+          {/* Name label — gradient purple */}
+          <Text
+            style={[
+              styles.nameLabel,
+              {
+                color: "#8b5cf6",
+                // @ts-ignore web gradient text
+                backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              },
+            ]}
+          >
+            {mascotName}
+          </Text>
 
           {/* Step content */}
           <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
