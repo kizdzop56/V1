@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform,
@@ -76,6 +76,7 @@ export default function FriendProfileScreen() {
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus>("loading");
   const [friendshipId, setFriendshipId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const onlinePollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isStudent = user?.role === "student";
 
@@ -95,6 +96,15 @@ export default function FriendProfileScreen() {
     }
   }, [friendId]);
 
+  // Lightweight poll — only refreshes isOnline, no full reload
+  const pollOnlineStatus = useCallback(async () => {
+    if (!friendId) return;
+    try {
+      const data = await apiFetch(`/api/users/${friendId}`);
+      setProfile(prev => prev ? { ...prev, isOnline: data.isOnline, lastSeenAt: data.lastSeenAt } : prev);
+    } catch { /* silent */ }
+  }, [friendId]);
+
   const loadFriendStatus = useCallback(async () => {
     if (!friendId || !isStudent) return;
     try {
@@ -109,7 +119,12 @@ export default function FriendProfileScreen() {
   useEffect(() => {
     loadProfile();
     loadFriendStatus();
-  }, [loadProfile, loadFriendStatus]);
+    // Poll online status every 30s so it stays up-to-date
+    onlinePollerRef.current = setInterval(pollOnlineStatus, 30_000);
+    return () => {
+      if (onlinePollerRef.current) clearInterval(onlinePollerRef.current);
+    };
+  }, [loadProfile, loadFriendStatus, pollOnlineStatus]);
 
   const handleSendRequest = async () => {
     setActionLoading(true);

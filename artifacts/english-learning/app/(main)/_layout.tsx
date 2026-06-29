@@ -56,10 +56,10 @@ function StudentTimerManager() {
       startNow();
     });
 
-    // Heartbeat every 60s
+    // Heartbeat every 60s — only fires while session is active
     heartbeatRef.current = setInterval(() => {
       const token = tokenRef.current;
-      if (token) {
+      if (token && sessionActiveRef.current) {
         fetch(`${BASE_URL}/api/users/ping`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

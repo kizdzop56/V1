@@ -244,15 +244,10 @@ export function DailyGoalBar({
                 : goalType.formatRemaining(remaining, target)}
             </Text>
           </View>
-          <View style={{ alignItems: "flex-end", gap: 4 }}>
-            <Text style={[styles.pctText, { color: barColor }]}>
-              {Math.round(pct * 100)}%
+          <View style={[styles.rewardBadge, { backgroundColor: bgColor }]}>
+            <Text style={[styles.rewardText, { color: done ? "#10b981" : goalType.color }]}>
+              {goalType.reward}
             </Text>
-            <View style={[styles.rewardBadge, { backgroundColor: bgColor }]}>
-              <Text style={[styles.rewardText, { color: done ? "#10b981" : goalType.color }]}>
-                {goalType.reward}
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -280,18 +275,11 @@ export function DailyGoalBar({
         </View>
 
         {/* Sub row */}
-        <View style={styles.bottomRow}>
-          <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-            {goalType.isTimeType
-              ? "💡 Нажми, чтобы изменить цель"
-              : `📅 Завтра будет другой тип цели`}
+        {goalType.isTimeType && (
+          <Text style={[styles.hint, { color: colors.mutedForeground, marginTop: 8 }]}>
+            💡 Нажми, чтобы изменить цель
           </Text>
-          <View style={[styles.progressPill, { backgroundColor: bgColor }]}>
-            <Text style={[styles.progressPillText, { color: done ? "#10b981" : goalType.color }]}>
-              {progress} / {target}
-            </Text>
-          </View>
-        </View>
+        )}
       </TouchableOpacity>
 
       {/* Goal Picker Modal — only for time goals */}
@@ -357,7 +345,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 14, fontWeight: "700" },
   sub: { fontSize: 12, marginTop: 2 },
-  pctText: { fontSize: 18, fontWeight: "800" },
   rewardBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   rewardText: { fontSize: 11, fontWeight: "700" },
   trackBg: { height: 10, borderRadius: 5, overflow: "hidden", position: "relative" },
@@ -366,14 +353,7 @@ const styles = StyleSheet.create({
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: "#fff",
   },
-  bottomRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8,
-  },
   hint: { fontSize: 11 },
-  progressPill: {
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20,
-  },
-  progressPillText: { fontSize: 11, fontWeight: "700" },
   overlay: { flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" },
   pickerSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 32 },
   pickerTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
