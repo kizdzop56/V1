@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Platform, Image as RNImage } from "react-native";
+import { Platform } from "react-native";
 import { Image as ExpoImage } from "expo-image";
+import { Asset } from "expo-asset";
 import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 // Transparent animated WebP — cropped tight to the leopard, full quality.
@@ -33,7 +34,7 @@ export function WavingMascot({ width, height }: Props) {
   }
 
   if (Platform.OS === "web") {
-    const uri = RNImage.resolveAssetSource(WAVE_WEBP).uri;
+    const uri = Asset.fromModule(WAVE_WEBP).uri;
     return React.createElement("img", {
       src: uri,
       width,
