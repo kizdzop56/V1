@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, Animated, StyleSheet } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import { View, Text, Animated, StyleSheet, Easing } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { XP_LEVELS, getXpProgress, type XpLevel } from "@/constants/xpLevels";
 
@@ -11,15 +11,52 @@ interface XpLevelBarProps {
 export function XpLevelBar({ totalPoints, compact = false }: XpLevelBarProps) {
   const colors = useColors();
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const countAnim = useRef(new Animated.Value(0)).current;
+  const [displayPoints, setDisplayPoints] = useState(0);
+
   const { current, next, progressPercent } = getXpProgress(totalPoints);
+  const isNearLevelUp = progressPercent >= 80 && !!next;
 
   useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: progressPercent / 100,
-      duration: 900,
+      duration: 1200,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [progressPercent, progressAnim]);
+
+    Animated.timing(countAnim, {
+      toValue: totalPoints,
+      duration: 1000,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    }).start();
+
+    const id = countAnim.addListener(({ value }) => setDisplayPoints(Math.floor(value)));
+    return () => countAnim.removeListener(id);
+  }, [totalPoints, progressPercent]);
+
+  useEffect(() => {
+    if (isNearLevelUp) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
+          Animated.timing(glowAnim, { toValue: 0.3, duration: 1000, useNativeDriver: false }),
+        ])
+      ).start();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.06, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      glowAnim.setValue(0);
+      pulseAnim.setValue(1);
+    }
+  }, [isNearLevelUp]);
 
   if (compact) {
     return (
@@ -32,7 +69,7 @@ export function XpLevelBar({ totalPoints, compact = false }: XpLevelBarProps) {
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
             <Text style={[styles.compactTitle, { color: colors.foreground }]}>{current.title}</Text>
             <Text style={[styles.compactXp, { color: colors.mutedForeground }]}>
-              {totalPoints} / {next?.xpRequired ?? "MAX"} XP
+              {displayPoints} / {next?.xpRequired ?? "MAX"} XP
             </Text>
           </View>
           <View style={[styles.track, { backgroundColor: colors.muted }]}>
@@ -51,49 +88,104 @@ export function XpLevelBar({ totalPoints, compact = false }: XpLevelBarProps) {
     );
   }
 
+  const xpToNext = next ? next.xpRequired - totalPoints : 0;
+  const xpInLevel = next
+    ? totalPoints - current.xpRequired
+    : 0;
+  const levelRange = next ? next.xpRequired - current.xpRequired : 1;
+
   return (
-    <View style={[styles.container, { backgroundColor: current.bgColor + "80", borderColor: current.color + "40", borderWidth: 1, borderRadius: 16, padding: 16 }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          backgroundColor: current.bgColor + "99",
+          borderColor: isNearLevelUp
+            ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: [current.color + "40", current.color + "cc"] })
+            : current.color + "40",
+          borderWidth: 1.5,
+          borderRadius: 20,
+          padding: 16,
+          transform: [{ scale: pulseAnim }],
+        },
+      ]}
+    >
+      {/* Top row: avatar badge + level info */}
       <View style={styles.topRow}>
-        <View style={[styles.levelBadge, { backgroundColor: current.color }]}>
+        <View style={[styles.levelCircle, { backgroundColor: current.color }]}>
           <Text style={styles.levelEmoji}>{current.emoji}</Text>
-          <Text style={styles.levelNum}>Ур. {current.level}</Text>
+          <Text style={styles.levelNumText}>{current.level}</Text>
         </View>
-        <View style={{ flex: 1, paddingLeft: 12 }}>
-          <Text style={[styles.titleText, { color: current.color }]}>{current.title}</Text>
-          <Text style={[styles.xpText, { color: colors.mutedForeground }]}>
-            {totalPoints} XP
-            {next ? ` · до ур.${next.level}: ${next.xpRequired - totalPoints} XP` : " · Максимальный уровень!"}
+
+        <View style={{ flex: 1, paddingHorizontal: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={[styles.titleText, { color: current.color }]}>{current.title}</Text>
+            {isNearLevelUp && (
+              <View style={[styles.nearLvlBadge, { backgroundColor: current.color }]}>
+                <Text style={styles.nearLvlText}>Почти!</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.xpSubText, { color: colors.mutedForeground }]}>
+            {next
+              ? `До ${next.emoji} ${next.title}: ${xpToNext} XP`
+              : "Максимальный уровень! 🏆"}
           </Text>
         </View>
-        <View style={[styles.pctBadge, { backgroundColor: current.color + "20" }]}>
-          <Text style={[styles.pctText, { color: current.color }]}>{progressPercent}%</Text>
+
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={[styles.bigPoints, { color: current.color }]}>{displayPoints}</Text>
+          <Text style={[styles.xpLabel, { color: colors.mutedForeground }]}>XP</Text>
         </View>
       </View>
 
-      <View style={[styles.track, { backgroundColor: colors.muted, marginTop: 10, height: 10 }]}>
+      {/* XP bar */}
+      <View style={[styles.trackBg, { backgroundColor: colors.muted, marginTop: 14 }]}>
         <Animated.View
           style={[
-            styles.fill,
+            styles.trackFill,
             {
               backgroundColor: current.color,
               width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
-              height: 10, borderRadius: 5,
             },
           ]}
         />
+        {/* Animated glow overlay when near level up */}
+        {isNearLevelUp && (
+          <Animated.View
+            style={[
+              styles.glowOverlay,
+              {
+                opacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }),
+                backgroundColor: "#fff",
+              },
+            ]}
+          />
+        )}
       </View>
 
+      {/* Progress labels */}
+      <View style={styles.progressLabels}>
+        <Text style={[styles.labelText, { color: colors.mutedForeground }]}>
+          {xpInLevel} / {levelRange} XP
+        </Text>
+        <Text style={[styles.pctBig, { color: current.color }]}>
+          {progressPercent}%
+        </Text>
+      </View>
+
+      {/* Next level reward */}
       {next && (
-        <View style={styles.nextRow}>
-          <Text style={[styles.nextText, { color: colors.mutedForeground }]}>
-            Следующий: {next.emoji} {next.title}
+        <View style={[styles.nextRewardRow, { backgroundColor: current.bgColor, borderColor: current.color + "30" }]}>
+          <Text style={[styles.nextRewardLabel, { color: colors.mutedForeground }]}>
+            Следующий уровень:
           </Text>
-          <Text style={[styles.nextReward, { color: current.color }]}>
-            🎁 {next.reward}
+          <Text style={[styles.nextRewardValue, { color: current.color }]}>
+            {next.emoji} {next.title} · 🎁 {next.reward}
           </Text>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -132,21 +224,40 @@ export function LevelBadgesShowcase({ currentLevel }: { currentLevel: number }) 
 const styles = StyleSheet.create({
   container: {},
   topRow: { flexDirection: "row", alignItems: "center" },
-  levelBadge: {
-    width: 52, height: 52, borderRadius: 26,
+  levelCircle: {
+    width: 56, height: 56, borderRadius: 28,
     justifyContent: "center", alignItems: "center",
+    shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
   levelEmoji: { fontSize: 22 },
-  levelNum: { fontSize: 10, color: "#fff", fontWeight: "800", marginTop: -2 },
+  levelNumText: { fontSize: 11, color: "#fff", fontWeight: "900", marginTop: -2 },
   titleText: { fontSize: 16, fontWeight: "800" },
-  xpText: { fontSize: 12, marginTop: 2 },
-  pctBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  pctText: { fontSize: 14, fontWeight: "800" },
-  track: { height: 8, borderRadius: 4, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: 4 },
-  nextRow: { marginTop: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  nextText: { fontSize: 12 },
-  nextReward: { fontSize: 12, fontWeight: "700" },
+  xpSubText: { fontSize: 12, marginTop: 3 },
+  nearLvlBadge: {
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+  },
+  nearLvlText: { fontSize: 10, color: "#fff", fontWeight: "800" },
+  bigPoints: { fontSize: 24, fontWeight: "900", lineHeight: 26 },
+  xpLabel: { fontSize: 11, fontWeight: "600", marginTop: 1 },
+  trackBg: {
+    height: 12, borderRadius: 6, overflow: "hidden", position: "relative",
+  },
+  trackFill: { height: "100%", borderRadius: 6 },
+  glowOverlay: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+  },
+  progressLabels: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6,
+  },
+  labelText: { fontSize: 11 },
+  pctBig: { fontSize: 13, fontWeight: "800" },
+  nextRewardRow: {
+    marginTop: 12, borderRadius: 10, borderWidth: 1,
+    padding: 10, gap: 2,
+  },
+  nextRewardLabel: { fontSize: 11 },
+  nextRewardValue: { fontSize: 13, fontWeight: "700" },
   compactContainer: { flexDirection: "row", alignItems: "center", gap: 10 },
   compactBadge: {
     flexDirection: "row", alignItems: "center", gap: 4,
@@ -156,6 +267,8 @@ const styles = StyleSheet.create({
   compactLevel: { fontSize: 12, fontWeight: "700" },
   compactTitle: { fontSize: 13, fontWeight: "700" },
   compactXp: { fontSize: 11 },
+  track: { height: 8, borderRadius: 4, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 4 },
   badgesContainer: { marginBottom: 16 },
   badgesTitle: {
     fontSize: 12, fontWeight: "700", marginBottom: 10,

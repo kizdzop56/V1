@@ -30,6 +30,8 @@ export interface GamificationStats {
   loginStreak: number;
   lastLoginDate: string | null;
   todayMinutes: number;
+  todayCompletions: number;
+  todayVoiceSessions: number;
   voiceChatSessions: number;
   perfectScoreCount: number;
   completedAssignments: number;

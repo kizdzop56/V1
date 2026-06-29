@@ -100,6 +100,23 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
 
   const xpLevel = computeLevel(userData.totalPoints);
 
+  // Today's completions and voice sessions
+  let todayCompletions = 0;
+  let todayVoiceSessions = 0;
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todaySubs = await db.select({ count: sql<number>`count(*)::int` })
+      .from(submissionsTable)
+      .where(and(eq(submissionsTable.studentId, userId), gte(submissionsTable.createdAt, todayStart)));
+    todayCompletions = todaySubs[0]?.count ?? 0;
+
+    const todayVoice = await db.select({ count: sql<number>`count(*)::int` })
+      .from(voiceChatSessionsTable)
+      .where(and(eq(voiceChatSessionsTable.studentId, userId), gte(voiceChatSessionsTable.createdAt, todayStart)));
+    todayVoiceSessions = todayVoice[0]?.count ?? 0;
+  } catch { /* silent */ }
+
   res.json({
     totalPoints: userData.totalPoints,
     xpLevel,
@@ -107,6 +124,8 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
     loginStreak: userData.loginStreak,
     lastLoginDate: userData.lastLoginDate,
     todayMinutes,
+    todayCompletions,
+    todayVoiceSessions,
     voiceChatSessions,
     perfectScoreCount,
     completedAssignments,

@@ -754,11 +754,20 @@ export default function ProfileScreen() {
       quality: 0.7,
     });
     if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    // Show local preview immediately for instant feedback
+    setAvatarUrl(asset.uri);
     setSaving(true);
     try {
-      const asset = result.assets[0];
       const formData = new FormData();
-      formData.append("file", { uri: asset.uri, type: "image/jpeg", name: "avatar.jpg" } as any);
+      if (Platform.OS === "web") {
+        // On web, fetch the blob from the data/blob URL first
+        const blobRes = await fetch(asset.uri);
+        const blob = await blobRes.blob();
+        formData.append("file", blob, "avatar.jpg");
+      } else {
+        formData.append("file", { uri: asset.uri, type: "image/jpeg", name: "avatar.jpg" } as any);
+      }
       const token = await authStorage.getItem("auth_token");
       const uploadRes = await fetch(`${baseUrl}/api/upload/image`, {
         method: "POST",
@@ -767,9 +776,11 @@ export default function ProfileScreen() {
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
       const { url } = await uploadRes.json();
-      setAvatarUrl(url);
+      setAvatarUrl(url + "?_t=" + Date.now());
       await saveProfile({ avatarUrl: url });
-    } catch { /* silent */ } finally {
+    } catch {
+      // Keep the local preview so user sees something even if upload failed
+    } finally {
       setSaving(false);
     }
   };
@@ -1201,6 +1212,8 @@ export default function ProfileScreen() {
                 <DailyGoalBar
                   todayMinutes={gamStats.todayMinutes}
                   goalMinutes={gamStats.dailyGoalMinutes}
+                  todayCompletions={gamStats.todayCompletions ?? 0}
+                  todayVoiceSessions={gamStats.todayVoiceSessions ?? 0}
                 />
               </View>
             )}
