@@ -948,12 +948,12 @@ export default function ProfileScreen() {
         visible={mascotVisible}
         mood={mascotMsg.mood}
         message={mascotMsg.message}
-        mascotName={gamStats?.mascotName ?? "Оливер"}
+        mascotName={gamStats?.mascotName ?? "Снежа"}
         onClose={() => setMascotVisible(false)}
       />
       <MascotNamePicker
         visible={mascotNamePickerOpen}
-        currentName={gamStats?.mascotName ?? "Оливер"}
+        currentName={gamStats?.mascotName ?? "Снежа"}
         onSave={(name) => saveMascotName(name)}
         onClose={() => setMascotNamePickerOpen(false)}
       />
@@ -1294,7 +1294,7 @@ export default function ProfileScreen() {
                   <Text style={{ fontSize: 30 }}>🦉</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.levelTitle, { color: "#6366f1" }]}>{gamStats?.mascotName ?? "Оливер"}</Text>
+                  <Text style={[s.levelTitle, { color: "#6366f1" }]}>{gamStats?.mascotName ?? "Снежа"}</Text>
                   <Text style={[s.levelSub, { color: colors.mutedForeground }]}>Твой помощник в учёбе</Text>
                 </View>
                 <View style={{ flexDirection: "row", gap: 8 }}>
@@ -1409,7 +1409,7 @@ export default function ProfileScreen() {
       {/* Floating mascot button for students */}
       {isStudent && (
         <FloatingMascot
-          mascotName={gamStats?.mascotName ?? "Оливер"}
+          mascotName={gamStats?.mascotName ?? "Снежа"}
           message={getMascotMessage("idle").message}
           mood="wave"
         />

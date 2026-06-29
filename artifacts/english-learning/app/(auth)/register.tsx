@@ -8,6 +8,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth, LEVEL_META } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import authStorage from "@/utils/authStorage";
 
 type Role = "student" | "parent" | "teacher";
 type Step = "role" | "details" | "dob";
@@ -254,6 +255,7 @@ export default function RegisterScreen() {
         return;
       }
       await login(data.token, data.user);
+      await authStorage.setItem("onboarding_tour_pending", "1");
       router.replace("/(main)/assignments");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");

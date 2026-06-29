@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, TextInput,
+  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, TextInput, Image,
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
@@ -15,7 +15,8 @@ const MOOD_EMOJIS: Record<MascotMood, string> = {
   sleep: "😴",
 };
 
-const MASCOT_BODY = "🦉";
+const MASCOT_IMAGE = require("../assets/images/mascot.jpeg");
+const MASCOT_CELEBRATE = require("../assets/images/mascot_celebrate.jpeg");
 
 interface MascotProps {
   visible: boolean;
@@ -28,7 +29,7 @@ interface MascotProps {
 }
 
 export function MascotModal({
-  visible, mood = "happy", message, onClose, mascotName = "Оливер",
+  visible, mood = "happy", message, onClose, mascotName = "Снежа",
   actionLabel, onAction,
 }: MascotProps) {
   const colors = useColors();
@@ -64,29 +65,22 @@ export function MascotModal({
 
   if (!visible) return null;
 
-  const bgColor = mood === "celebrate" ? "#fef3c7" : mood === "sad" ? "#fee2e2" : "#ede9fe";
-  const borderColor = mood === "celebrate" ? "#f59e0b" : mood === "sad" ? "#ef4444" : "#8b5cf6";
+  const bgColor = mood === "celebrate" ? "#f3e8ff" : mood === "sad" ? "#fee2e2" : "#ede9fe";
+  const borderColor = mood === "celebrate" ? "#a855f7" : mood === "sad" ? "#ef4444" : "#8b5cf6";
+  const mascotSrc = mood === "celebrate" ? MASCOT_CELEBRATE : MASCOT_IMAGE;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <Animated.View
-          style={[
-            styles.container,
-            { backgroundColor: colors.card, transform: [{ scale: scaleAnim }] },
-          ]}
+          style={[styles.container, { backgroundColor: colors.card, transform: [{ scale: scaleAnim }] }]}
         >
           <TouchableOpacity activeOpacity={1}>
-            {/* Mascot Character */}
             <View style={styles.mascotArea}>
               <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-                <View style={[styles.mascotCircle, { backgroundColor: bgColor, borderColor }]}>
-                  <Text style={styles.mascotBody}>{MASCOT_BODY}</Text>
-                  <View style={styles.moodBadge}>
+                <View style={[styles.mascotCircle, { borderColor }]}>
+                  <Image source={mascotSrc} style={styles.mascotImage} />
+                  <View style={[styles.moodBadge, { backgroundColor: bgColor }]}>
                     <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood]}</Text>
                   </View>
                 </View>
@@ -94,13 +88,11 @@ export function MascotModal({
               <Text style={[styles.mascotName, { color: colors.mutedForeground }]}>{mascotName}</Text>
             </View>
 
-            {/* Speech Bubble */}
             <View style={[styles.bubble, { backgroundColor: bgColor, borderColor }]}>
               <View style={[styles.bubbleTail, { borderBottomColor: bgColor }]} />
               <Text style={[styles.messageText, { color: "#1e293b" }]}>{message}</Text>
             </View>
 
-            {/* Actions */}
             <View style={styles.actions}>
               {actionLabel && onAction && (
                 <TouchableOpacity
@@ -132,7 +124,7 @@ interface FloatingMascotProps {
   onPress?: () => void;
 }
 
-export function FloatingMascot({ mascotName = "Оливер", message, mood = "wave", onPress }: FloatingMascotProps) {
+export function FloatingMascot({ mascotName = "Снежа", message, mood = "wave", onPress }: FloatingMascotProps) {
   const [showModal, setShowModal] = useState(false);
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -162,7 +154,7 @@ export function FloatingMascot({ mascotName = "Оливер", message, mood = "w
       <TouchableOpacity onPress={handlePress} activeOpacity={0.9} style={styles.floatingBtn}>
         <Animated.View style={{ transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }}>
           <View style={styles.floatingCircle}>
-            <Text style={styles.floatingEmoji}>{MASCOT_BODY}</Text>
+            <Image source={MASCOT_IMAGE} style={styles.floatingImage} />
           </View>
           <View style={styles.floatingMood}>
             <Text style={{ fontSize: 12 }}>{MOOD_EMOJIS[mood]}</Text>
@@ -200,7 +192,9 @@ export function MascotNamePicker({ visible, currentName, onSave, onClose }: Masc
         <View style={[styles.namePickerContainer, { backgroundColor: colors.card }]}>
           <Text style={[styles.namePickerTitle, { color: colors.foreground }]}>Имя маскота</Text>
           <View style={{ alignItems: "center", marginVertical: 16 }}>
-            <Text style={{ fontSize: 64 }}>{MASCOT_BODY}</Text>
+            <View style={[styles.mascotCircle, { borderColor: "#8b5cf6" }]}>
+              <Image source={MASCOT_IMAGE} style={styles.mascotImage} />
+            </View>
           </View>
           <TextInput
             style={[styles.nameInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
@@ -284,22 +278,21 @@ const styles = StyleSheet.create({
     width: "100%", borderRadius: 24, padding: 24,
     shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20, elevation: 8,
   },
-  mascotArea: {
-    alignItems: "center", marginBottom: 8,
-  },
+  mascotArea: { alignItems: "center", marginBottom: 8 },
   mascotCircle: {
-    width: 88, height: 88, borderRadius: 44,
-    borderWidth: 3, justifyContent: "center", alignItems: "center",
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 3, overflow: "hidden",
+    shadowColor: "#8b5cf6", shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
-  mascotBody: { fontSize: 44 },
+  mascotImage: { width: "100%", height: "100%", resizeMode: "cover" },
   moodBadge: {
     position: "absolute", bottom: -4, right: -4,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: "#fff", justifyContent: "center", alignItems: "center",
+    width: 30, height: 30, borderRadius: 15,
+    justifyContent: "center", alignItems: "center",
     shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
   },
-  moodEmoji: { fontSize: 16 },
-  mascotName: { fontSize: 12, fontWeight: "600", marginTop: 6 },
+  moodEmoji: { fontSize: 17 },
+  mascotName: { fontSize: 12, fontWeight: "600", marginTop: 8 },
   bubble: {
     borderRadius: 16, borderWidth: 1.5, padding: 16, marginTop: 16, position: "relative",
   },
@@ -323,20 +316,17 @@ const styles = StyleSheet.create({
   closeBtnText: { fontWeight: "600", fontSize: 15 },
   floatingBtn: { position: "absolute", bottom: 90, right: 16, zIndex: 100 },
   floatingCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: "#ede9fe", justifyContent: "center", alignItems: "center",
-    shadowColor: "#6366f1", shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-    borderWidth: 2, borderColor: "#8b5cf6",
+    width: 58, height: 58, borderRadius: 29, overflow: "hidden",
+    shadowColor: "#8b5cf6", shadowOpacity: 0.35, shadowRadius: 8, elevation: 6,
+    borderWidth: 2.5, borderColor: "#8b5cf6",
   },
-  floatingEmoji: { fontSize: 28 },
+  floatingImage: { width: "100%", height: "100%", resizeMode: "cover" },
   floatingMood: {
-    position: "absolute", top: -2, right: -2, width: 20, height: 20,
-    borderRadius: 10, backgroundColor: "#fff", justifyContent: "center", alignItems: "center",
+    position: "absolute", top: -2, right: -2, width: 22, height: 22,
+    borderRadius: 11, backgroundColor: "#fff", justifyContent: "center", alignItems: "center",
     shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, elevation: 2,
   },
-  namePickerContainer: {
-    width: "100%", borderRadius: 24, padding: 24,
-  },
+  namePickerContainer: { width: "100%", borderRadius: 24, padding: 24 },
   namePickerTitle: { fontSize: 18, fontWeight: "800", textAlign: "center" },
   nameInput: {
     borderWidth: 1, borderRadius: 12, padding: 12,

@@ -13,6 +13,7 @@ import type { Assignment } from "@workspace/api-client-react";
 import authStorage from "@/utils/authStorage";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
 import { useGamification } from "@/hooks/useGamification";
+import { OnboardingTour } from "@/components/OnboardingTour";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -244,6 +245,7 @@ export default function AssignmentsScreen() {
   const levelMeta = user?.knowledgeLevel ? LEVEL_META[user.knowledgeLevel] : null;
 
   const [refreshing, setRefreshing] = useState(false);
+  const [tourVisible, setTourVisible] = useState(false);
 
   // Gamification: daily goal bar
   const { stats: gamStats, loadStats, updateDailyGoal } = useGamification();
@@ -251,6 +253,16 @@ export default function AssignmentsScreen() {
   useFocusEffect(useCallback(() => {
     if (isStudent) loadStats();
   }, [isStudent, loadStats]));
+
+  useEffect(() => {
+    if (!isStudent) return;
+    authStorage.getItem("onboarding_tour_pending").then((val) => {
+      if (val === "1") {
+        authStorage.removeItem("onboarding_tour_pending");
+        setTimeout(() => setTourVisible(true), 600);
+      }
+    });
+  }, [isStudent]);
 
   const loadMyTasks = useCallback(async () => {
     if (!isStudent) return;
@@ -827,6 +839,12 @@ export default function AssignmentsScreen() {
         destructive
         onConfirm={() => { if (confirmDelete) { handleDeleteAssignment(confirmDelete.id); setConfirmDelete(null); } }}
         onCancel={() => setConfirmDelete(null)}
+      />
+
+      <OnboardingTour
+        visible={tourVisible}
+        mascotName={gamStats?.mascotName ?? "Снежа"}
+        onFinish={() => setTourVisible(false)}
       />
     </View>
   );
