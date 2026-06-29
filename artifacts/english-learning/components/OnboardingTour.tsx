@@ -123,7 +123,6 @@ export function OnboardingTour({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "#000000b0",
     justifyContent: "center",
     alignItems: "center",
     padding: PAD,
