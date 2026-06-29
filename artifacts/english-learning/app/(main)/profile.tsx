@@ -284,8 +284,13 @@ function FriendsModal({
   };
 
   const removeOrDecline = async (id: number) => {
-    await apiFetch(`/api/connections/friends/${id}`, { method: "DELETE" });
-    setFriends((prev) => prev.filter((f) => f.friendshipId !== id));
+    try {
+      await apiFetch(`/api/connections/friends/${id}`, { method: "DELETE" });
+      setFriends((prev) => prev.filter((f) => f.friendshipId !== id));
+    } catch (e: any) {
+      // If already removed or not found — still remove from local list
+      setFriends((prev) => prev.filter((f) => f.friendshipId !== id));
+    }
   };
 
   const accepted = friends.filter((f) => f.status === "accepted");

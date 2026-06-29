@@ -429,7 +429,7 @@ router.get("/connections/friends", requireAuth, async (req, res) => {
     lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(inArray(usersTable.id, otherIds));
 
-  const ONLINE_MS = 3 * 60 * 1000;
+  const ONLINE_MS = 90 * 1000; // 90s — must match users.ts
   const userMap = Object.fromEntries(users.map((u) => [u.id, {
     ...u,
     isOnline: u.lastSeenAt
