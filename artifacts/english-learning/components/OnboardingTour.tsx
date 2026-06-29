@@ -142,13 +142,13 @@ export function OnboardingTour({
   const isLandscape = current.pose === "lie";
   // Mascot floats ABOVE the card — portrait poses are tall so keep them
   // reasonably sized; landscape ("lie") is wide.
-  const mascotW  = isLandscape ? Math.round(cardW * 0.68) : Math.round(cardW * 0.48);
+  const mascotW  = isLandscape ? Math.round(cardW * 0.75) : Math.round(cardW * 0.65);
   const mascotH  = isLandscape
     ? Math.round(mascotW * 9 / 16)
     : Math.round(mascotW * 16 / 9);
-  // How many pixels the mascot's feet overlap into the card top
-  const overlap  = isLandscape ? 24 : Math.round(mascotH * 0.18);
-  const cardTopPad = overlap + 12;
+  // Mascot's lower body overlaps card so no white gap is visible
+  const overlap  = isLandscape ? 32 : Math.round(mascotH * 0.30);
+  const cardTopPad = overlap + 8;
 
   return (
     <Modal
