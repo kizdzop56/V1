@@ -1,22 +1,27 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Image, Dimensions,
+  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { AnimatedMascotImage, type MascotPose } from "@/components/AnimatedMascotImage";
 
-const MASCOT_WAVE = require("../assets/images/mascot_full.png");
-const MASCOT_CELEBRATE = require("../assets/images/mascot_full_celebrate.png");
-const MASCOT_THINK = require("../assets/images/mascot_full_think.png");
 const { width: W, height: H } = Dimensions.get("window");
 
-export type TabGuideTab = "assignments" | "voice-chat" | "leaderboard" | "calendar" | "profile" | "students" | "analysis";
+export type TabGuideTab =
+  | "assignments"
+  | "voice-chat"
+  | "leaderboard"
+  | "calendar"
+  | "profile"
+  | "students"
+  | "analysis";
 
 interface TabGuideInfo {
   tab: TabGuideTab;
   emoji: string;
   title: string;
   description: string;
-  mascotPose: "wave" | "celebrate" | "think";
+  mascotPose: MascotPose;
   accentColor: string;
 }
 
@@ -25,15 +30,17 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     tab: "assignments",
     emoji: "📚",
     title: "Задания",
-    description: "Здесь собраны все задания от твоего учителя: тесты, аудирование, чтение и видео. Выполняй их и зарабатывай XP очки — чем больше заданий, тем выше уровень!",
-    mascotPose: "wave",
+    description:
+      "Здесь собраны все задания от твоего учителя: тесты, аудирование, чтение и видео. Выполняй их и зарабатывай XP очки — чем больше заданий, тем выше уровень!",
+    mascotPose: "point",
     accentColor: "#8b5cf6",
   },
   "voice-chat": {
     tab: "voice-chat",
     emoji: "🎤",
     title: "AI-тьютор",
-    description: "Общайся по-английски с искусственным интеллектом! Он поправит ошибки, объяснит грамматику и поможет улучшить произношение. Это как живая беседа с носителем языка!",
+    description:
+      "Общайся по-английски с искусственным интеллектом! Он поправит ошибки, объяснит грамматику и поможет улучшить произношение. Это как живая беседа с носителем языка!",
     mascotPose: "think",
     accentColor: "#06b6d4",
   },
@@ -41,7 +48,8 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     tab: "leaderboard",
     emoji: "🏆",
     title: "Рейтинг",
-    description: "Смотри, кто набрал больше всего XP за неделю! Соревнуйся с друзьями, поднимайся в топ и получай бонусы за лидерство. Стань лучшим учеником!",
+    description:
+      "Смотри, кто набрал больше всего XP за неделю! Соревнуйся с друзьями, поднимайся в топ и получай бонусы за лидерство. Стань лучшим учеником!",
     mascotPose: "celebrate",
     accentColor: "#f59e0b",
   },
@@ -49,15 +57,17 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     tab: "calendar",
     emoji: "📅",
     title: "Календарь",
-    description: "Все занятия и задания по дням. Ты всегда будешь знать, что нужно сдать и когда — никаких неожиданностей и пропущенных дедлайнов!",
-    mascotPose: "wave",
+    description:
+      "Все занятия и задания по дням. Ты всегда будешь знать, что нужно сдать и когда — никаких неожиданностей и пропущенных дедлайнов!",
+    mascotPose: "happy",
     accentColor: "#10b981",
   },
   profile: {
     tab: "profile",
     emoji: "👤",
     title: "Профиль",
-    description: "Твои достижения, уровень, XP и статистика. Здесь же можно добавить друзей и следить за их прогрессом. Можешь даже переименовать меня — Снежу! 😄",
+    description:
+      "Твои достижения, уровень, XP и статистика. Здесь же можно добавить друзей и следить за их прогрессом. Можешь даже переименовать меня — Снежу! 😄",
     mascotPose: "wave",
     accentColor: "#6366f1",
   },
@@ -65,25 +75,21 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     tab: "students",
     emoji: "👨‍🎓",
     title: "Ученики",
-    description: "Список всех твоих учеников. Смотри их прогресс, уровень и статистику. Назначай задания отдельным ученикам или группам!",
-    mascotPose: "wave",
+    description:
+      "Список всех твоих учеников. Смотри их прогресс, уровень и статистику. Назначай задания отдельным ученикам или группам!",
+    mascotPose: "curious",
     accentColor: "#8b5cf6",
   },
   analysis: {
     tab: "analysis",
     emoji: "📊",
     title: "Анализ",
-    description: "Детальная аналитика по всем ученикам: успеваемость, выполнение заданий и прогресс по времени. Принимай решения на основе данных!",
+    description:
+      "Детальная аналитика по всем ученикам: успеваемость, выполнение заданий и прогресс по времени. Принимай решения на основе данных!",
     mascotPose: "think",
     accentColor: "#6366f1",
   },
 };
-
-function getMascotImage(pose: "wave" | "celebrate" | "think") {
-  if (pose === "celebrate") return MASCOT_CELEBRATE;
-  if (pose === "think") return MASCOT_THINK;
-  return MASCOT_WAVE;
-}
 
 interface TabGuideProps {
   tabName: TabGuideTab | null;
@@ -92,76 +98,96 @@ interface TabGuideProps {
   onClose: () => void;
 }
 
-export function TabGuide({ tabName, visible, mascotName = "Снежа", onClose }: TabGuideProps) {
+export function TabGuide({
+  tabName,
+  visible,
+  mascotName = "Снежа",
+  onClose,
+}: TabGuideProps) {
   const colors = useColors();
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(60)).current;
-  const mascotSlideAnim = useRef(new Animated.Value(80)).current;
+  const scaleAnim  = useRef(new Animated.Value(0)).current;
+  const slideAnim  = useRef(new Animated.Value(60)).current;
+  const mascotSlide = useRef(new Animated.Value(60)).current;
 
   const info = tabName ? TAB_GUIDE_CONTENT[tabName] : null;
 
   useEffect(() => {
     if (visible) {
-      scaleAnim.setValue(0.8);
-      slideAnim.setValue(60);
-      mascotSlideAnim.setValue(80);
+      scaleAnim.setValue(0.85);
+      slideAnim.setValue(50);
+      mascotSlide.setValue(60);
 
       Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 10, useNativeDriver: true }),
-        Animated.spring(mascotSlideAnim, { toValue: 0, tension: 60, friction: 9, useNativeDriver: true }),
+        Animated.spring(scaleAnim,  { toValue: 1, tension: 70,  friction: 8,  useNativeDriver: true }),
+        Animated.spring(slideAnim,  { toValue: 0, tension: 80,  friction: 10, useNativeDriver: true }),
+        Animated.spring(mascotSlide,{ toValue: 0, tension: 55,  friction: 9,  useNativeDriver: true }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, tabName]);
 
   if (!visible || !info) return null;
 
-  const accent = info.accentColor;
-  const mascotSrc = getMascotImage(info.mascotPose);
-  const mascotH = Math.min(H * 0.38, 300);
+  const accent  = info.accentColor;
+  const cardW   = Math.min(W - 40, 380);
+  const mascotW = cardW * 0.62;
+  const mascotH = mascotW * (16 / 9);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <Animated.View
           style={[
             styles.card,
-            {
-              backgroundColor: colors.card,
-              transform: [{ scale: scaleAnim }],
-            },
+            { backgroundColor: colors.card, width: cardW, transform: [{ scale: scaleAnim }] },
           ]}
         >
-          {/* Accent top bar */}
+          {/* ── Accent top bar ── */}
           <View style={[styles.topBar, { backgroundColor: accent + "18" }]}>
-            <Text style={[styles.topBarEmoji]}>{info.emoji}</Text>
+            <Text style={styles.topBarEmoji}>{info.emoji}</Text>
             <Text style={[styles.topBarTitle, { color: accent }]}>{info.title}</Text>
           </View>
 
-          {/* Mascot full body */}
+          {/* ── Animated mascot — slides in once, then stays put ── */}
           <Animated.View
-            style={[styles.mascotWrap, { transform: [{ translateY: mascotSlideAnim }] }]}
+            style={[styles.mascotWrap, { transform: [{ translateY: mascotSlide }] }]}
           >
-            <Image
-              source={mascotSrc}
-              style={[styles.mascotImg, { height: mascotH }]}
-              resizeMode="contain"
+            <AnimatedMascotImage
+              pose={info.mascotPose}
+              width={mascotW}
+              height={mascotH}
             />
           </Animated.View>
 
-          {/* Name badge */}
-          <View style={[styles.nameBadge, { backgroundColor: accent + "20", borderColor: accent + "40" }]}>
+          {/* ── Name badge ── */}
+          <View
+            style={[
+              styles.nameBadge,
+              { backgroundColor: accent + "20", borderColor: accent + "40" },
+            ]}
+          >
             <Text style={[styles.nameText, { color: accent }]}>{mascotName}</Text>
           </View>
 
-          {/* Speech bubble */}
+          {/* ── Speech bubble ── */}
           <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-            <View style={[styles.bubble, { backgroundColor: accent + "12", borderColor: accent + "30" }]}>
-              <Text style={[styles.bubbleText, { color: colors.foreground }]}>{info.description}</Text>
+            <View
+              style={[
+                styles.bubble,
+                { backgroundColor: accent + "12", borderColor: accent + "30" },
+              ]}
+            >
+              <Text style={[styles.bubbleText, { color: colors.foreground }]}>
+                {info.description}
+              </Text>
             </View>
           </Animated.View>
 
-          {/* Button */}
+          {/* ── Confirm button ── */}
           <TouchableOpacity
             style={[styles.btn, { backgroundColor: accent }]}
             onPress={onClose}
@@ -175,8 +201,6 @@ export function TabGuide({ tabName, visible, mascotName = "Снежа", onClose 
   );
 }
 
-const CARD_W = Math.min(W - 40, 380);
-
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -186,7 +210,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    width: CARD_W,
     borderRadius: 28,
     overflow: "hidden",
     shadowColor: "#000",
@@ -201,15 +224,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 14,
   },
-  topBarEmoji: { fontSize: 24 },
-  topBarTitle: { fontSize: 20, fontWeight: "800", letterSpacing: -0.3 },
+  topBarEmoji:  { fontSize: 24 },
+  topBarTitle:  { fontSize: 20, fontWeight: "800", letterSpacing: -0.3 },
   mascotWrap: {
     alignItems: "center",
-    marginTop: -8,
-    marginBottom: -4,
-  },
-  mascotImg: {
-    width: CARD_W * 0.72,
+    marginTop: -4,
+    marginBottom: -8,
   },
   nameBadge: {
     alignSelf: "center",
@@ -217,9 +237,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 14,
     paddingVertical: 4,
+    marginTop: 4,
     marginBottom: 14,
   },
-  nameText: { fontSize: 13, fontWeight: "700" },
+  nameText:   { fontSize: 13, fontWeight: "700" },
   bubble: {
     marginHorizontal: 20,
     borderRadius: 18,

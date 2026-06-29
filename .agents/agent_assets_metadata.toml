@@ -84,3 +84,33 @@ id = "AkKk7CtvWbtf7YIqAcvLj"
 uri = "file://artifacts/english-learning/assets/images/mascot_full_think.png"
 type = "image"
 title = "chibi snow leopard mascot thinking white bg"
+
+[[generated]]
+id = "Hu5D5j0fCttnSgTblr--_"
+uri = "file://artifacts/english-learning/assets/images/mascot_happy.png"
+type = "image"
+title = "chibi snow leopard mascot happy sitting"
+
+[[generated]]
+id = "ISKiHBoCOOPj34NMqsXva"
+uri = "file://artifacts/english-learning/assets/images/mascot_excited.png"
+type = "image"
+title = "chibi snow leopard mascot excited"
+
+[[generated]]
+id = "9JHhD7fh4m81sAmZkYhL3"
+uri = "file://artifacts/english-learning/assets/images/mascot_curious.png"
+type = "image"
+title = "chibi snow leopard mascot curious tilted"
+
+[[generated]]
+id = "6YkzZpnDBGUY7vyAv0Vp1"
+uri = "file://artifacts/english-learning/assets/images/mascot_point.png"
+type = "image"
+title = "chibi snow leopard mascot pointing guide"
+
+[[generated]]
+id = "wv-EXRMynpTif1uErxDDS"
+uri = "file://artifacts/english-learning/assets/images/mascot_laugh.png"
+type = "image"
+title = "chibi snow leopard mascot laughing"
