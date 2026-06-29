@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
 import authStorage from "@/utils/authStorage";
+import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const PAD = Math.min(SCREEN_W * 0.06, 28);
@@ -41,37 +42,55 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const accent = "#8b5cf6";
-  const cardW  = Math.min(SCREEN_W - 40, 420);
+  const accent   = "#8b5cf6";
+  const cardW    = Math.min(SCREEN_W - 40, 420);
+  const mascotW  = Math.round(cardW * 0.65);
+  const mascotH  = Math.round(mascotW * 16 / 9);
+  const overlap  = Math.round(mascotH * 0.30);
+  const cardTopPad = overlap + 8;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
-      {/* No backdrop — card floats over the live app */}
+      {/* No dark overlay — floats over the live app */}
       <View style={styles.overlay} pointerEvents="box-none">
         <Animated.View
           style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}
           pointerEvents="auto"
         >
-          {/* Glass card — only the rectangle with text */}
+          {/* Mascot floats above the card */}
+          <AnimatedMascotImage
+            pose="wave"
+            width={mascotW}
+            height={mascotH}
+            style={{ zIndex: 2 }}
+          />
+
+          {/* Glass card — transparent with purple border, mascot overlaps top */}
           <Animated.View
             style={[
               styles.glassPanel,
               {
+                marginTop: -overlap,
+                paddingTop: cardTopPad,
                 // @ts-ignore web backdropFilter
-                backdropFilter: "blur(24px) saturate(1.3)",
-                WebkitBackdropFilter: "blur(24px) saturate(1.3)",
+                backdropFilter: "blur(24px) saturate(1.2)",
+                WebkitBackdropFilter: "blur(24px) saturate(1.2)",
                 transform: [{ translateY: slideAnim }],
               },
             ]}
           >
             <Text style={styles.stepTitle}>Привет! Я {mascotName}! 👋</Text>
+
             <View style={styles.bubble}>
               <Text style={styles.bubbleText}>
                 Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
               </Text>
             </View>
 
-            <TouchableOpacity style={[styles.nextBtn, { backgroundColor: accent }]} onPress={handleFinish}>
+            <TouchableOpacity
+              style={[styles.nextBtn, { backgroundColor: accent }]}
+              onPress={handleFinish}
+            >
               <Text style={styles.nextText}>Давай! 🚀</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -93,13 +112,14 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     borderColor: "rgba(139,92,246,0.75)",
-    backgroundColor: "rgba(42,36,60,0.82)",
+    /* transparent fill — see the blurred app through it */
+    backgroundColor: "rgba(255,255,255,0.06)",
     padding: 22,
     alignItems: "center",
     shadowColor: "#8b5cf6",
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 18,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 16,
   },
   stepTitle: {
     fontSize: 20,
@@ -112,10 +132,11 @@ const styles = StyleSheet.create({
   bubble: {
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: "rgba(139,92,246,0.4)",
+    borderColor: "rgba(139,92,246,0.45)",
     backgroundColor: "rgba(255,255,255,0.08)",
     padding: 16,
     width: "100%",
+    marginBottom: 16,
   },
   bubbleText: {
     fontSize: 15,
