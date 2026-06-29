@@ -96,12 +96,22 @@ export function OnboardingTour({
             </Text>
 
             {/* Title */}
-            <Text style={styles.title}>Привет! Я {mascotName}! 👋</Text>
+            <Text style={styles.title}>Привет! 👋</Text>
 
-            {/* Description text */}
-            <Text style={styles.bubbleText}>
-              Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
-            </Text>
+            {/* Description bubble with neon purple border */}
+            <View
+              style={[
+                styles.bubble,
+                {
+                  // @ts-ignore web boxShadow
+                  boxShadow: "0 0 14px rgba(168,85,247,0.8), 0 0 4px rgba(168,85,247,0.5)",
+                },
+              ]}
+            >
+              <Text style={styles.bubbleText}>
+                Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
+              </Text>
+            </View>
 
             {/* CTA button */}
             <TouchableOpacity
@@ -155,10 +165,10 @@ const styles = StyleSheet.create({
   },
   bubble: {
     width: "100%",
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "rgba(139,92,246,0.45)",
-    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#a855f7",
+    backgroundColor: "rgba(255,255,255,0.05)",
     padding: 16,
     marginBottom: 16,
   },
@@ -168,7 +178,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     color: "#ede9ff",
-    marginBottom: 20,
   },
   btn: {
     width: "100%",
