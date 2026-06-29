@@ -62,9 +62,16 @@ export function useGamification() {
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/api/gamification/stats");
+      const raw = await apiFetch("/api/gamification/stats");
+      // migrate old default name
+      const data: GamificationStats = {
+        ...raw,
+        mascotName: (raw.mascotName === "Оливер" || raw.mascotName === "Oliver" || !raw.mascotName)
+          ? "Снежа"
+          : raw.mascotName,
+      };
       setStats(data);
-      return data as GamificationStats;
+      return data;
     } catch {
       return null;
     } finally {
