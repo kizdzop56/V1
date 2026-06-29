@@ -46,7 +46,10 @@ function StudentTimerManager() {
     sessionActiveRef.current = false;
     AsyncStorage.removeItem(SESSION_START_KEY);
     rawPost("/api/time-tracking/end");
-    rawPost("/api/users/offline");
+    // Do NOT call users/offline here — AppState goes inactive during normal
+    // navigation on iOS, and visibilitychange fires on tab switch on web.
+    // Offline status is determined by 90s ping expiry.
+    // Explicit logout (AuthContext.logout) handles the offline call.
   }, [rawPost]);
 
   useEffect(() => {

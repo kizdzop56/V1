@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Platform, TextInput, Modal, FlatList, ActivityIndicator,
-  Clipboard, Image,
+  Clipboard, Image, Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
@@ -1380,7 +1380,6 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={s.logoutBtn}
           onPress={() => {
-            const { Alert } = require("react-native");
             Alert.alert(
               "Выйти из аккаунта?",
               "Вы уверены, что хотите выйти из профиля?",
