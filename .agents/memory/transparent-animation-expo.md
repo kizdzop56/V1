@@ -26,3 +26,5 @@ The subject (a snow-leopard mascot) is **white-furred on a near-white background
    `ffmpeg -framerate 25 -i out/f_%04d.png -c:v libwebp_anim -lossless 0 -q:v 78 -loop 0 -an mascot.webp`
 
 **Gotcha:** this env's `ffmpeg`/`ffprobe` **cannot decode** animated WebP ("image data not found"). Verify frame count/alpha with **ImageMagick** instead (`magick identify mascot.webp | wc -l`, `magick "mascot.webp[N]" out.png`). ~100 frames ≈ 1.6 MB; fine for a one-time onboarding.
+
+**Aspect-ratio gotcha:** the assembled `mascot_wave.webp` is **landscape 672x544**, not portrait. If the `<Image>` box is given a portrait ratio (e.g. `mascotW * 16/9`) with `contentFit="contain"`, the mascot gets letterboxed into a tall box and renders tiny with dead vertical space. Always size the box to the asset's true ratio: `mascotH = mascotW * (544/672)`. Check actual dims with `magick identify` before hardcoding a ratio.

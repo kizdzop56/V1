@@ -116,8 +116,9 @@ function CalendarTabIcon({ color }: { color: string }) {
   );
 }
 
-// Storage key prefix for tab-first-visit tracking
-const TAB_SEEN_PREFIX = "tab_first_visit_v1_";
+// Storage key prefix for tab-first-visit tracking.
+// Bump the version to re-show the guides after a redesign.
+const TAB_SEEN_PREFIX = "tab_first_visit_v2_";
 
 // Which tabs have a guide available
 const GUIDE_TABS = new Set<string>(Object.keys(TAB_GUIDE_CONTENT));

@@ -48,9 +48,11 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const cardW   = Math.min(SCREEN_W - 40, 380);
-  const mascotW = Math.round(cardW * 0.72);
-  const mascotH = Math.round(mascotW / (9 / 16));
+  const cardW   = Math.min(SCREEN_W - 32, 400);
+  // mascot_wave.webp is 672x544 (landscape) — keep its true ratio so it
+  // isn't letterboxed into a tall box and rendered tiny.
+  const mascotW = cardW;
+  const mascotH = Math.round(mascotW * (544 / 672));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
