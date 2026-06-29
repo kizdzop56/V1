@@ -123,6 +123,7 @@ export function OnboardingTour({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    backgroundColor: "#000000aa",
     justifyContent: "center",
     alignItems: "center",
     padding: PAD,
@@ -130,8 +131,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     borderRadius: 26,
-    // Semi-transparent dark purple — you can see blurred app behind it
-    backgroundColor: "rgba(30,22,55,0.70)",
+    backgroundColor: "transparent",
     borderWidth: 2,
     borderColor: "rgba(139,92,246,0.70)",
     padding: 20,
