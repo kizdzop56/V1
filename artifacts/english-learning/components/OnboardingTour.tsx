@@ -181,30 +181,44 @@ export function OnboardingTour({
               },
             ]}
           >
-            {/* Name label — gradient purple */}
-            <Text
+            {/* Name — only on first slide, large */}
+            {step === 0 && (
+              <Text
+                style={[
+                  styles.nameLabel,
+                  {
+                    fontSize: 30,
+                    marginBottom: 6,
+                    color: "#c084fc",
+                    // @ts-ignore web gradient text
+                    backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  },
+                ]}
+              >
+                {mascotName}
+              </Text>
+            )}
+
+            {/* Step content — glassmorphism panel */}
+            <Animated.View
               style={[
-                styles.nameLabel,
+                styles.glassPanel,
                 {
-                  color: "#a78bfa",
-                  // @ts-ignore web gradient text
-                  backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  // @ts-ignore web backdropFilter
+                  backdropFilter: "blur(22px) saturate(1.4)",
+                  WebkitBackdropFilter: "blur(22px) saturate(1.4)",
                 },
+                { transform: [{ translateY: slideAnim }] },
               ]}
             >
-              {mascotName}
-            </Text>
-
-            {/* Step content */}
-            <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
               <Text style={[styles.stepTitle, { color: "#ffffff" }]}>
                 {current.title}
               </Text>
-              <View style={[styles.bubble, { backgroundColor: "#ffffff18", borderColor: accent + "60" }]}>
-                <Text style={[styles.bubbleText, { color: "#f0edff" }]}>
+              <View style={[styles.bubble, { backgroundColor: "rgba(255,255,255,0.08)", borderColor: accent + "55" }]}>
+                <Text style={[styles.bubbleText, { color: "#ede9ff" }]}>
                   {current.message}
                 </Text>
               </View>
@@ -269,6 +283,16 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 28,
     padding: PAD,
+    alignItems: "center",
+  },
+  glassPanel: {
+    width: "100%",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    padding: 16,
+    marginBottom: 4,
     alignItems: "center",
   },
   nameLabel: {
