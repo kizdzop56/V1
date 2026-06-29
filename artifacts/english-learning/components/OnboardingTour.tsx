@@ -2,80 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
-import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
-import { AnimatedMascotImage, type MascotPose } from "@/components/AnimatedMascotImage";
+import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 const { width: SCREEN_W } = Dimensions.get("window");
+const PAD = Math.min(SCREEN_W * 0.06, 28);
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
-
-interface TourStep {
-  title: string;
-  message: string;
-  emoji: string;
-  pose: MascotPose;
-  accentColor: string;
-}
-
-const TOUR_STEPS: TourStep[] = [
-  {
-    title: "Привет! Я Снежа! 👋",
-    message:
-      "Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!",
-    emoji: "👋",
-    pose: "wave",
-    accentColor: "#8b5cf6",
-  },
-  {
-    title: "📚 Задания",
-    message:
-      "На первой вкладке живут твои задания от учителя: тесты, аудирование, чтение и видео. Выполняй их и зарабатывай очки XP!",
-    emoji: "📚",
-    pose: "point",
-    accentColor: "#8b5cf6",
-  },
-  {
-    title: "🎤 AI-тьютор",
-    message:
-      "Говори по-английски с AI! Он исправит ошибки, объяснит грамматику и поможет улучшить произношение. Это как живой разговор!",
-    emoji: "🎤",
-    pose: "sit",
-    accentColor: "#06b6d4",
-  },
-  {
-    title: "🏆 Таблица лидеров",
-    message:
-      "Смотри, кто набрал больше всего XP за неделю. Соревнуйся с друзьями и поднимайся на вершину! Удачи в борьбе за первое место!",
-    emoji: "🏆",
-    pose: "excited",
-    accentColor: "#f59e0b",
-  },
-  {
-    title: "📅 Расписание",
-    message:
-      "Здесь отображаются все занятия по дням. Ты всегда знаешь, что и когда нужно сдать — никаких сюрпризов!",
-    emoji: "📅",
-    pose: "happy",
-    accentColor: "#10b981",
-  },
-  {
-    title: "👤 Профиль",
-    message:
-      "Тут хранятся твои достижения, уровень, стрик и статистика. Также можешь найти друзей и следить за их прогрессом!",
-    emoji: "👤",
-    pose: "curious",
-    accentColor: "#6366f1",
-  },
-  {
-    title: "Ты готов! 🎉",
-    message:
-      "Всё, что нужно — знаешь! Начни с первого задания и набери как можно больше XP. Я всегда буду рядом. Отдыхай и учись! 🚀",
-    emoji: "🎉",
-    pose: "lie",
-    accentColor: "#a855f7",
-  },
-];
 
 interface OnboardingTourProps {
   visible: boolean;
@@ -88,44 +21,19 @@ export function OnboardingTour({
   onFinish,
   mascotName = "Снежа",
 }: OnboardingTourProps) {
-  const colors = useColors();
-  const [step, setStep]   = useState(0);
   const scaleAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
-  const current = TOUR_STEPS[step]!;
-  const isLast  = step === TOUR_STEPS.length - 1;
-
-  // Entrance animation (modal appears)
   useEffect(() => {
     if (visible) {
-      setStep(0);
       scaleAnim.setValue(0);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
+      slideAnim.setValue(30);
+      Animated.parallel([
+        Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, tension: 100, friction: 10, useNativeDriver: true }),
+      ]).start();
     }
   }, [visible]);
-
-  // Slide in content when step changes
-  useEffect(() => {
-    if (!visible) return;
-    slideAnim.setValue(30);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      tension: 100,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [step]);
-
-  const handleNext = () => {
-    if (isLast) handleFinish();
-    else setStep((s) => s + 1);
-  };
 
   const handleFinish = async () => {
     await authStorage.setItem(TOUR_STORAGE_KEY, "1");
@@ -134,75 +42,42 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const accent    = current.accentColor;
-  const bgColor   = accent + "18";
-  const borderColor = accent;
-
-  const cardW      = Math.min(SCREEN_W - 40, 420);
-  const isLandscape = current.pose === "lie";
-  // Mascot floats ABOVE the card — portrait poses are tall so keep them
-  // reasonably sized; landscape ("lie") is wide.
-  const mascotW  = isLandscape ? Math.round(cardW * 0.75) : Math.round(cardW * 0.65);
-  const mascotH  = isLandscape
-    ? Math.round(mascotW * 9 / 16)
-    : Math.round(mascotW * 16 / 9);
-  // Mascot's lower body overlaps card so no white gap is visible
-  const overlap  = isLandscape ? 32 : Math.round(mascotH * 0.30);
+  const accent   = "#8b5cf6";
+  const cardW    = Math.min(SCREEN_W - 40, 420);
+  const mascotW  = Math.round(cardW * 0.65);
+  const mascotH  = Math.round(mascotW * 16 / 9);
+  const overlap  = Math.round(mascotH * 0.30);
   const cardTopPad = overlap + 8;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleFinish}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
       <View style={styles.overlay}>
-        {/* ── Outer wrapper centres everything ── */}
         <Animated.View style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}>
 
-          {/* ── Mascot — floats on the dark overlay, no white box ── */}
-          <AnimatedMascotImage
-            pose={current.pose}
-            width={mascotW}
-            height={mascotH}
-            style={{ zIndex: 2 }}
-          />
+          {/* Mascot floats above panel */}
+          <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} style={{ zIndex: 2 }} />
 
-          {/* ── Content — no card, floating on dark overlay ── */}
-          <View
-            style={[
-              styles.container,
-              {
-                backgroundColor: "transparent",
-                width: cardW,
-                marginTop: -overlap,
-                paddingTop: cardTopPad,
-              },
-            ]}
-          >
-            {/* Name — only on first slide, large */}
-            {step === 0 && (
-              <Text
-                style={[
-                  styles.nameLabel,
-                  {
-                    fontSize: 30,
-                    marginBottom: 6,
-                    color: "#c084fc",
-                    // @ts-ignore web gradient text
-                    backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  },
-                ]}
-              >
-                {mascotName}
-              </Text>
-            )}
+          {/* Content panel */}
+          <View style={[styles.container, { width: cardW, marginTop: -overlap, paddingTop: cardTopPad }]}>
 
-            {/* Step content — glassmorphism panel */}
+            {/* Big name on intro slide */}
+            <Text
+              style={[
+                styles.nameLabel,
+                {
+                  color: "#c084fc",
+                  // @ts-ignore web gradient
+                  backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              ]}
+            >
+              {mascotName}
+            </Text>
+
+            {/* Glass content panel */}
             <Animated.View
               style={[
                 styles.glassPanel,
@@ -210,67 +85,28 @@ export function OnboardingTour({
                   // @ts-ignore web backdropFilter
                   backdropFilter: "blur(22px) saturate(1.4)",
                   WebkitBackdropFilter: "blur(22px) saturate(1.4)",
+                  transform: [{ translateY: slideAnim }],
                 },
-                { transform: [{ translateY: slideAnim }] },
               ]}
             >
-              <Text style={[styles.stepTitle, { color: "#ffffff" }]}>
-                {current.title}
-              </Text>
-              <View style={[styles.bubble, { backgroundColor: "rgba(255,255,255,0.08)", borderColor: accent + "55" }]}>
-                <Text style={[styles.bubbleText, { color: "#ede9ff" }]}>
-                  {current.message}
+              <Text style={styles.stepTitle}>Привет! Я {mascotName}! 👋</Text>
+              <View style={styles.bubble}>
+                <Text style={styles.bubbleText}>
+                  Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
                 </Text>
               </View>
             </Animated.View>
 
-            {/* Progress dots */}
-            <View style={styles.dotsRow}>
-              {TOUR_STEPS.map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    i === step
-                      ? { backgroundColor: accent, width: 20 }
-                      : { backgroundColor: "#ffffff40" },
-                  ]}
-                />
-              ))}
-            </View>
-
-            {/* Buttons */}
-            <View style={styles.btnRow}>
-              {!isLast && (
-                <TouchableOpacity
-                  style={[styles.skipBtn, { borderColor: "#ffffff40" }]}
-                  onPress={handleFinish}
-                >
-                  <Text style={[styles.skipText, { color: "#ffffffaa" }]}>
-                    Пропустить
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[
-                  styles.nextBtn,
-                  { backgroundColor: accent, flex: isLast ? 1 : undefined },
-                ]}
-                onPress={handleNext}
-              >
-                <Text style={styles.nextText}>
-                  {isLast ? "Начать учиться! 🚀" : "Далее"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* Single button */}
+            <TouchableOpacity style={[styles.nextBtn, { backgroundColor: accent }]} onPress={handleFinish}>
+              <Text style={styles.nextText}>Давай! 🚀</Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
       </View>
     </Modal>
   );
 }
-
-const PAD = Math.min(SCREEN_W * 0.06, 28);
 
 const styles = StyleSheet.create({
   overlay: {
@@ -285,6 +121,13 @@ const styles = StyleSheet.create({
     padding: PAD,
     alignItems: "center",
   },
+  nameLabel: {
+    textAlign: "center",
+    fontSize: 30,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
   glassPanel: {
     width: "100%",
     borderRadius: 22,
@@ -292,15 +135,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.18)",
     backgroundColor: "rgba(255,255,255,0.10)",
     padding: 16,
-    marginBottom: 4,
+    marginBottom: 16,
     alignItems: "center",
-  },
-  nameLabel: {
-    textAlign: "center",
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 12,
-    letterSpacing: 0.3,
   },
   stepTitle: {
     fontSize: 20,
@@ -308,12 +144,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 12,
     letterSpacing: -0.3,
+    color: "#ffffff",
   },
   bubble: {
     borderRadius: 16,
     borderWidth: 1.5,
+    borderColor: "rgba(139,92,246,0.4)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     padding: 16,
-    marginBottom: 20,
     width: "100%",
   },
   bubbleText: {
@@ -321,40 +159,15 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     fontWeight: "500",
     textAlign: "center",
+    color: "#ede9ff",
   },
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 20,
-  },
-  dot: {
-    height: 7,
-    borderRadius: 4,
-    width: 7,
-  },
-  btnRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    width: "100%",
-  },
-  skipBtn: {
-    borderWidth: 1.5,
-    borderRadius: 13,
-    paddingVertical: 13,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  skipText: { fontSize: 14, fontWeight: "600" },
   nextBtn: {
-    flex: 1,
+    width: "100%",
     borderRadius: 13,
     paddingVertical: 14,
     alignItems: "center",
-    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.45)",
   },
   nextText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

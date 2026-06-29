@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
+  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions, Platform,
 } from "react-native";
-import { useColors } from "@/hooks/useColors";
 import { AnimatedMascotImage, type MascotPose } from "@/components/AnimatedMascotImage";
 
-const { width: W, height: H } = Dimensions.get("window");
+const { width: W } = Dimensions.get("window");
 
 export type TabGuideTab =
   | "assignments"
@@ -104,23 +103,21 @@ export function TabGuide({
   mascotName = "Снежа",
   onClose,
 }: TabGuideProps) {
-  const colors = useColors();
-  const scaleAnim  = useRef(new Animated.Value(0)).current;
-  const slideAnim  = useRef(new Animated.Value(60)).current;
+  const scaleAnim   = useRef(new Animated.Value(0.88)).current;
+  const slideAnim   = useRef(new Animated.Value(50)).current;
   const mascotSlide = useRef(new Animated.Value(60)).current;
 
   const info = tabName ? TAB_GUIDE_CONTENT[tabName] : null;
 
   useEffect(() => {
     if (visible) {
-      scaleAnim.setValue(0.85);
+      scaleAnim.setValue(0.88);
       slideAnim.setValue(50);
       mascotSlide.setValue(60);
-
       Animated.parallel([
-        Animated.spring(scaleAnim,  { toValue: 1, tension: 70,  friction: 8,  useNativeDriver: true }),
-        Animated.spring(slideAnim,  { toValue: 0, tension: 80,  friction: 10, useNativeDriver: true }),
-        Animated.spring(mascotSlide,{ toValue: 0, tension: 55,  friction: 9,  useNativeDriver: true }),
+        Animated.spring(scaleAnim,   { toValue: 1, tension: 70,  friction: 8,  useNativeDriver: true }),
+        Animated.spring(slideAnim,   { toValue: 0, tension: 80,  friction: 10, useNativeDriver: true }),
+        Animated.spring(mascotSlide, { toValue: 0, tension: 55,  friction: 9,  useNativeDriver: true }),
       ]).start();
     }
   }, [visible, tabName]);
@@ -131,6 +128,7 @@ export function TabGuide({
   const cardW   = Math.min(W - 40, 380);
   const mascotW = cardW * 0.62;
   const mascotH = mascotW * (16 / 9);
+  const overlap = Math.round(mascotH * 0.28);
 
   return (
     <Modal
@@ -139,76 +137,57 @@ export function TabGuide({
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      {/* No backdrop — card floats over live app content */}
+      <View style={styles.overlay} pointerEvents="box-none">
         <Animated.View
           style={[
-            styles.card,
-            { backgroundColor: colors.card, width: cardW, transform: [{ scale: scaleAnim }] },
+            styles.cardWrapper,
+            { width: cardW, transform: [{ scale: scaleAnim }] },
           ]}
+          pointerEvents="auto"
         >
-          {/* ── Accent top bar ── */}
-          <View style={[styles.topBar, { backgroundColor: accent + "18" }]}>
-            <Text style={styles.topBarEmoji}>{info.emoji}</Text>
-            <Text style={[styles.topBarTitle, { color: accent }]}>{info.title}</Text>
-          </View>
-
-          {/* ── Animated mascot — slides in once, then stays put ── */}
+          {/* Mascot floats above card */}
           <Animated.View
             style={[styles.mascotWrap, { transform: [{ translateY: mascotSlide }] }]}
           >
-            <AnimatedMascotImage
-              pose={info.mascotPose}
-              width={mascotW}
-              height={mascotH}
-            />
+            <AnimatedMascotImage pose={info.mascotPose} width={mascotW} height={mascotH} />
           </Animated.View>
 
-          {/* ── Name badge ── */}
+          {/* Dark glass card */}
           <View
             style={[
-              styles.nameBadge,
-              { backgroundColor: accent + "20", borderColor: accent + "40" },
+              styles.card,
+              {
+                marginTop: -overlap,
+                paddingTop: overlap + 10,
+                // @ts-ignore web backdropFilter
+                ...(Platform.OS === "web"
+                  ? { backdropFilter: "blur(24px) saturate(1.3)", WebkitBackdropFilter: "blur(24px) saturate(1.3)" }
+                  : {}),
+              },
             ]}
           >
-            <Text
-              style={[
-                styles.nameText,
-                {
-                  color: "#8b5cf6",
-                  // @ts-ignore web gradient text
-                  backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                },
-              ]}
-            >
-              {mascotName}
-            </Text>
-          </View>
-
-          {/* ── Speech bubble ── */}
-          <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-            <View
-              style={[
-                styles.bubble,
-                { backgroundColor: accent + "12", borderColor: accent + "30" },
-              ]}
-            >
-              <Text style={[styles.bubbleText, { color: colors.foreground }]}>
-                {info.description}
+            {/* Title row */}
+            <Animated.View style={{ transform: [{ translateY: slideAnim }], alignItems: "center", width: "100%" }}>
+              <Text style={styles.title}>
+                {info.emoji}{"  "}{info.title}
               </Text>
-            </View>
-          </Animated.View>
 
-          {/* ── Confirm button ── */}
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: accent }]}
-            onPress={onClose}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.btnText}>Понятно! 👍</Text>
-          </TouchableOpacity>
+              {/* Description bubble */}
+              <View style={[styles.bubble, { borderColor: accent + "55" }]}>
+                <Text style={styles.bubbleText}>{info.description}</Text>
+              </View>
+
+              {/* Confirm button */}
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: accent }]}
+                onPress={onClose}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.btnText}>Далее</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -218,47 +197,43 @@ export function TabGuide({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "#000000bb",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
-  card: {
-    borderRadius: 28,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  topBar: {
-    flexDirection: "row",
+  cardWrapper: {
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 22,
-    paddingVertical: 14,
   },
-  topBarEmoji:  { fontSize: 24 },
-  topBarTitle:  { fontSize: 20, fontWeight: "800", letterSpacing: -0.3 },
   mascotWrap: {
     alignItems: "center",
-    marginTop: -4,
-    marginBottom: -8,
+    zIndex: 2,
   },
-  nameBadge: {
-    alignSelf: "center",
-    borderRadius: 20,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    marginTop: 4,
+  card: {
+    width: "100%",
+    borderRadius: 28,
+    backgroundColor: "rgba(42,36,60,0.88)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#ffffff",
+    textAlign: "center",
     marginBottom: 14,
+    letterSpacing: -0.3,
   },
-  nameText:   { fontSize: 13, fontWeight: "700" },
   bubble: {
-    marginHorizontal: 20,
+    width: "100%",
     borderRadius: 18,
     borderWidth: 1.5,
+    backgroundColor: "rgba(255,255,255,0.08)",
     padding: 16,
     marginBottom: 18,
   },
@@ -267,13 +242,15 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     fontWeight: "500",
     textAlign: "center",
+    color: "#ede9ff",
   },
   btn: {
-    marginHorizontal: 20,
-    marginBottom: 22,
+    width: "100%",
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.45)",
   },
   btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
