@@ -6,7 +6,7 @@ import authStorage from "@/utils/authStorage";
 import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const PAD = Math.min(SCREEN_W * 0.06, 28);
+const PAD = Math.min(SCREEN_W * 0.06, 24);
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
 
@@ -42,22 +42,22 @@ export function OnboardingTour({
 
   if (!visible) return null;
 
-  const accent   = "#8b5cf6";
-  const cardW    = Math.min(SCREEN_W - 40, 420);
-  const mascotW  = Math.round(cardW * 0.65);
-  const mascotH  = Math.round(mascotW * 16 / 9);
-  const overlap  = Math.round(mascotH * 0.30);
-  const cardTopPad = overlap + 8;
+  const accent  = "#8b5cf6";
+  const cardW   = Math.min(SCREEN_W - 40, 420);
+  // Mascot: wide enough to show the full body clearly
+  const mascotW = Math.round(cardW * 0.70);
+  const mascotH = Math.round(mascotW * 16 / 9);
+  // Small overlap — just tuck the feet into the card, body stays fully visible
+  const overlap = Math.round(mascotH * 0.12);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleFinish}>
-      {/* No dark overlay — floats over the live app */}
-      <View style={styles.overlay} pointerEvents="box-none">
+      {/* Dark overlay — mascot pops against it */}
+      <View style={styles.overlay}>
         <Animated.View
           style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}
-          pointerEvents="auto"
         >
-          {/* Mascot floats above the card */}
+          {/* Mascot — full body above the card */}
           <AnimatedMascotImage
             pose="wave"
             width={mascotW}
@@ -65,33 +65,53 @@ export function OnboardingTour({
             style={{ zIndex: 2 }}
           />
 
-          {/* Glass card — transparent with purple border, mascot overlaps top */}
+          {/* Semi-transparent card — slides in from below */}
           <Animated.View
             style={[
-              styles.glassPanel,
+              styles.card,
               {
                 marginTop: -overlap,
-                paddingTop: cardTopPad,
+                paddingTop: overlap + 12,
                 // @ts-ignore web backdropFilter
-                backdropFilter: "blur(24px) saturate(1.2)",
-                WebkitBackdropFilter: "blur(24px) saturate(1.2)",
+                backdropFilter: "blur(20px) saturate(1.3)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.3)",
                 transform: [{ translateY: slideAnim }],
               },
             ]}
           >
-            <Text style={styles.stepTitle}>Привет! Я {mascotName}! 👋</Text>
+            {/* Name — gradient purple, slightly larger */}
+            <Text
+              style={[
+                styles.nameLabel,
+                {
+                  // @ts-ignore web gradient text
+                  backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              ]}
+            >
+              {mascotName}
+            </Text>
 
+            {/* Title */}
+            <Text style={styles.title}>Привет! Я {mascotName}! 👋</Text>
+
+            {/* Description bubble */}
             <View style={styles.bubble}>
               <Text style={styles.bubbleText}>
                 Я твой личный помощник в изучении английского. Давай покажу тебе, как всё устроено!
               </Text>
             </View>
 
+            {/* CTA button */}
             <TouchableOpacity
-              style={[styles.nextBtn, { backgroundColor: accent }]}
+              style={[styles.btn, { backgroundColor: accent }]}
               onPress={handleFinish}
+              activeOpacity={0.85}
             >
-              <Text style={styles.nextText}>Давай! 🚀</Text>
+              <Text style={styles.btnText}>Давай! 🚀</Text>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -103,37 +123,48 @@ export function OnboardingTour({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    backgroundColor: "#000000b0",
     justifyContent: "center",
     alignItems: "center",
     padding: PAD,
   },
-  glassPanel: {
+  card: {
     width: "100%",
-    borderRadius: 24,
-    /* no background — fully transparent, no border */
-    backgroundColor: "transparent",
-    padding: 22,
+    borderRadius: 26,
+    // Semi-transparent dark purple — you can see blurred app behind it
+    backgroundColor: "rgba(30,22,55,0.70)",
+    borderWidth: 2,
+    borderColor: "rgba(139,92,246,0.70)",
+    padding: 20,
     alignItems: "center",
+    shadowColor: "#8b5cf6",
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 18,
   },
-  stepTitle: {
+  nameLabel: {
     fontSize: 22,
     fontWeight: "800",
     textAlign: "center",
+    color: "#c084fc",
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    textAlign: "center",
+    color: "#ffffff",
     marginBottom: 14,
-    letterSpacing: -0.3,
-    color: "#2d1a6e",
-    textShadowColor: "rgba(255,255,255,0.8)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    letterSpacing: -0.2,
   },
   bubble: {
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: "rgba(139,92,246,0.6)",
-    /* dark fill so white text is always readable */
-    backgroundColor: "rgba(30,22,55,0.88)",
-    padding: 18,
     width: "100%",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "rgba(139,92,246,0.45)",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    padding: 16,
     marginBottom: 16,
   },
   bubbleText: {
@@ -143,13 +174,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#ede9ff",
   },
-  nextBtn: {
+  btn: {
     width: "100%",
-    borderRadius: 13,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.45)",
+    borderColor: "rgba(255,255,255,0.40)",
   },
-  nextText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  btnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });
