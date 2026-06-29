@@ -126,3 +126,63 @@ id = "3X0h6OkvOuLZbPrybVCht"
 uri = "file://artifacts/english-learning/assets/images/mascot_lie.png"
 type = "image"
 title = "chibi snow leopard mascot lying down"
+
+[[generated]]
+id = "LRlOOT6gbxgS0R6b0NIT1"
+uri = "file://artifacts/english-learning/assets/images/mascot_full_blink.png"
+type = "image"
+title = "wave blink"
+
+[[generated]]
+id = "tWVTXq1Kittp7Zg8dcbHO"
+uri = "file://artifacts/english-learning/assets/images/mascot_full_celebrate_blink.png"
+type = "image"
+title = "celebrate blink"
+
+[[generated]]
+id = "iqVf6DfyEM1J4cyQh41r8"
+uri = "file://artifacts/english-learning/assets/images/mascot_full_think_blink.png"
+type = "image"
+title = "think blink"
+
+[[generated]]
+id = "2ZkMm1SXm-lwnXnElOYos"
+uri = "file://artifacts/english-learning/assets/images/mascot_sit_blink.png"
+type = "image"
+title = "sit blink"
+
+[[generated]]
+id = "dJcuVj-gnTtm0nYgXQlR8"
+uri = "file://artifacts/english-learning/assets/images/mascot_excited_blink.png"
+type = "image"
+title = "excited blink"
+
+[[generated]]
+id = "UB1EoALJUM9BHKEQmIrK9"
+uri = "file://artifacts/english-learning/assets/images/mascot_point_blink.png"
+type = "image"
+title = "point blink"
+
+[[generated]]
+id = "OPnm5N-bxgk9bcaN7FHBY"
+uri = "file://artifacts/english-learning/assets/images/mascot_curious_blink.png"
+type = "image"
+title = "curious blink"
+
+[[generated]]
+id = "peizPLhV7IQNdhEMy6GaW"
+uri = "file://artifacts/english-learning/assets/images/mascot_happy_blink.png"
+type = "image"
+title = "happy blink"
+
+[[generated]]
+id = "An3LEC42MLbGQubpEjH8X"
+uri = "file://artifacts/english-learning/assets/images/mascot_laugh_blink.png"
+type = "image"
+title = "laugh blink"
+
+[[generated]]
+id = "yckXbA26Uj-Rn11VWQ-6q"
+uri = "file://artifacts/english-learning/assets/images/mascot_lie_blink.png"
+type = "image"
+title = "lie blink"

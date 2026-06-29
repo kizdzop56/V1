@@ -1,26 +1,16 @@
 /**
  * AnimatedMascotImage
  *
- * Shows the mascot PNG with two life-like animations:
+ * Two-frame sprite blink: open-eye image + closed-eye image stacked on top.
+ * During a blink the closed-eye layer fades in (80ms), pauses, then fades out (80ms).
+ * Because both images share the same art style the transition looks completely natural.
  *
- * 1. Slow breathing — very subtle scale 1.0 ↔ 1.007 (~3.6 s loop).
- *
- * 2. Eyelid blink — a React Native View pair (no SVG drawn on top of image)
- *    positioned at each eye.  Each "eye" container has:
- *      • overflow:"hidden" + borderRadius  →  clips its children to an ellipse
- *      • An inner View (the lid) that slides via translateY from
- *        ABOVE the clip boundary (invisible) DOWN to cover the eye (closed).
- *    This is exactly how a real eyelid works: the lid descends from the top,
- *    pauses a moment, then retracts.  The lid colour (#d4d0c8) matches the
- *    leopard's light-grey fur so the closed eye looks natural.
- *
- * Nothing is drawn on top of the original PNG artwork.
+ * Subtle breathing: scale 1.0 ↔ 1.007 every ~3.6 s.
  */
 
 import React, { useEffect, useRef, useCallback } from "react";
 import { View, Image, Animated, StyleSheet } from "react-native";
 
-// ─── Pose registry ────────────────────────────────────────────────────────────
 export type MascotPose =
   | "wave"
   | "celebrate"
@@ -33,7 +23,6 @@ export type MascotPose =
   | "sit"
   | "lie";
 
-/** Width-to-height ratio for each pose image */
 const RATIO: Record<MascotPose, number> = {
   wave:      9 / 16,
   celebrate: 9 / 16,
@@ -47,7 +36,7 @@ const RATIO: Record<MascotPose, number> = {
   lie:       16 / 9,
 };
 
-const IMAGES: Record<MascotPose, any> = {
+const OPEN: Record<MascotPose, any> = {
   wave:      require("../assets/images/mascot_full.png"),
   celebrate: require("../assets/images/mascot_full_celebrate.png"),
   think:     require("../assets/images/mascot_full_think.png"),
@@ -60,35 +49,19 @@ const IMAGES: Record<MascotPose, any> = {
   lie:       require("../assets/images/mascot_lie.png"),
 };
 
-// ─── Eye positions ────────────────────────────────────────────────────────────
-// Expressed as fractions of the rendered image (width × height).
-// (lx, ly)  left-eye  centre;  (rx, ry)  right-eye centre.
-// erx = horizontal half-width,  ery = vertical half-height of eyelid area.
-// Values calibrated visually for each chibi pose (all 9:16 except "lie").
-interface EyePos {
-  lx: number; ly: number;
-  rx: number; ry: number;
-  erx: number; ery: number;
-}
-
-const EYE: Record<MascotPose, EyePos> = {
-  wave:      { lx:.365, ly:.270, rx:.565, ry:.270, erx:.092, ery:.050 },
-  celebrate: { lx:.350, ly:.258, rx:.558, ry:.258, erx:.096, ery:.054 },
-  think:     { lx:.356, ly:.290, rx:.556, ry:.290, erx:.092, ery:.050 },
-  happy:     { lx:.366, ly:.276, rx:.566, ry:.276, erx:.092, ery:.050 },
-  excited:   { lx:.355, ly:.258, rx:.560, ry:.258, erx:.096, ery:.054 },
-  curious:   { lx:.362, ly:.270, rx:.564, ry:.270, erx:.092, ery:.050 },
-  point:     { lx:.374, ly:.268, rx:.574, ry:.268, erx:.092, ery:.048 },
-  laugh:     { lx:.370, ly:.266, rx:.572, ry:.266, erx:.092, ery:.048 },
-  sit:       { lx:.368, ly:.288, rx:.568, ry:.288, erx:.094, ery:.052 },
-  // lie is landscape — positions are tuned separately
-  lie:       { lx:.270, ly:.428, rx:.408, ry:.408, erx:.076, ery:.072 },
+const BLINK: Record<MascotPose, any> = {
+  wave:      require("../assets/images/mascot_full_blink.png"),
+  celebrate: require("../assets/images/mascot_full_celebrate_blink.png"),
+  think:     require("../assets/images/mascot_full_think_blink.png"),
+  happy:     require("../assets/images/mascot_happy_blink.png"),
+  excited:   require("../assets/images/mascot_excited_blink.png"),
+  curious:   require("../assets/images/mascot_curious_blink.png"),
+  point:     require("../assets/images/mascot_point_blink.png"),
+  laugh:     require("../assets/images/mascot_laugh_blink.png"),
+  sit:       require("../assets/images/mascot_sit_blink.png"),
+  lie:       require("../assets/images/mascot_lie_blink.png"),
 };
 
-// Eyelid colour — matches the leopard's light-grey fur above the eyes
-const LID_COLOR = "#d4d0c8";
-
-// ─── Component ────────────────────────────────────────────────────────────────
 interface Props {
   pose?:   MascotPose;
   width?:  number;
@@ -105,26 +78,10 @@ export function AnimatedMascotImage({
   const imgW = width;
   const imgH = height ?? Math.round(width / RATIO[pose]);
 
-  const ep   = EYE[pose];
+  const breathe    = useRef(new Animated.Value(1)).current;
+  const blinkOpac  = useRef(new Animated.Value(0)).current;
 
-  // Pixel sizes derived from fractions
-  const lx  = ep.lx  * imgW;
-  const ly  = ep.ly  * imgH;
-  const rx  = ep.rx  * imgW;
-  const ry  = ep.ry  * imgH;
-  const erx = ep.erx * imgW;   // horizontal half-width
-  const ery = ep.ery * imgW;   // vertical half-height (use imgW for consistency)
-
-  // The lid fills the eye container top-to-bottom.
-  // Start position: fully above the container (invisible).
-  const lidH = ery * 2 + 4;
-
-  // ── Animated values ──────────────────────────────────────────────────────
-  const breathe  = useRef(new Animated.Value(1)).current;
-  const lidLY    = useRef(new Animated.Value(-lidH)).current;  // left  eyelid Y
-  const lidRY    = useRef(new Animated.Value(-lidH)).current;  // right eyelid Y
-
-  // ── Breathing pulse ──────────────────────────────────────────────────────
+  // Breathing
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -134,39 +91,28 @@ export function AnimatedMascotImage({
     ).start();
   }, []);
 
-  // ── Blink loop ───────────────────────────────────────────────────────────
+  // Blink
   const doBlink = useCallback(() => {
-    const slideDown = (v: Animated.Value) =>
-      Animated.timing(v, { toValue: 0,    duration: 70,  useNativeDriver: true });
-    const slideUp   = (v: Animated.Value) =>
-      Animated.timing(v, { toValue: -lidH, duration: 70, useNativeDriver: true });
+    const close = Animated.timing(blinkOpac, { toValue: 1, duration: 75,  useNativeDriver: true });
+    const open  = Animated.timing(blinkOpac, { toValue: 0, duration: 75,  useNativeDriver: true });
+    const pause = Animated.delay(60);
 
-    // Close both lids simultaneously, hold, then open
-    const singleBlink = Animated.sequence([
-      Animated.parallel([slideDown(lidLY), slideDown(lidRY)]),
-      Animated.delay(55),
-      Animated.parallel([slideUp(lidLY), slideUp(lidRY)]),
-    ]);
-
-    // Occasionally double-blink
-    const seq = Math.random() > 0.55
-      ? Animated.sequence([
-          singleBlink,
-          Animated.delay(110),
-          Animated.parallel([slideDown(lidLY), slideDown(lidRY)]),
-          Animated.delay(45),
-          Animated.parallel([slideUp(lidLY), slideUp(lidRY)]),
-        ])
-      : singleBlink;
+    const seq = Math.random() > 0.5
+      ? Animated.sequence([close, pause, open])
+      : Animated.sequence([
+          close, pause, open,
+          Animated.delay(120),
+          close, Animated.delay(40), open,
+        ]);
 
     seq.start();
-  }, [lidLY, lidRY, lidH]);
+  }, [blinkOpac]);
 
   useEffect(() => {
     let alive = true;
     const schedule = () => {
       if (!alive) return;
-      const delay = 2800 + Math.random() * 1800;
+      const delay = 2500 + Math.random() * 2000;
       setTimeout(() => {
         if (!alive) return;
         doBlink();
@@ -177,39 +123,6 @@ export function AnimatedMascotImage({
     return () => { alive = false; };
   }, [pose, doBlink]);
 
-  // ── Eye lid View helper ──────────────────────────────────────────────────
-  // One "eyelid unit" = a clip-container + a sliding lid inside
-  const EyeLid = ({
-    cx, cy, lidY,
-  }: {
-    cx: number; cy: number; lidY: Animated.Value;
-  }) => (
-    <View
-      pointerEvents="none"
-      style={{
-        position:     "absolute",
-        left:         cx - erx,
-        top:          cy - ery,
-        width:        erx * 2,
-        height:       lidH,
-        borderRadius: erx,          // elliptical clip
-        overflow:     "hidden",
-      }}
-    >
-      <Animated.View
-        style={{
-          position:        "absolute",
-          top:             0,
-          left:            0,
-          right:           0,
-          height:          lidH,
-          backgroundColor: LID_COLOR,
-          transform:       [{ translateY: lidY }],
-        }}
-      />
-    </View>
-  );
-
   return (
     <Animated.View
       style={[
@@ -218,15 +131,19 @@ export function AnimatedMascotImage({
         { transform: [{ scale: breathe }] },
       ]}
     >
-      {/* ── Mascot PNG — completely unmodified ── */}
+      {/* Open eyes — always visible */}
       <Image
-        source={IMAGES[pose]}
-        style={{ width: imgW, height: imgH, resizeMode: "contain" }}
+        source={OPEN[pose]}
+        style={StyleSheet.absoluteFill}
+        resizeMode="contain"
       />
 
-      {/* ── Sliding eyelids (left + right) ── */}
-      <EyeLid cx={lx} cy={ly} lidY={lidLY} />
-      <EyeLid cx={rx} cy={ry} lidY={lidRY} />
+      {/* Closed eyes — fades in during blink */}
+      <Animated.Image
+        source={BLINK[pose]}
+        style={[StyleSheet.absoluteFill, { opacity: blinkOpac }]}
+        resizeMode="contain"
+      />
     </Animated.View>
   );
 }
