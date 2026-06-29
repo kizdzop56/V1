@@ -169,16 +169,15 @@ export function OnboardingTour({
             style={{ zIndex: 2 }}
           />
 
-          {/* ── White card — slides under the mascot feet ── */}
+          {/* ── Content — no card, floating on dark overlay ── */}
           <View
             style={[
               styles.container,
               {
-                backgroundColor: colors.card,
+                backgroundColor: "transparent",
                 width: cardW,
                 marginTop: -overlap,
                 paddingTop: cardTopPad,
-                zIndex: 1,
               },
             ]}
           >
@@ -187,9 +186,9 @@ export function OnboardingTour({
               style={[
                 styles.nameLabel,
                 {
-                  color: "#8b5cf6",
+                  color: "#a78bfa",
                   // @ts-ignore web gradient text
-                  backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                  backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #e879f9)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -201,11 +200,11 @@ export function OnboardingTour({
 
             {/* Step content */}
             <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-              <Text style={[styles.stepTitle, { color: colors.foreground }]}>
+              <Text style={[styles.stepTitle, { color: "#ffffff" }]}>
                 {current.title}
               </Text>
-              <View style={[styles.bubble, { backgroundColor: bgColor, borderColor }]}>
-                <Text style={[styles.bubbleText, { color: colors.foreground }]}>
+              <View style={[styles.bubble, { backgroundColor: "#ffffff18", borderColor: accent + "60" }]}>
+                <Text style={[styles.bubbleText, { color: "#f0edff" }]}>
                   {current.message}
                 </Text>
               </View>
@@ -220,7 +219,7 @@ export function OnboardingTour({
                     styles.dot,
                     i === step
                       ? { backgroundColor: accent, width: 20 }
-                      : { backgroundColor: colors.border },
+                      : { backgroundColor: "#ffffff40" },
                   ]}
                 />
               ))}
@@ -230,10 +229,10 @@ export function OnboardingTour({
             <View style={styles.btnRow}>
               {!isLast && (
                 <TouchableOpacity
-                  style={[styles.skipBtn, { borderColor: colors.border }]}
+                  style={[styles.skipBtn, { borderColor: "#ffffff40" }]}
                   onPress={handleFinish}
                 >
-                  <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.skipText, { color: "#ffffffaa" }]}>
                     Пропустить
                   </Text>
                 </TouchableOpacity>
@@ -270,10 +269,6 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 28,
     padding: PAD,
-    shadowColor: "#8b5cf6",
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
     alignItems: "center",
   },
   nameLabel: {
