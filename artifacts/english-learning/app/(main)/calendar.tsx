@@ -112,16 +112,41 @@ type WheelColumnProps = {
   fg: string; muted: string; hlColor: string;
 };
 function WheelColumn({ items, value, onChange, fg, muted, hlColor }: WheelColumnProps) {
-  const ref = useRef<ScrollView>(null);
+  const ref        = useRef<ScrollView>(null);
+  const lastY      = useRef(0);
+  const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [localVal, setLocalVal] = useState(value);
 
   const scrollTo = (i: number, animated = true) =>
     ref.current?.scrollTo({ y: i * WHEEL_ITEM_H, animated });
 
-  // Scroll to current value on mount (without animation)
   useEffect(() => {
     const i = items.indexOf(value);
     if (i >= 0) setTimeout(() => scrollTo(i, false), 50);
   }, []);
+
+  const commit = (y: number) => {
+    const i = Math.max(0, Math.min(Math.round(y / WHEEL_ITEM_H), items.length - 1));
+    scrollTo(i, true);
+    setLocalVal(items[i]);
+    onChange(items[i]);
+  };
+
+  const handleScroll = (e: any) => {
+    const y = e.nativeEvent.contentOffset.y;
+    lastY.current = y;
+    // Live visual highlight
+    const i = Math.max(0, Math.min(Math.round(y / WHEEL_ITEM_H), items.length - 1));
+    if (items[i] !== localVal) setLocalVal(items[i]);
+    // Debounce-commit after 160ms without scroll
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commitTimer.current = setTimeout(() => commit(lastY.current), 160);
+  };
+
+  const handleScrollEnd = (e: any) => {
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commit(e.nativeEvent.contentOffset.y);
+  };
 
   return (
     <View style={{ width: 70, height: WHEEL_ITEM_H * WHEEL_VISIBLE, overflow: "hidden" }}>
@@ -141,21 +166,19 @@ function WheelColumn({ items, value, onChange, fg, muted, hlColor }: WheelColumn
         showsVerticalScrollIndicator={false}
         snapToInterval={WHEEL_ITEM_H}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingVertical: WHEEL_ITEM_H * 2 }}
-        onMomentumScrollEnd={(e) => {
-          const i = Math.round(e.nativeEvent.contentOffset.y / WHEEL_ITEM_H);
-          const clamped = Math.max(0, Math.min(i, items.length - 1));
-          onChange(items[clamped]);
-        }}
         scrollEventThrottle={16}
+        contentContainerStyle={{ paddingVertical: WHEEL_ITEM_H * 2 }}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
       >
         {items.map((item, i) => {
-          const sel = item === value;
+          const sel = item === localVal;
           return (
             <TouchableOpacity
               key={item}
               style={{ height: WHEEL_ITEM_H, justifyContent: "center", alignItems: "center" }}
-              onPress={() => { onChange(item); scrollTo(i); }}
+              onPress={() => { setLocalVal(item); onChange(item); scrollTo(i); }}
               activeOpacity={0.7}
             >
               <Text style={{

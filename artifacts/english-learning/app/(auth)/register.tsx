@@ -55,12 +55,30 @@ function DrumPicker({ items, selectedIndex, onSelect, label, width, colors }: Dr
   const ITEM_H = 46;
   const scrollRef = useRef<ScrollView>(null);
   const [localIdx, setLocalIdx] = useState(selectedIndex);
+  const lastY      = useRef(selectedIndex * ITEM_H);
+  const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const commit = (y: number) => {
+    const idx = Math.max(0, Math.min(Math.round(y / ITEM_H), items.length - 1));
+    scrollRef.current?.scrollTo({ y: idx * ITEM_H, animated: true });
+    setLocalIdx(idx);
+    onSelect(idx);
+  };
+
+  const handleScroll = (e: any) => {
+    const y = e.nativeEvent.contentOffset.y;
+    lastY.current = y;
+    // Live visual update
+    const preview = Math.max(0, Math.min(Math.round(y / ITEM_H), items.length - 1));
+    if (preview !== localIdx) setLocalIdx(preview);
+    // Debounce-commit: if no new scroll event for 160ms → finalise
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commitTimer.current = setTimeout(() => commit(lastY.current), 160);
+  };
 
   const handleScrollEnd = (e: any) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-    const clamped = Math.max(0, Math.min(idx, items.length - 1));
-    setLocalIdx(clamped);
-    onSelect(clamped);
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commit(e.nativeEvent.contentOffset.y);
   };
 
   return (
@@ -84,7 +102,9 @@ function DrumPicker({ items, selectedIndex, onSelect, label, width, colors }: Dr
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_H}
           decelerationRate="fast"
+          scrollEventThrottle={16}
           contentContainerStyle={{ paddingVertical: ITEM_H }}
+          onScroll={handleScroll}
           onMomentumScrollEnd={handleScrollEnd}
           onScrollEndDrag={handleScrollEnd}
           contentOffset={{ x: 0, y: selectedIndex * ITEM_H }}
