@@ -128,22 +128,29 @@ export function AnimatedMascotImage({
   return (
     <Animated.View
       style={[
-        { width: imgW, height: imgH },
+        { width: imgW, height: imgH, position: "relative" },
         style,
         { transform: [{ scale: breathe }] },
       ]}
     >
-      {/* Open eyes — always visible */}
+      {/* Open eyes — base layer, always visible */}
       <Image
         source={OPEN[pose]}
-        style={StyleSheet.absoluteFill}
+        style={{ width: imgW, height: imgH }}
         resizeMode="contain"
       />
 
-      {/* Closed eyes — fades in during blink */}
+      {/* Closed eyes — on top, fades in during blink */}
       <Animated.Image
         source={BLINK[pose]}
-        style={[StyleSheet.absoluteFill, { opacity: blinkOpac }]}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: imgW,
+          height: imgH,
+          opacity: blinkOpac,
+        }}
         resizeMode="contain"
       />
     </Animated.View>
