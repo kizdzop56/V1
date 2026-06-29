@@ -12,6 +12,7 @@ import { useAuth, LEVEL_META } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
 import authStorage from "@/utils/authStorage";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
+import { XpLevelBar } from "@/components/XpLevelBar";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -322,6 +323,20 @@ export default function FriendProfileScreen() {
               </Text>
             </View>
           ))}
+        </View>
+
+        {/* ── XP Level ── */}
+        <View style={{
+          backgroundColor: colors.card, borderRadius: 16, padding: 16,
+          borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+        }}>
+          <Text style={{
+            fontSize: 11, fontWeight: "700", color: colors.mutedForeground,
+            textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12,
+          }}>
+            Уровень опыта
+          </Text>
+          <XpLevelBar totalPoints={profile.totalPoints} />
         </View>
 
         <AchievementsShowcase

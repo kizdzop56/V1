@@ -3,6 +3,57 @@ import { View, Text, Animated, StyleSheet, Easing } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { XP_LEVELS, getXpProgress, type XpLevel } from "@/constants/xpLevels";
 
+function ShimmerBar({ color, progress }: { color: string; progress: Animated.AnimatedInterpolation<string | number> }) {
+  const shimmerPos = useRef(new Animated.Value(-1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(shimmerPos, {
+        toValue: 1,
+        duration: 2200,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmerPos]);
+
+  return (
+    <View style={{ height: 12, borderRadius: 6, overflow: "hidden", position: "relative" }}>
+      {/* Filled portion */}
+      <Animated.View
+        style={{
+          position: "absolute", top: 0, left: 0, bottom: 0,
+          backgroundColor: color,
+          borderRadius: 6,
+          width: progress,
+          overflow: "hidden",
+        }}
+      >
+        {/* Shimmer strip inside fill */}
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: 0, bottom: 0,
+            width: "55%",
+            backgroundColor: "#ffffff",
+            opacity: shimmerPos.interpolate({
+              inputRange: [-1, -0.5, 0, 0.5, 1],
+              outputRange: [0, 0, 0.35, 0, 0],
+            }),
+            left: shimmerPos.interpolate({
+              inputRange: [-1, 1],
+              outputRange: ["-80%", "160%"],
+            }),
+            transform: [{ skewX: "-20deg" }],
+          }}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
 interface XpLevelBarProps {
   totalPoints: number;
   compact?: boolean;
@@ -139,29 +190,12 @@ export function XpLevelBar({ totalPoints, compact = false }: XpLevelBarProps) {
         </View>
       </View>
 
-      {/* XP bar */}
-      <View style={[styles.trackBg, { backgroundColor: colors.muted, marginTop: 14 }]}>
-        <Animated.View
-          style={[
-            styles.trackFill,
-            {
-              backgroundColor: current.color,
-              width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
-            },
-          ]}
+      {/* XP bar with shimmer */}
+      <View style={{ marginTop: 14, backgroundColor: colors.muted, borderRadius: 6 }}>
+        <ShimmerBar
+          color={current.color}
+          progress={progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] })}
         />
-        {/* Animated glow overlay when near level up */}
-        {isNearLevelUp && (
-          <Animated.View
-            style={[
-              styles.glowOverlay,
-              {
-                opacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }),
-                backgroundColor: "#fff",
-              },
-            ]}
-          />
-        )}
       </View>
 
       {/* Progress labels */}
