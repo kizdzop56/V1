@@ -80,6 +80,7 @@ export function AnimatedMascotImage({ pose = "wave", width = 200, height, style 
   const breathe = useRef(new Animated.Value(1)).current;
   const lidLY   = useRef(new Animated.Value(-lidH)).current;
   const lidRY   = useRef(new Animated.Value(-lidH)).current;
+  const waveRot = useRef(new Animated.Value(0)).current;
 
   // ── Breathing ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -90,6 +91,23 @@ export function AnimatedMascotImage({ pose = "wave", width = 200, height, style 
       ])
     ).start();
   }, []);
+
+  // ── Wave rocking (only for "wave" pose) ────────────────────────────────────
+  useEffect(() => {
+    if (pose !== "wave") return;
+    const rock = Animated.loop(
+      Animated.sequence([
+        Animated.timing(waveRot, { toValue:  1, duration: 300, useNativeDriver:true }),
+        Animated.timing(waveRot, { toValue: -1, duration: 300, useNativeDriver:true }),
+        Animated.timing(waveRot, { toValue:  1, duration: 300, useNativeDriver:true }),
+        Animated.timing(waveRot, { toValue: -1, duration: 300, useNativeDriver:true }),
+        Animated.timing(waveRot, { toValue:  0, duration: 300, useNativeDriver:true }),
+        Animated.delay(1400),
+      ])
+    );
+    rock.start();
+    return () => rock.stop();
+  }, [pose]);
 
   // ── Blink ──────────────────────────────────────────────────────────────────
   const doBlink = useCallback(() => {
@@ -158,10 +176,18 @@ export function AnimatedMascotImage({ pose = "wave", width = 200, height, style 
   const lx = ep.lx * imgW, ly = ep.ly * imgH;
   const rx = ep.rx * imgW, ry = ep.ry * imgH;
 
+  const rotDeg = waveRot.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ["-6deg", "0deg", "6deg"],
+  });
+
   return (
     <Animated.View
-      style={[{ width: imgW, height: imgH, position: "relative" }, style,
-              { transform: [{ scale: breathe }] }]}
+      style={[
+        { width: imgW, height: imgH, position: "relative" },
+        style,
+        { transform: [{ scale: breathe }, { rotate: pose === "wave" ? rotDeg : "0deg" }] },
+      ]}
     >
       <Image source={SRC[pose]} style={{ width: imgW, height: imgH }} resizeMode="contain" />
 

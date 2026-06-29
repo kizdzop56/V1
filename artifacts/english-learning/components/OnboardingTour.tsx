@@ -76,11 +76,21 @@ export function OnboardingTour({
           {/* Title */}
           <Text style={styles.title}>Привет!</Text>
 
-          {/* Description — plain, no box */}
-          <Text style={styles.desc}>
-            Я твой личный помощник в изучении английского.{"\n"}
-            Давай покажу тебе, как всё устроено!
-          </Text>
+          {/* Description — in a neon-bordered bubble */}
+          <View
+            style={[
+              styles.bubble,
+              {
+                // @ts-ignore web
+                boxShadow: "0 0 16px rgba(168,85,247,0.7), 0 0 5px rgba(168,85,247,0.4)",
+              },
+            ]}
+          >
+            <Text style={styles.desc}>
+              Я твой личный помощник в изучении английского.{"\n"}
+              Давай покажу тебе, как всё устроено!
+            </Text>
+          </View>
 
           {/* CTA */}
           <TouchableOpacity style={styles.btn} onPress={handleFinish} activeOpacity={0.85}>
@@ -121,13 +131,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     letterSpacing: -0.3,
   },
+  bubble: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#a855f7",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 22,
+  },
   desc: {
     fontSize: 15,
     lineHeight: 24,
     fontWeight: "500",
     textAlign: "center",
     color: "#ede9ff",
-    marginBottom: 28,
   },
   btn: {
     width: "100%",
