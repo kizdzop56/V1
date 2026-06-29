@@ -241,7 +241,18 @@ function FriendsModal({
     finally { setLoadingList(false); }
   }, []);
 
-  useEffect(() => { if (visible) loadFriends(); }, [visible, loadFriends]);
+  const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      loadFriends();
+      // Poll every 30s while modal is open to refresh online dots
+      pollerRef.current = setInterval(loadFriends, 30_000);
+    } else {
+      if (pollerRef.current) { clearInterval(pollerRef.current); pollerRef.current = null; }
+    }
+    return () => { if (pollerRef.current) { clearInterval(pollerRef.current); pollerRef.current = null; } };
+  }, [visible, loadFriends]);
 
   // Auto-search when exactly 6 chars entered
   const handleCodeChange = async (raw: string) => {

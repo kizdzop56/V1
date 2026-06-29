@@ -9,7 +9,6 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
-import { Feather } from "@expo/vector-icons";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,7 +23,7 @@ setBaseUrl(domain ? `https://${domain}/api` : "/api");
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    ...Feather.font,
+    Feather: require("../assets/fonts/Feather.ttf"),
   });
 
   useEffect(() => {
