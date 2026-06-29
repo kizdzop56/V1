@@ -132,8 +132,6 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 26,
     backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "rgba(139,92,246,0.70)",
     padding: 20,
     alignItems: "center",
     shadowColor: "#8b5cf6",
