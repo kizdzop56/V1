@@ -46,6 +46,7 @@ function StudentTimerManager() {
     sessionActiveRef.current = false;
     AsyncStorage.removeItem(SESSION_START_KEY);
     rawPost("/api/time-tracking/end");
+    rawPost("/api/users/offline");
   }, [rawPost]);
 
   useEffect(() => {

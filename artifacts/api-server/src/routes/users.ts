@@ -60,7 +60,7 @@ router.get("/users/:id", requireAuth, async (req, res) => {
     }
   }
 
-  const ONLINE_MS = 3 * 60 * 1000;
+  const ONLINE_MS = 90 * 1000; // 90s — ping is every 60s, 30s buffer
   const isOnline = user.lastSeenAt
     ? Date.now() - new Date(user.lastSeenAt).getTime() < ONLINE_MS
     : false;

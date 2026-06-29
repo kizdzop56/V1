@@ -174,42 +174,7 @@ export default function LeaderboardScreen() {
       </View>
 
       {/* ── Scope pills (horizontal scroll, fixed height) ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{
-          paddingHorizontal: 16, paddingBottom: 10,
-          gap: 8, flexDirection: "row", alignItems: "center",
-        }}
-      >
-        {SCOPE_OPTIONS.map(opt => {
-          const active = opt.key === scope;
-          return (
-            <TouchableOpacity
-              key={opt.key}
-              onPress={() => setScope(opt.key)}
-              activeOpacity={0.78}
-              style={{
-                flexDirection: "row", alignItems: "center", gap: 7,
-                paddingHorizontal: 16, paddingVertical: 9,
-                borderRadius: 22,
-                backgroundColor: active ? opt.color : colors.card,
-                borderWidth: 1.5,
-                borderColor: active ? opt.color : colors.border,
-              }}
-            >
-              <Feather name={opt.icon} size={15} color={active ? "#fff" : opt.color} />
-              <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.foreground }}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* ── Age group pills (only when scope === "age") ── */}
-      {scope === "age" && (
+      <View style={{ flexGrow: 0, flexShrink: 0, overflow: "hidden" }}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -219,65 +184,106 @@ export default function LeaderboardScreen() {
             gap: 8, flexDirection: "row", alignItems: "center",
           }}
         >
-          {AGE_GROUPS.map(ag => {
-            const active = ag.label === activeAgeGroup.label;
+          {SCOPE_OPTIONS.map(opt => {
+            const active = opt.key === scope;
             return (
               <TouchableOpacity
-                key={ag.label}
-                onPress={() => setActiveAgeGroup(ag)}
+                key={opt.key}
+                onPress={() => setScope(opt.key)}
                 activeOpacity={0.78}
                 style={{
-                  flexDirection: "row", alignItems: "center", gap: 6,
-                  paddingHorizontal: 14, paddingVertical: 8,
+                  flexDirection: "row", alignItems: "center", gap: 7,
+                  paddingHorizontal: 16, paddingVertical: 9,
                   borderRadius: 22,
-                  backgroundColor: active ? "#f59e0b" : colors.card,
+                  backgroundColor: active ? opt.color : colors.card,
                   borderWidth: 1.5,
-                  borderColor: active ? "#f59e0b" : colors.border,
+                  borderColor: active ? opt.color : colors.border,
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
-                  {ag.label}
+                <Feather name={opt.icon} size={15} color={active ? "#fff" : opt.color} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.foreground }}>
+                  {opt.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
+      </View>
+
+      {/* ── Age group pills (only when scope === "age") ── */}
+      {scope === "age" && (
+        <View style={{ flexGrow: 0, flexShrink: 0, overflow: "hidden" }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16, paddingBottom: 10,
+              gap: 8, flexDirection: "row", alignItems: "center",
+            }}
+          >
+            {AGE_GROUPS.map(ag => {
+              const active = ag.label === activeAgeGroup.label;
+              return (
+                <TouchableOpacity
+                  key={ag.label}
+                  onPress={() => setActiveAgeGroup(ag)}
+                  activeOpacity={0.78}
+                  style={{
+                    flexDirection: "row", alignItems: "center", gap: 6,
+                    paddingHorizontal: 14, paddingVertical: 8,
+                    borderRadius: 22,
+                    backgroundColor: active ? "#f59e0b" : colors.card,
+                    borderWidth: 1.5,
+                    borderColor: active ? "#f59e0b" : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
+                    {ag.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       )}
 
       {/* ── Subcategory tabs ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{
-          paddingHorizontal: 16, paddingBottom: 12,
-          gap: 8, flexDirection: "row", alignItems: "center",
-        }}
-      >
-        {CATEGORIES.map(cat => {
-          const active = cat.key === activeKey;
-          return (
-            <TouchableOpacity
-              key={cat.key}
-              activeOpacity={0.75}
-              onPress={() => setActiveKey(cat.key)}
-              style={{
-                flexDirection: "row", alignItems: "center", gap: 6,
-                paddingHorizontal: 14, paddingVertical: 8,
-                borderRadius: 22,
-                backgroundColor: active ? cat.color : colors.card,
-                borderWidth: 1.5,
-                borderColor: active ? cat.color : colors.border,
-              }}
-            >
-              <Feather name={cat.icon} size={14} color={active ? "#fff" : colors.mutedForeground} />
-              <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={{ flexGrow: 0, flexShrink: 0, overflow: "hidden" }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, flexShrink: 0 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16, paddingBottom: 12,
+            gap: 8, flexDirection: "row", alignItems: "center",
+          }}
+        >
+          {CATEGORIES.map(cat => {
+            const active = cat.key === activeKey;
+            return (
+              <TouchableOpacity
+                key={cat.key}
+                activeOpacity={0.75}
+                onPress={() => setActiveKey(cat.key)}
+                style={{
+                  flexDirection: "row", alignItems: "center", gap: 6,
+                  paddingHorizontal: 14, paddingVertical: 8,
+                  borderRadius: 22,
+                  backgroundColor: active ? cat.color : colors.card,
+                  borderWidth: 1.5,
+                  borderColor: active ? cat.color : colors.border,
+                }}
+              >
+                <Feather name={cat.icon} size={14} color={active ? "#fff" : colors.mutedForeground} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : colors.mutedForeground }}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* ── My position card ── */}
       {myEntry && (
