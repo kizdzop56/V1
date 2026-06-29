@@ -1405,15 +1405,19 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={s.logoutBtn}
           onPress={() => {
-            Alert.alert(
-              "Выйти из аккаунта?",
-              "Вы уверены, что хотите выйти из профиля?",
-              [
-                { text: "Отмена", style: "cancel" },
-                { text: "Выйти", style: "destructive", onPress: logout },
-              ],
-              { cancelable: true }
-            );
+            if (Platform.OS === "web") {
+              if (window.confirm("Выйти из аккаунта?")) logout();
+            } else {
+              Alert.alert(
+                "Выйти из аккаунта?",
+                "Вы уверены, что хотите выйти из профиля?",
+                [
+                  { text: "Отмена", style: "cancel" },
+                  { text: "Выйти", style: "destructive", onPress: logout },
+                ],
+                { cancelable: true }
+              );
+            }
           }}
         >
           <Text style={s.logoutText}>Выйти из аккаунта</Text>
