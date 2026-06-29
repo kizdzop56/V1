@@ -1,13 +1,17 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
+  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions, Platform,
 } from "react-native";
+import { Video, ResizeMode } from "expo-av";
 import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 import authStorage from "@/utils/authStorage";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const WAVE_VIDEO = require("../assets/images/mascot_wave_anim.mov");
 
 interface OnboardingTourProps {
   visible: boolean;
@@ -54,8 +58,19 @@ export function OnboardingTour({
             { width: cardW, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Mascot — transparent PNG, no background */}
-          <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} />
+          {/* Mascot — MOV with alpha on native, PNG fallback on web */}
+          {Platform.OS !== "web" ? (
+            <Video
+              source={WAVE_VIDEO}
+              style={{ width: mascotW, height: mascotH }}
+              resizeMode={ResizeMode.CONTAIN}
+              isLooping
+              shouldPlay
+              isMuted
+            />
+          ) : (
+            <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} />
+          )}
 
           {/* Name */}
           <Text
@@ -76,7 +91,7 @@ export function OnboardingTour({
           {/* Title */}
           <Text style={styles.title}>Привет!</Text>
 
-          {/* Description — in a neon-bordered bubble */}
+          {/* Description — neon-bordered bubble */}
           <View
             style={[
               styles.bubble,
@@ -112,7 +127,6 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: "center",
-    // no background, no border, no shadow — everything floats on the overlay
   },
   nameLabel: {
     fontSize: 22,
