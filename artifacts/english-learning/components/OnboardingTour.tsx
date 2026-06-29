@@ -138,12 +138,17 @@ export function OnboardingTour({
   const bgColor   = accent + "18";
   const borderColor = accent;
 
-  const cardW   = Math.min(SCREEN_W - 40, 420);
-  // lie pose is landscape (16:9); all others are portrait (9:16)
+  const cardW      = Math.min(SCREEN_W - 40, 420);
   const isLandscape = current.pose === "lie";
-  const mascotAreaH = isLandscape ? 140 : 210;
-  const mascotW = isLandscape ? cardW * 0.72 : Math.round(mascotAreaH * 9 / 16);
-  const mascotH = isLandscape ? Math.round(mascotW * 9 / 16) : Math.round(mascotW * 16 / 9);
+  // Mascot floats ABOVE the card — portrait poses are tall so keep them
+  // reasonably sized; landscape ("lie") is wide.
+  const mascotW  = isLandscape ? Math.round(cardW * 0.68) : Math.round(cardW * 0.48);
+  const mascotH  = isLandscape
+    ? Math.round(mascotW * 9 / 16)
+    : Math.round(mascotW * 16 / 9);
+  // How many pixels the mascot's feet overlap into the card top
+  const overlap  = isLandscape ? 24 : Math.round(mascotH * 0.18);
+  const cardTopPad = overlap + 12;
 
   return (
     <Modal
@@ -153,88 +158,98 @@ export function OnboardingTour({
       onRequestClose={handleFinish}
     >
       <View style={styles.overlay}>
-        <Animated.View
-          style={[
-            styles.container,
-            { backgroundColor: colors.card, width: cardW, transform: [{ scale: scaleAnim }] },
-          ]}
-        >
-          {/* ── Mascot — fixed-height container, mascot centred ── */}
-          <View style={[styles.mascotArea, { height: mascotAreaH }]}>
-            <AnimatedMascotImage
-              pose={current.pose}
-              width={mascotW}
-              height={mascotH}
-            />
-          </View>
+        {/* ── Outer wrapper centres everything ── */}
+        <Animated.View style={{ width: cardW, alignItems: "center", transform: [{ scale: scaleAnim }] }}>
 
-          {/* Name label — gradient purple */}
-          <Text
+          {/* ── Mascot — floats on the dark overlay, no white box ── */}
+          <AnimatedMascotImage
+            pose={current.pose}
+            width={mascotW}
+            height={mascotH}
+            style={{ zIndex: 2 }}
+          />
+
+          {/* ── White card — slides under the mascot feet ── */}
+          <View
             style={[
-              styles.nameLabel,
+              styles.container,
               {
-                color: "#8b5cf6",
-                // @ts-ignore web gradient text
-                backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                backgroundColor: colors.card,
+                width: cardW,
+                marginTop: -overlap,
+                paddingTop: cardTopPad,
+                zIndex: 1,
               },
             ]}
           >
-            {mascotName}
-          </Text>
-
-          {/* Step content */}
-          <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>
-              {current.title}
+            {/* Name label — gradient purple */}
+            <Text
+              style={[
+                styles.nameLabel,
+                {
+                  color: "#8b5cf6",
+                  // @ts-ignore web gradient text
+                  backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              ]}
+            >
+              {mascotName}
             </Text>
-            <View style={[styles.bubble, { backgroundColor: bgColor, borderColor }]}>
-              <Text style={[styles.bubbleText, { color: colors.foreground }]}>
-                {current.message}
+
+            {/* Step content */}
+            <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+              <Text style={[styles.stepTitle, { color: colors.foreground }]}>
+                {current.title}
               </Text>
+              <View style={[styles.bubble, { backgroundColor: bgColor, borderColor }]}>
+                <Text style={[styles.bubbleText, { color: colors.foreground }]}>
+                  {current.message}
+                </Text>
+              </View>
+            </Animated.View>
+
+            {/* Progress dots */}
+            <View style={styles.dotsRow}>
+              {TOUR_STEPS.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    i === step
+                      ? { backgroundColor: accent, width: 20 }
+                      : { backgroundColor: colors.border },
+                  ]}
+                />
+              ))}
             </View>
-          </Animated.View>
 
-          {/* Progress dots */}
-          <View style={styles.dotsRow}>
-            {TOUR_STEPS.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  i === step
-                    ? { backgroundColor: accent, width: 20 }
-                    : { backgroundColor: colors.border },
-                ]}
-              />
-            ))}
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.btnRow}>
-            {!isLast && (
+            {/* Buttons */}
+            <View style={styles.btnRow}>
+              {!isLast && (
+                <TouchableOpacity
+                  style={[styles.skipBtn, { borderColor: colors.border }]}
+                  onPress={handleFinish}
+                >
+                  <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
+                    Пропустить
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                style={[styles.skipBtn, { borderColor: colors.border }]}
-                onPress={handleFinish}
+                style={[
+                  styles.nextBtn,
+                  { backgroundColor: accent, flex: isLast ? 1 : undefined },
+                ]}
+                onPress={handleNext}
               >
-                <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-                  Пропустить
+                <Text style={styles.nextText}>
+                  {isLast ? "Начать учиться! 🚀" : "Далее"}
                 </Text>
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[
-                styles.nextBtn,
-                { backgroundColor: accent, flex: isLast ? 1 : undefined },
-              ]}
-              onPress={handleNext}
-            >
-              <Text style={styles.nextText}>
-                {isLast ? "Начать учиться! 🚀" : "Далее"}
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
       </View>
@@ -260,13 +275,6 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
     alignItems: "center",
-  },
-  mascotArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    marginBottom: 8,
-    alignSelf: "center",
   },
   nameLabel: {
     textAlign: "center",
