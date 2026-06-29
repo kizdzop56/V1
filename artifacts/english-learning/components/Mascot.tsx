@@ -15,8 +15,8 @@ const MOOD_EMOJIS: Record<MascotMood, string> = {
   sleep: "😴",
 };
 
-const MASCOT_IMAGE = require("../assets/images/mascot.jpeg");
-const MASCOT_CELEBRATE = require("../assets/images/mascot_celebrate.jpeg");
+const MASCOT_IMAGE = require("../assets/images/mascot_full.png");
+const MASCOT_CELEBRATE = require("../assets/images/mascot_full_celebrate.png");
 
 interface MascotProps {
   visible: boolean;
@@ -77,19 +77,16 @@ export function MascotModal({
         >
           <TouchableOpacity activeOpacity={1}>
             <View style={styles.mascotArea}>
-              <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-                <View style={[styles.mascotCircle, { borderColor }]}>
-                  <Image source={mascotSrc} style={styles.mascotImage} />
-                  <View style={[styles.moodBadge, { backgroundColor: bgColor }]}>
-                    <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood]}</Text>
-                  </View>
+              <Animated.View style={{ transform: [{ translateY: bounceAnim }], alignItems: "center" }}>
+                <Image source={mascotSrc} style={styles.mascotImage} resizeMode="contain" />
+                <View style={[styles.moodBadge, { backgroundColor: bgColor, borderColor }]}>
+                  <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood]}</Text>
+                  <Text style={[styles.mascotName, { color: borderColor }]}>{mascotName}</Text>
                 </View>
               </Animated.View>
-              <Text style={[styles.mascotName, { color: colors.mutedForeground }]}>{mascotName}</Text>
             </View>
 
             <View style={[styles.bubble, { backgroundColor: bgColor, borderColor }]}>
-              <View style={[styles.bubbleTail, { borderBottomColor: bgColor }]} />
               <Text style={[styles.messageText, { color: "#1e293b" }]}>{message}</Text>
             </View>
 
@@ -152,12 +149,10 @@ export function FloatingMascot({ mascotName = "Снежа", message, mood = "wav
   return (
     <>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.9} style={styles.floatingBtn}>
-        <Animated.View style={{ transform: [{ translateY: bounceAnim }, { scale: scaleAnim }] }}>
-          <View style={styles.floatingCircle}>
-            <Image source={MASCOT_IMAGE} style={styles.floatingImage} />
-          </View>
+        <Animated.View style={{ transform: [{ translateY: bounceAnim }, { scale: scaleAnim }], alignItems: "center" }}>
+          <Image source={MASCOT_IMAGE} style={styles.floatingImage} resizeMode="contain" />
           <View style={styles.floatingMood}>
-            <Text style={{ fontSize: 12 }}>{MOOD_EMOJIS[mood]}</Text>
+            <Text style={{ fontSize: 11 }}>{MOOD_EMOJIS[mood]}</Text>
           </View>
         </Animated.View>
       </TouchableOpacity>
@@ -191,10 +186,8 @@ export function MascotNamePicker({ visible, currentName, onSave, onClose }: Masc
       <View style={styles.overlay}>
         <View style={[styles.namePickerContainer, { backgroundColor: colors.card }]}>
           <Text style={[styles.namePickerTitle, { color: colors.foreground }]}>Имя маскота</Text>
-          <View style={{ alignItems: "center", marginVertical: 16 }}>
-            <View style={[styles.mascotCircle, { borderColor: "#8b5cf6" }]}>
-              <Image source={MASCOT_IMAGE} style={styles.mascotImage} />
-            </View>
+          <View style={{ alignItems: "center", marginVertical: 8 }}>
+            <Image source={MASCOT_IMAGE} style={[styles.mascotImage, { width: 120, height: 150 }]} resizeMode="contain" />
           </View>
           <TextInput
             style={[styles.nameInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
@@ -278,29 +271,18 @@ const styles = StyleSheet.create({
     width: "100%", borderRadius: 24, padding: 24,
     shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20, elevation: 8,
   },
-  mascotArea: { alignItems: "center", marginBottom: 8 },
-  mascotCircle: {
-    width: 96, height: 96, borderRadius: 48,
-    borderWidth: 3, overflow: "hidden",
-    shadowColor: "#8b5cf6", shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
-  },
-  mascotImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  mascotArea: { alignItems: "center", marginBottom: 4 },
+  mascotImage: { width: 150, height: 190, marginBottom: 2 },
   moodBadge: {
-    position: "absolute", bottom: -4, right: -4,
-    width: 30, height: 30, borderRadius: 15,
-    justifyContent: "center", alignItems: "center",
-    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    borderRadius: 20, borderWidth: 1.5,
+    paddingHorizontal: 12, paddingVertical: 4,
+    marginBottom: 4,
   },
-  moodEmoji: { fontSize: 17 },
-  mascotName: { fontSize: 12, fontWeight: "600", marginTop: 8 },
+  moodEmoji: { fontSize: 16 },
+  mascotName: { fontSize: 13, fontWeight: "700" },
   bubble: {
-    borderRadius: 16, borderWidth: 1.5, padding: 16, marginTop: 16, position: "relative",
-  },
-  bubbleTail: {
-    position: "absolute", top: -10, left: "50%", marginLeft: -8,
-    width: 0, height: 0,
-    borderLeftWidth: 8, borderRightWidth: 8, borderBottomWidth: 10,
-    borderLeftColor: "transparent", borderRightColor: "transparent",
+    borderRadius: 16, borderWidth: 1.5, padding: 16, marginTop: 8,
   },
   messageText: { fontSize: 15, lineHeight: 22, fontWeight: "500", textAlign: "center" },
   actions: { flexDirection: "row", gap: 12, marginTop: 20 },
@@ -314,17 +296,13 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   closeBtnText: { fontWeight: "600", fontSize: 15 },
-  floatingBtn: { position: "absolute", bottom: 90, right: 16, zIndex: 100 },
-  floatingCircle: {
-    width: 58, height: 58, borderRadius: 29, overflow: "hidden",
-    shadowColor: "#8b5cf6", shadowOpacity: 0.35, shadowRadius: 8, elevation: 6,
-    borderWidth: 2.5, borderColor: "#8b5cf6",
-  },
-  floatingImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  floatingBtn: { position: "absolute", bottom: 90, right: 12, zIndex: 100 },
+  floatingImage: { width: 72, height: 90 },
   floatingMood: {
-    position: "absolute", top: -2, right: -2, width: 22, height: 22,
-    borderRadius: 11, backgroundColor: "#fff", justifyContent: "center", alignItems: "center",
-    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, elevation: 2,
+    marginTop: 2, width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "#ede9fe", justifyContent: "center", alignItems: "center",
+    borderWidth: 2, borderColor: "#8b5cf6",
+    shadowColor: "#8b5cf6", shadowOpacity: 0.3, shadowRadius: 4, elevation: 3,
   },
   namePickerContainer: { width: "100%", borderRadius: 24, padding: 24 },
   namePickerTitle: { fontSize: 18, fontWeight: "800", textAlign: "center" },

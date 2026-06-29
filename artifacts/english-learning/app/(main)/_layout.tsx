@@ -3,12 +3,13 @@ import { Feather } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Platform, AppState } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CalendarBadgeProvider, useCalendarBadge } from "@/contexts/CalendarBadgeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import authStorage from "@/utils/authStorage";
+import { TabGuide, TAB_GUIDE_CONTENT, type TabGuideTab } from "@/components/TabGuide";
 
 export const SESSION_START_KEY = "timer_session_start";
 
@@ -17,12 +18,10 @@ const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   : "";
 
 function StudentTimerManager() {
-  // Cache token in a ref so cleanup functions (which can't be async) can use it synchronously
   const tokenRef = useRef<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionActiveRef = useRef(false);
 
-  // Raw fetch helpers — use keepalive:true so they complete even on page close/unmount
   const rawPost = useCallback((path: string) => {
     const token = tokenRef.current;
     if (!token) return;
@@ -46,20 +45,14 @@ function StudentTimerManager() {
     sessionActiveRef.current = false;
     AsyncStorage.removeItem(SESSION_START_KEY);
     rawPost("/api/time-tracking/end");
-    // Do NOT call users/offline here — AppState goes inactive during normal
-    // navigation on iOS, and visibilitychange fires on tab switch on web.
-    // Offline status is determined by 90s ping expiry.
-    // Explicit logout (AuthContext.logout) handles the offline call.
   }, [rawPost]);
 
   useEffect(() => {
-    // Load token first, then start session
     authStorage.getItem("auth_token").then((t) => {
       tokenRef.current = t;
       startNow();
     });
 
-    // Heartbeat every 60s — only fires while session is active
     heartbeatRef.current = setInterval(() => {
       const token = tokenRef.current;
       if (token && sessionActiveRef.current) {
@@ -73,34 +66,23 @@ function StudentTimerManager() {
 
     if (Platform.OS === "web" && typeof document !== "undefined") {
       const onVisibilityChange = () => {
-        if (document.hidden) {
-          endNow();
-        } else {
-          startNow();
-        }
+        if (document.hidden) endNow();
+        else startNow();
       };
       document.addEventListener("visibilitychange", onVisibilityChange);
-
-      // keepalive ensures this fires even on tab/browser close
       const onBeforeUnload = () => { endNow(); };
       window.addEventListener("beforeunload", onBeforeUnload);
-
       return () => {
         document.removeEventListener("visibilitychange", onVisibilityChange);
         window.removeEventListener("beforeunload", onBeforeUnload);
         if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-        // Direct fetch (not React Query) so it is NOT cancelled on unmount
         endNow();
       };
     }
 
-    // Native: handle app backgrounding
     const appStateSub = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "background" || nextState === "inactive") {
-        endNow();
-      } else if (nextState === "active") {
-        startNow();
-      }
+      if (nextState === "background" || nextState === "inactive") endNow();
+      else if (nextState === "active") startNow();
     });
 
     return () => {
@@ -134,7 +116,20 @@ function CalendarTabIcon({ color }: { color: string }) {
   );
 }
 
-function CustomTabBar({ state, descriptors, navigation }: any) {
+// Storage key prefix for tab-first-visit tracking
+const TAB_SEEN_PREFIX = "tab_first_visit_v1_";
+
+// Which tabs have a guide available
+const GUIDE_TABS = new Set<string>(Object.keys(TAB_GUIDE_CONTENT));
+
+interface CustomTabBarProps {
+  state: any;
+  descriptors: any;
+  navigation: any;
+  onFirstVisit: (tabName: TabGuideTab, navigateFn: () => void) => void;
+}
+
+function CustomTabBar({ state, descriptors, navigation, onFirstVisit }: CustomTabBarProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -183,7 +178,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               ? options.title
               : route.name;
 
-          const onPress = () => {
+          const navigateToTab = () => {
             const event = navigation.emit({
               type: "tabPress",
               target: route.key,
@@ -192,6 +187,25 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
+          };
+
+          const onPress = async () => {
+            if (isFocused) return;
+
+            const tabName = route.name as TabGuideTab;
+
+            // Only show guide for tabs that have content + not yet seen
+            if (GUIDE_TABS.has(tabName)) {
+              const seenKey = `${TAB_SEEN_PREFIX}${tabName}`;
+              const seen = await AsyncStorage.getItem(seenKey);
+              if (!seen) {
+                await AsyncStorage.setItem(seenKey, "1");
+                onFirstVisit(tabName, navigateToTab);
+                return;
+              }
+            }
+
+            navigateToTab();
           };
 
           return (
@@ -252,6 +266,24 @@ function MainLayoutInner() {
   const { user } = useAuth();
   const colors = useColors();
 
+  // State for the tab guide
+  const [guideState, setGuideState] = useState<{
+    visible: boolean;
+    tabName: TabGuideTab | null;
+    navigateFn: (() => void) | null;
+  }>({ visible: false, tabName: null, navigateFn: null });
+
+  const handleFirstVisit = useCallback((tabName: TabGuideTab, navigateFn: () => void) => {
+    setGuideState({ visible: true, tabName, navigateFn });
+  }, []);
+
+  const handleGuideClose = useCallback(() => {
+    const nav = guideState.navigateFn;
+    setGuideState({ visible: false, tabName: null, navigateFn: null });
+    // Navigate after the modal begins to close
+    if (nav) setTimeout(nav, 150);
+  }, [guideState.navigateFn]);
+
   if (!user) return <Redirect href="/(auth)/login" />;
 
   const isStudent = user.role === "student";
@@ -262,7 +294,12 @@ function MainLayoutInner() {
     <>
       {isStudent && <StudentTimerManager />}
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={(props) => (
+          <CustomTabBar
+            {...props}
+            onFirstVisit={handleFirstVisit}
+          />
+        )}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "transparent" },
@@ -338,6 +375,13 @@ function MainLayoutInner() {
         <Tabs.Screen name="teacher-results/[id]" options={{ href: null }} />
         <Tabs.Screen name="submission-review/[id]" options={{ href: null }} />
       </Tabs>
+
+      <TabGuide
+        tabName={guideState.tabName}
+        visible={guideState.visible}
+        mascotName={isStudent ? "Снежа" : undefined}
+        onClose={handleGuideClose}
+      />
     </>
   );
 }
@@ -349,4 +393,3 @@ export default function MainLayout() {
     </CalendarBadgeProvider>
   );
 }
-

@@ -66,3 +66,21 @@ id = "_awll_UZVEeaGOJDpWLwy"
 uri = "file://artifacts/english-learning/assets/badges/early-bird.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "qwJy9ENbGFENIKZ0zF62I"
+uri = "file://artifacts/english-learning/assets/images/mascot_full.png"
+type = "image"
+title = "chibi snow leopard mascot waving white bg"
+
+[[generated]]
+id = "mzXAmOC0AvO4AWGSKU-P3"
+uri = "file://artifacts/english-learning/assets/images/mascot_full_celebrate.png"
+type = "image"
+title = "chibi snow leopard mascot celebrating white bg"
+
+[[generated]]
+id = "AkKk7CtvWbtf7YIqAcvLj"
+uri = "file://artifacts/english-learning/assets/images/mascot_full_think.png"
+type = "image"
+title = "chibi snow leopard mascot thinking white bg"

@@ -5,8 +5,8 @@ import {
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
 
-const MASCOT_IMAGE = require("../assets/images/mascot.jpeg");
-const MASCOT_CELEBRATE = require("../assets/images/mascot_celebrate.jpeg");
+const MASCOT_IMAGE = require("../assets/images/mascot_full.png");
+const MASCOT_CELEBRATE = require("../assets/images/mascot_full_celebrate.png");
 const { width: SCREEN_W } = Dimensions.get("window");
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
@@ -221,17 +221,11 @@ const styles = StyleSheet.create({
   },
   mascotArea: { alignItems: "center", marginBottom: 4 },
   mascotRing: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 3.5,
+    width: 160,
+    height: 200,
     overflow: "hidden",
-    shadowColor: "#8b5cf6",
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
   },
-  mascotImg: { width: "100%", height: "100%", resizeMode: "cover" },
+  mascotImg: { width: "100%", height: "100%", resizeMode: "contain" },
   sparkleRow: { flexDirection: "row", gap: 8, marginTop: 4 },
   sparkle: { fontSize: 18 },
   nameLabel: {
