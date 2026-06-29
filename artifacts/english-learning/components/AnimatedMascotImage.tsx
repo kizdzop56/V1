@@ -93,16 +93,18 @@ export function AnimatedMascotImage({
 
   // Blink
   const doBlink = useCallback(() => {
-    const close = Animated.timing(blinkOpac, { toValue: 1, duration: 75,  useNativeDriver: true });
-    const open  = Animated.timing(blinkOpac, { toValue: 0, duration: 75,  useNativeDriver: true });
-    const pause = Animated.delay(60);
+    const close = Animated.timing(blinkOpac, { toValue: 1, duration: 140, useNativeDriver: true });
+    const open  = Animated.timing(blinkOpac, { toValue: 0, duration: 160, useNativeDriver: true });
+    const pause = Animated.delay(90);
 
-    const seq = Math.random() > 0.5
+    const seq = Math.random() > 0.55
       ? Animated.sequence([close, pause, open])
       : Animated.sequence([
           close, pause, open,
-          Animated.delay(120),
-          close, Animated.delay(40), open,
+          Animated.delay(180),
+          Animated.timing(blinkOpac, { toValue: 1, duration: 120, useNativeDriver: true }),
+          Animated.delay(70),
+          Animated.timing(blinkOpac, { toValue: 0, duration: 140, useNativeDriver: true }),
         ]);
 
     seq.start();
@@ -112,7 +114,7 @@ export function AnimatedMascotImage({
     let alive = true;
     const schedule = () => {
       if (!alive) return;
-      const delay = 2500 + Math.random() * 2000;
+      const delay = 3000 + Math.random() * 2500;
       setTimeout(() => {
         if (!alive) return;
         doBlink();

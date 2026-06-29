@@ -141,7 +141,8 @@ export function OnboardingTour({
   const cardW   = Math.min(SCREEN_W - 40, 420);
   // lie pose is landscape (16:9); all others are portrait (9:16)
   const isLandscape = current.pose === "lie";
-  const mascotW = isLandscape ? cardW * 0.88 : cardW * 0.55;
+  const mascotAreaH = isLandscape ? 140 : 210;
+  const mascotW = isLandscape ? cardW * 0.72 : Math.round(mascotAreaH * 9 / 16);
   const mascotH = isLandscape ? Math.round(mascotW * 9 / 16) : Math.round(mascotW * 16 / 9);
 
   return (
@@ -158,8 +159,8 @@ export function OnboardingTour({
             { backgroundColor: colors.card, width: cardW, transform: [{ scale: scaleAnim }] },
           ]}
         >
-          {/* ── Mascot — static position, only part-animations ── */}
-          <View style={styles.mascotArea}>
+          {/* ── Mascot — fixed-height container, mascot centred ── */}
+          <View style={[styles.mascotArea, { height: mascotAreaH }]}>
             <AnimatedMascotImage
               pose={current.pose}
               width={mascotW}
@@ -262,7 +263,10 @@ const styles = StyleSheet.create({
   },
   mascotArea: {
     alignItems: "center",
-    marginBottom: 4,
+    justifyContent: "center",
+    overflow: "hidden",
+    marginBottom: 8,
+    alignSelf: "center",
   },
   nameLabel: {
     textAlign: "center",
