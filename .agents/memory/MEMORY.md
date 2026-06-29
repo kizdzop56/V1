@@ -1,1 +1,1 @@
-- [Gamification system](gamification.md) — full XP/achievements/mascot system added; key schema, API routes, and frontend hooks/components documented.
+- [Transparent animated mascot in Expo](transparent-animation-expo.md) — use animated WebP via expo-image, not video; flood-fill solid bg out per-frame; verify alpha (filenames lie).

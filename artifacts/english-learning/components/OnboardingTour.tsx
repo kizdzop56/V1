@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions, Platform,
+  View, Text, TouchableOpacity, Animated, StyleSheet, Modal, Dimensions,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
+import { Image } from "expo-image";
 import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 import authStorage from "@/utils/authStorage";
 
@@ -10,8 +10,10 @@ const { width: SCREEN_W } = Dimensions.get("window");
 
 export const TOUR_STORAGE_KEY = "onboarding_tour_done_v1";
 
+// Transparent animated WebP (white bg flood-filled out, alpha preserved).
+// expo-image autoplays animated WebP with transparency on web + native.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const WAVE_VIDEO = require("../assets/images/mascot_wave_anim.mov");
+const WAVE_WEBP = require("../assets/images/mascot_wave.webp");
 
 interface OnboardingTourProps {
   visible: boolean;
@@ -26,6 +28,7 @@ export function OnboardingTour({
 }: OnboardingTourProps) {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -58,18 +61,18 @@ export function OnboardingTour({
             { width: cardW, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Mascot — MOV with alpha on native, PNG fallback on web */}
-          {Platform.OS !== "web" ? (
-            <Video
-              source={WAVE_VIDEO}
-              style={{ width: mascotW, height: mascotH }}
-              resizeMode={ResizeMode.CONTAIN}
-              isLooping
-              shouldPlay
-              isMuted
-            />
-          ) : (
+          {/* Mascot — transparent animated WebP (autoplays everywhere).
+              Falls back to the static PNG mascot if it fails to load. */}
+          {imgFailed ? (
             <AnimatedMascotImage pose="wave" width={mascotW} height={mascotH} />
+          ) : (
+            <Image
+              source={WAVE_WEBP}
+              style={{ width: mascotW, height: mascotH }}
+              contentFit="contain"
+              autoplay
+              onError={() => setImgFailed(true)}
+            />
           )}
 
           {/* Name */}
