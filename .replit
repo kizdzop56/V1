@@ -11,6 +11,27 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "English Learning App"
+
+[[workflows.workflow]]
+name = "English Learning App"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=22710 pnpm --filter @workspace/english-learning run dev"
+waitForPort = 22710
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
