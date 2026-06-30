@@ -5,11 +5,11 @@ import { Asset } from "expo-asset";
 import { AnimatedMascotImage } from "@/components/AnimatedMascotImage";
 
 // Transparent animated WebP — cropped tight to the leopard, full quality.
-// Native ratio is 303x405 (portrait).
+// Native ratio is 290x392 (portrait).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const WAVE_WEBP = require("../assets/images/mascot_wave.webp");
 
-export const MASCOT_RATIO = 303 / 405; // width / height
+export const MASCOT_RATIO = 290 / 392; // width / height
 
 interface Props {
   width: number;
