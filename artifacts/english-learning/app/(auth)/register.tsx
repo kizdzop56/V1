@@ -70,6 +70,12 @@ export default function RegisterScreen() {
     setStep("details");
   };
 
+  const isFormValid =
+    name.trim().length > 0 &&
+    username.trim().length > 0 &&
+    password.length >= 6 &&
+    (role !== "teacher" || teacherCode.trim().length > 0);
+
   const handleDetailsNext = () => {
     if (!name.trim()) { setError("Введите ваше полное имя"); return; }
     if (!username.trim()) { setError("Введите ваш псевдоним"); return; }
@@ -154,7 +160,7 @@ export default function RegisterScreen() {
     eyeBtn: { padding: 6 },
 
     primaryBtn: {
-      backgroundColor: colors.primary, borderRadius: 14,
+      borderRadius: 14,
       paddingVertical: 16, alignItems: "center", marginTop: 10,
     },
     primaryBtnText: { fontSize: 16, fontWeight: "700", color: "#fff", letterSpacing: 0.2 },
@@ -296,10 +302,15 @@ export default function RegisterScreen() {
 
               {error ? <Text style={s.error}>{error}</Text> : null}
 
-              <TouchableOpacity style={s.primaryBtn} onPress={handleDetailsNext} disabled={loading}>
+              <TouchableOpacity
+                style={[s.primaryBtn, { backgroundColor: isFormValid && !loading ? colors.primary : colors.border }]}
+                onPress={handleDetailsNext}
+                disabled={!isFormValid || loading}
+                activeOpacity={isFormValid ? 0.75 : 1}
+              >
                 {loading
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.primaryBtnText}>Создать аккаунт</Text>
+                  : <Text style={[s.primaryBtnText, { color: isFormValid ? "#fff" : colors.mutedForeground }]}>Создать аккаунт</Text>
                 }
               </TouchableOpacity>
             </>
