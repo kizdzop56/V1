@@ -4,7 +4,6 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateToken, requireAuth, getUser } from "../lib/auth";
-import { calculateAge, getKnowledgeLevel } from "../lib/knowledgeLevel";
 import { generateInviteCode } from "../lib/inviteCode";
 
 const router = Router();
@@ -64,8 +63,10 @@ router.post("/auth/login", async (req, res) => {
   res.json({ token, user: PUBLIC_USER_FIELDS(user) });
 });
 
+const TEACHER_CODE = "422668";
+
 router.post("/auth/register", async (req, res) => {
-  const { username, password, name, role, dateOfBirth, parentId } = req.body;
+  const { username, password, name, role, parentId, teacherCode } = req.body;
 
   if (!username || !password || !name || !role) {
     res.status(400).json({ error: "Missing required fields" });
@@ -77,20 +78,11 @@ router.post("/auth/register", async (req, res) => {
     return;
   }
 
-  let age: number | null = null;
-  let knowledgeLevel: string | null = null;
-
-  if (role === "student") {
-    if (!dateOfBirth) {
-      res.status(400).json({ error: "Date of birth is required for students" });
+  if (role === "teacher") {
+    if (!teacherCode || teacherCode !== TEACHER_CODE) {
+      res.status(403).json({ error: "Неверный код учителя" });
       return;
     }
-    age = calculateAge(dateOfBirth);
-    if (age < 5 || age > 18) {
-      res.status(400).json({ error: "Student age must be between 5 and 18 years" });
-      return;
-    }
-    knowledgeLevel = getKnowledgeLevel(age);
   }
 
   const [existing] = await db.select().from(usersTable).where(eq(usersTable.username, username));
@@ -118,9 +110,6 @@ router.post("/auth/register", async (req, res) => {
     passwordHash,
     name,
     role: dbRole,
-    age,
-    dateOfBirth: dateOfBirth ?? null,
-    knowledgeLevel: knowledgeLevel as any ?? null,
     parentId: role === "student" && parentId ? parentId : null,
     totalPoints: 0,
     inviteCode,

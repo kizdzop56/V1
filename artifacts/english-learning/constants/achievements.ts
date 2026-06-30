@@ -219,62 +219,6 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: ({ totalPoints }) => totalPoints >= 5000,
   },
 
-  // ─── Уровни знаний ─────────────────────────────────────────────
-  {
-    id: "level_starter",
-    emoji: "🌱",
-    title: "Стартовый уровень",
-    description: "Ты начал обучение на стартовом уровне — каждый мастер когда-то был новичком.",
-    requirement: "Начни обучение — уровень знаний «Стартовый».",
-    color: "#8b5cf6",
-    bgColor: "#ede9fe",
-    check: ({ knowledgeLevel }) =>
-      ["starter", "beginner", "elementary", "intermediate", "upper_intermediate"].includes(knowledgeLevel ?? ""),
-  },
-  {
-    id: "level_beginner",
-    emoji: "🌿",
-    title: "Начинающий",
-    description: "Ты достиг уровня «Начинающий» — прогресс налицо!",
-    requirement: "Достигни уровня знаний «Начинающий».",
-    color: "#06b6d4",
-    bgColor: "#cffafe",
-    check: ({ knowledgeLevel }) =>
-      ["beginner", "elementary", "intermediate", "upper_intermediate"].includes(knowledgeLevel ?? ""),
-  },
-  {
-    id: "level_elementary",
-    emoji: "🌳",
-    title: "Элементарный",
-    description: "Уровень «Элементарный» покорён — ты уверенно идёшь вперёд!",
-    requirement: "Достигни уровня знаний «Элементарный».",
-    color: "#10b981",
-    bgColor: "#d1fae5",
-    check: ({ knowledgeLevel }) =>
-      ["elementary", "intermediate", "upper_intermediate"].includes(knowledgeLevel ?? ""),
-  },
-  {
-    id: "level_intermediate",
-    emoji: "🔥",
-    title: "Средний уровень",
-    description: "Средний уровень знаний — ты горишь жаждой знаний!",
-    requirement: "Достигни уровня знаний «Средний».",
-    color: "#f59e0b",
-    bgColor: "#fef3c7",
-    check: ({ knowledgeLevel }) =>
-      ["intermediate", "upper_intermediate"].includes(knowledgeLevel ?? ""),
-  },
-  {
-    id: "level_upper",
-    emoji: "🚀",
-    title: "Продвинутый",
-    description: "Продвинутый уровень! Ты взлетел на вершины владения языком!",
-    requirement: "Достигни уровня знаний «Продвинутый».",
-    color: "#ef4444",
-    bgColor: "#fee2e2",
-    check: ({ knowledgeLevel }) => knowledgeLevel === "upper_intermediate",
-  },
-
   // ─── Стрики ────────────────────────────────────────────────────
   {
     id: "streak_3",

@@ -9,7 +9,7 @@ import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useAuth, isTeacherOrAdmin, LEVEL_META, type AuthUser } from "@/contexts/AuthContext";
+import { useAuth, isTeacherOrAdmin, type AuthUser } from "@/contexts/AuthContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useGetStudentSubmissions, useGetStudentTimeStats } from "@workspace/api-client-react";
 import { ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements, type AchievementStats } from "@/constants/achievements";
@@ -656,7 +656,6 @@ export default function ProfileScreen() {
   // timeStats.totalMinutes already includes open-session elapsed time from the server.
   // Do NOT add sessionSeconds here — that would double-count the current session.
   const totalMinutes = timeStats?.totalMinutes ?? 0;
-  const levelMeta = user?.knowledgeLevel ? LEVEL_META[user.knowledgeLevel] : null;
 
   // ── Load gamification stats & claim daily login on focus ──────────
   useFocusEffect(
@@ -1044,13 +1043,6 @@ export default function ProfileScreen() {
                 </View>
               ) : null;
             })()}
-            {/* Уровень (только ученик) */}
-            {levelMeta && (
-              <View style={[s.badge, { backgroundColor: levelMeta.color + "18" }]}>
-                <Feather name="zap" size={12} color={levelMeta.color} />
-                <Text style={[s.badgeText, { color: levelMeta.color }]}>{levelMeta.labelRu}</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -1252,26 +1244,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Уровень */}
-            {levelMeta && (
-              <View style={s.section}>
-                <Text style={s.sectionTitle}>Мой уровень</Text>
-                <View style={[s.levelCard, {
-                  backgroundColor: levelMeta.color + "10",
-                  borderColor: levelMeta.color + "40",
-                }]}>
-                  <View style={[s.levelIcon, { backgroundColor: levelMeta.color + "20" }]}>
-                    <Feather name="zap" size={24} color={levelMeta.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.levelTitle, { color: levelMeta.color }]}>{levelMeta.labelRu}</Text>
-                    <Text style={[s.levelSub, { color: colors.mutedForeground }]}>{levelMeta.label}</Text>
-                    <Text style={[s.levelAge, { color: levelMeta.color }]}>{levelMeta.ageRange}</Text>
-                  </View>
-                  <Feather name="check-circle" size={22} color={levelMeta.color} />
-                </View>
-              </View>
-            )}
 
             {/* ── Витрина наград — Steam стиль ── */}
             <View style={s.section}>
