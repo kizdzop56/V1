@@ -1,1 +1,2 @@
 - [Transparent animated mascot in Expo](transparent-animation-expo.md) — use animated WebP via expo-image, not video; flood-fill solid bg out per-frame; verify alpha (filenames lie).
+- [Mascot image processing](mascot-image-processing.md) — defringe white halo by stripping light edge pixels (true border is dark outline); set WebP speed via ffmpeg -framerate (Pillow duration reader/lossy-save are unreliable).
