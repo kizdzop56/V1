@@ -51,8 +51,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedToken = await authStorage.getItem("auth_token");
         const storedUser = await authStorage.getItem("auth_user");
         if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
+            ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
+            : "";
+          try {
+            const res = await fetch(`${BASE_URL}/api/auth/me`, {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            });
+            if (res.ok) {
+              const freshUser = await res.json();
+              await authStorage.setItem("auth_user", JSON.stringify(freshUser));
+              setToken(storedToken);
+              setUser(freshUser);
+            } else {
+              await authStorage.removeItem("auth_token");
+              await authStorage.removeItem("auth_user");
+            }
+          } catch {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+          }
         }
       } catch {
         // ignore
