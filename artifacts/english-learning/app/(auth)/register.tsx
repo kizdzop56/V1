@@ -110,7 +110,6 @@ export default function RegisterScreen() {
         return;
       }
       await login(data.token, data.user);
-      await authStorage.setItem("onboarding_tour_pending", "1");
       router.replace("/(main)/assignments");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");

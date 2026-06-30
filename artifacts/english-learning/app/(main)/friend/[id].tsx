@@ -8,11 +8,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useAuth, LEVEL_META } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
 import authStorage from "@/utils/authStorage";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
-import { XpLevelBar } from "@/components/XpLevelBar";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -204,10 +203,6 @@ export default function FriendProfileScreen() {
     );
   }
 
-  const levelMeta = profile.knowledgeLevel
-    ? LEVEL_META[profile.knowledgeLevel as keyof typeof LEVEL_META]
-    : null;
-
   const achievementStats: AchievementStats = {
     completedAssignments: profile.completedAssignments,
     totalPoints: profile.totalPoints,
@@ -262,7 +257,7 @@ export default function FriendProfileScreen() {
             flexDirection: "row", alignItems: "center", gap: 5,
             backgroundColor: profile.isOnline ? "#dcfce7" : "rgba(220,210,255,0.4)",
             paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
-            marginBottom: levelMeta ? 10 : 0,
+            marginBottom: 0,
           }}>
             <View style={{
               width: 7, height: 7, borderRadius: 4,
@@ -276,18 +271,6 @@ export default function FriendProfileScreen() {
             </Text>
           </View>
 
-          {levelMeta && (
-            <View style={{
-              flexDirection: "row", alignItems: "center", gap: 6,
-              backgroundColor: levelMeta.color + "18",
-              paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-            }}>
-              <Feather name="zap" size={13} color={levelMeta.color} />
-              <Text style={{ fontSize: 13, fontWeight: "700", color: levelMeta.color }}>
-                {levelMeta.labelRu}
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* ── Friend request card (only students, not self) ── */}
@@ -338,20 +321,6 @@ export default function FriendProfileScreen() {
               </Text>
             </View>
           ))}
-        </View>
-
-        {/* ── XP Level ── */}
-        <View style={{
-          backgroundColor: colors.card, borderRadius: 16, padding: 16,
-          borderWidth: 1, borderColor: colors.border, marginBottom: 16,
-        }}>
-          <Text style={{
-            fontSize: 11, fontWeight: "700", color: colors.mutedForeground,
-            textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12,
-          }}>
-            Уровень опыта
-          </Text>
-          <XpLevelBar totalPoints={profile.totalPoints} />
         </View>
 
         <AchievementsShowcase

@@ -7,7 +7,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useAuth, isTeacherOrAdmin, LEVEL_META } from "@/contexts/AuthContext";
+import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import authStorage from "@/utils/authStorage";
 import { useRouter } from "expo-router";
 
@@ -43,10 +43,6 @@ type PersonItem = {
 };
 
 function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRemove: () => void; onPress: () => void; colors: any }) {
-  const levelMeta = item.knowledgeLevel
-    ? LEVEL_META[item.knowledgeLevel as keyof typeof LEVEL_META]
-    : null;
-
   return (
     <TouchableOpacity
       activeOpacity={0.75}
@@ -76,17 +72,6 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>{item.name}</Text>
         <Text style={{ fontSize: 12, color: colors.mutedForeground }}>@{item.username}</Text>
-        {levelMeta && (
-          <View style={{
-            flexDirection: "row", alignItems: "center", marginTop: 3,
-            backgroundColor: levelMeta.color + "18", paddingHorizontal: 8, paddingVertical: 2,
-            borderRadius: 8, alignSelf: "flex-start",
-          }}>
-            <Text style={{ fontSize: 11, fontWeight: "700", color: levelMeta.color }}>
-              {levelMeta.labelRu}
-            </Text>
-          </View>
-        )}
       </View>
 
       <View style={{ alignItems: "flex-end", gap: 6 }}>
@@ -159,10 +144,6 @@ function AddByCodeModal({
       setError(e.message ?? "Ошибка добавления");
     } finally { setConfirming(false); }
   };
-
-  const levelMeta = found?.knowledgeLevel
-    ? LEVEL_META[found.knowledgeLevel as keyof typeof LEVEL_META]
-    : null;
 
   const borderColor = error ? colors.destructive : found ? "#10b981" : colors.border;
 
@@ -237,14 +218,6 @@ function AddByCodeModal({
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name}</Text>
                 <Text style={{ fontSize: 13, color: "#065f46bb" }}>@{found.username}</Text>
-                {levelMeta && (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: levelMeta.color }} />
-                    <Text style={{ fontSize: 12, color: levelMeta.color, fontWeight: "700" }}>
-                      {levelMeta.labelRu}
-                    </Text>
-                  </View>
-                )}
               </View>
               <Feather name="check-circle" size={26} color="#10b981" />
             </View>
@@ -430,9 +403,6 @@ export default function StudentsScreen() {
                 Ожидают подтверждения · {pendingRequests.length}
               </Text>
               {pendingRequests.map((req) => {
-                const lm = req.student.knowledgeLevel
-                  ? LEVEL_META[req.student.knowledgeLevel as keyof typeof LEVEL_META]
-                  : null;
                 return (
                   <View key={req.requestId} style={{
                     flexDirection: "row", alignItems: "center", gap: 12,
@@ -451,7 +421,7 @@ export default function StudentsScreen() {
                         {req.student.name}
                       </Text>
                       <Text style={{ fontSize: 12, color: "#92400eaa" }}>
-                        {lm ? lm.labelRu : "Ожидает ответа..."}
+                        Ожидает ответа...
                       </Text>
                     </View>
                     <TouchableOpacity

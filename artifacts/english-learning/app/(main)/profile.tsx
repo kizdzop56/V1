@@ -15,7 +15,6 @@ import { useGetStudentSubmissions, useGetStudentTimeStats } from "@workspace/api
 import { ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements, type AchievementStats } from "@/constants/achievements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import authStorage from "@/utils/authStorage";
-import { XpLevelBar, LevelBadgesShowcase } from "@/components/XpLevelBar";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
 import { MascotModal, getMascotMessage } from "@/components/Mascot";
 import { AchievementToast } from "@/components/AchievementToast";
@@ -1200,11 +1199,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* XP Level Bar */}
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Уровень опыта</Text>
-              <XpLevelBar totalPoints={achievementStats.totalPoints} />
-            </View>
 
             {/* Daily Goal */}
             {gamStats && (
@@ -1238,11 +1232,6 @@ export default function ProfileScreen() {
             </View>
 
 
-            {/* ── Витрина наград — Steam стиль ── */}
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Уровни XP</Text>
-              <LevelBadgesShowcase currentLevel={achievementStats.xpLevel} />
-            </View>
 
             <AchievementsShowcase
               unlocked={unlocked}
