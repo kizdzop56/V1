@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform,
-  ActivityIndicator, Modal, TextInput,
+  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
 } from "react-native";
 import ConfirmModal from "@/components/ConfirmModal";
 import { Feather } from "@expo/vector-icons";
@@ -149,7 +149,8 @@ function AddByCodeModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { onClose(); reset(); }}>
-      <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
         <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground, marginBottom: 4 }}>
             {title}
@@ -250,7 +251,8 @@ function AddByCodeModal({
             <Text style={{ fontSize: 15, color: colors.mutedForeground }}>Отмена</Text>
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
