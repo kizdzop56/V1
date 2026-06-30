@@ -29,5 +29,22 @@ them but balloons size (e.g. 2.3MB → 8MB).
 
 **Reliable re-time:** dump frames to PNG, then
 `ffmpeg -y -framerate N -i f%03d.png -vcodec libwebp -lossless 0 -q:v 92 -loop 0 -an out.webp`.
-`-framerate` sets uniform per-frame duration. A natural friendly wave loop is
-~1.8–2.2s; the mascot has 102 frames so framerate 55 ≈ 1.85s. Keeps size ~original.
+`-framerate` sets uniform per-frame duration. Keep target fps ≤ ~40 (higher fps
+animated WebP can stutter/decode-lag on mobile, which reads as "slowing down").
+
+# Making a clean looping wave from a one-shot gesture
+The source mascot_wave gesture is NOT periodic: paw raises (~f0–24), holds up
+waggling slowly (~f24–101), then the loop SNAPS the paw from up back to down
+(seam diff ~58 vs ~9 normal step = a visible teleport = the "visual bug").
+No forward sub-loop is seamless (best seam ~15, still a jump).
+**Fix:** take one paw-up waggle segment (~f24–50) and **ping-pong** it
+(`seg + seg[-2:0:-1]`). Ping-pong reverses through adjacent frames so it's always
+smooth regardless of seam, drops the slow tail and the snap, and gives a continuous
+greeting wave. The intro raise can't loop in a plain animated WebP anyway.
+
+# Prevent lossy halo resurrection (color-bleed)
+Defringe only zeroes ALPHA; the light RGB stays under transparent pixels and
+lossy WebP's RGB→YUV bleeds it back as a faint halo (a recurring "visual bug").
+**Before encoding, dilate opaque RGB into transparent pixels** (iterative neighbor
+average over alpha<40 pixels): the outermost opaque ring is the dark outline, so
+the bleed becomes dark and invisible. Verify edges over BOTH dark and light bgs.
