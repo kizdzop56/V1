@@ -22,6 +22,9 @@ run = "pnpm --filter @workspace/english-learning run dev"
 build = [ "pnpm", "--filter", "@workspace/english-learning", "run", "build" ]
 run = [ "pnpm", "--filter", "@workspace/english-learning", "run", "serve" ]
 
+[services.production.health.startup]
+path = "/healthz"
+
 [services.env]
 PORT = "22710"
 BASE_PATH = "/"
