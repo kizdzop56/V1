@@ -100,11 +100,6 @@ router.post("/auth/register", async (req, res) => {
     return;
   }
 
-  if (!email || !email.includes("@")) {
-    res.status(400).json({ error: "Введите корректный email-адрес" });
-    return;
-  }
-
   if (role === "teacher") {
     if (!teacherCode || teacherCode !== TEACHER_CODE) {
       res.status(403).json({ error: "Неверный код учителя" });
@@ -115,12 +110,6 @@ router.post("/auth/register", async (req, res) => {
   const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.username, username));
   if (existingUser) {
     res.status(400).json({ error: "Этот псевдоним уже занят" });
-    return;
-  }
-
-  const [existingEmail] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase().trim()));
-  if (existingEmail) {
-    res.status(400).json({ error: "Этот email уже зарегистрирован" });
     return;
   }
 
@@ -143,23 +132,11 @@ router.post("/auth/register", async (req, res) => {
     passwordHash,
     name,
     role: dbRole,
-    email: email.toLowerCase().trim(),
     emailVerified: "false",
     parentId: role === "student" && parentId ? parentId : null,
     totalPoints: 0,
     inviteCode,
   }).returning();
-
-  // Send 6-digit verification code (non-blocking)
-  const code = makeCode();
-  await db.insert(authTokensTable).values({
-    userId: user.id,
-    token: code,
-    type: "email_verification",
-    expiresAt: minutesFromNow(15),
-  });
-
-  sendVerificationCode(user.email!, code).catch(() => {});
 
   const jwtToken = generateToken({ userId: user.id, role: user.role });
   res.status(201).json({ token: jwtToken, user: PUBLIC_USER_FIELDS(user) });

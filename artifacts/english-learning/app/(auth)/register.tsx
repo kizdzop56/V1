@@ -23,7 +23,6 @@ export default function RegisterScreen() {
   const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [teacherCode, setTeacherCode] = useState("");
@@ -74,7 +73,6 @@ export default function RegisterScreen() {
   const handleDetailsNext = () => {
     if (!name.trim()) { setError("Введите ваше полное имя"); return; }
     if (!username.trim()) { setError("Введите ваш псевдоним"); return; }
-    if (!email.trim() || !email.includes("@")) { setError("Введите корректный email-адрес"); return; }
     if (password.length < 6) { setError("Пароль должен содержать не менее 6 символов"); return; }
     if (role === "teacher") {
       if (!teacherCode.trim()) { setError("Введите код учителя"); return; }
@@ -97,7 +95,6 @@ export default function RegisterScreen() {
         username: username.trim(),
         password,
         name: name.trim(),
-        email: email.trim(),
         role,
         teacherCode: role === "teacher" ? teacherCode.trim() : undefined,
       };
@@ -114,7 +111,7 @@ export default function RegisterScreen() {
       }
       await login(data.token, data.user);
       await authStorage.setItem("onboarding_tour_pending", "1");
-      router.replace("/(auth)/confirm-email");
+      router.replace("/(main)/assignments");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {
@@ -254,20 +251,6 @@ export default function RegisterScreen() {
                   onChangeText={setUsername}
                   placeholder="Придумайте уникальный логин"
                   placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <Text style={s.fieldLabel}>Email</Text>
-              <View style={s.inputRow}>
-                <TextInput
-                  style={s.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Ваш email-адрес"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
