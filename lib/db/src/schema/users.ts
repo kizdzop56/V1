@@ -34,6 +34,8 @@ export const usersTable = pgTable("users", {
   dailyGoalMinutes: integer("daily_goal_minutes").notNull().default(15),
   loginStreak: integer("login_streak").notNull().default(0),
   lastLoginDate: date("last_login_date"),
+  email: text("email").unique(),
+  emailVerified: text("email_verified").default("false"),
   mascotName: text("mascot_name").default("Оливер"),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

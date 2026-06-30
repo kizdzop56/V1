@@ -138,6 +138,13 @@ export default function LoginScreen() {
             }
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={{ alignItems: "center", marginTop: 4, marginBottom: 4 }}
+            onPress={() => router.push("/(auth)/forgot-password")}
+          >
+            <Text style={[styles.footerLink, { fontSize: 14 }]}>Забыли пароль?</Text>
+          </TouchableOpacity>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>Нет аккаунта?</Text>
             <TouchableOpacity onPress={() => router.push("/(auth)/register")}>

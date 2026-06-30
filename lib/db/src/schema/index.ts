@@ -7,3 +7,4 @@ export * from "./connections";
 export * from "./assignedTasks";
 export * from "./calendar";
 export * from "./gamification";
+export * from "./authTokens";
