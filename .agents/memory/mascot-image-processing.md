@@ -53,13 +53,33 @@ blend 0=alpha-blend, 1=do-not-blend). Remember chunk size padding `sz + (sz&1)`.
   SINGLE rest frame via bytes 12-14, instead of repeating that frame dozens of times.
 
 # Making a clean looping wave from a one-shot gesture
-The pristine source (102 frames, 672x544) is a DOUBLE wave, not periodic: wave1
-(~f0-21 up→down), rest (~f24-38), wave2 (~f39-60 up→down), rest (~f63-101), then the
-loop SNAPS paw-up (seam diff ~54 vs normal step). To get "rest → raise → wave →
-lower → long still rest" seamlessly: take one rest→peak segment (e.g. f36→f49) and
-**ping-pong** it (`[rest] + raise(37..49) + lower(48..37)`). Ping-pong only crosses
-adjacent frames so it's always smooth; the leading rest frame gets the long duration
-for the pause. Crop all frames to the UNION opaque bbox (mascot barely shifts) so it
-stays stable; keep target fps ≤ ~40. Component renders the webp via raw <img> on web
-/ expo-image native with objectFit:contain, so a tiny aspect-ratio change just
-letterboxes — still update MASCOT_RATIO to the new WxH.
+The pristine source (102 frames, 672x544) is a DOUBLE wave, not periodic: paw-UP
+peaks ~f0-3,f11-17,f24-27,f36-43; paw settles DOWN and stays ~f44-101. To get
+"long still rest (paw DOWN) → raise → wave → lower → rest" seamlessly: take one
+down→up segment and **ping-pong** it. The LEADING (long-duration / held) frame MUST
+be the paw-DOWN extreme, then raise to the paw-UP peak and lower back:
+`[down] + raise(...up...) + lower(...back to down...)` — e.g. `[49] + range(48,35,-1)
++ range(37,49)` holds f49 (down), peaks at f36 (up). Ping-pong only crosses adjacent
+frames so it's always smooth; it loops at the down boundary (e.g. f48→f49).
+
+**CRITICAL — verify which extreme is paw-DOWN before choosing the hold frame.**
+Don't eyeball tiny thumbnails (I once inverted it and shipped a freeze on paw-UP).
+Measure opaque-pixel count in the raised-paw region (cropped 290x392: y[130:210],
+x[205:280]): the body/leg overlaps it so the metric NEVER hits 0 — paw-DOWN ≈
+baseline ~1230-1330, paw-UP ≈ ~2.5x baseline ~2900-3600. Pick a hold frame near
+baseline. Then ALWAYS composite rendered frame 0 over a bg and look: the held paw
+must be visibly DOWN.
+
+Crop all frames to the UNION opaque bbox (mascot barely shifts) so it stays stable;
+keep target fps ≤ ~40. Component renders the webp via raw <img> on web / expo-image
+native with objectFit:contain, so a tiny aspect-ratio change just letterboxes — still
+update MASCOT_RATIO to the new WxH.
+
+# App icon from the mascot (Expo)
+iOS app icons must be OPAQUE (no alpha) — composite the transparent mascot PNG onto a
+solid/gradient bg and save as RGB (not RGBA), 1024x1024, full-bleed (OS rounds
+corners; don't bake them). Static mascot_*.png are 768x1408 RGBA (higher-res than the
+wave source — use these, not wave frames, for crisp icons). app.json `expo.icon`,
+`splash.image`, and `web.favicon` all point at the SAME icon.png, so overwriting it
+rebrands all three — set `splash.backgroundColor` to a theme purple (#7C3AED) so the
+splash isn't a square tile on white.
