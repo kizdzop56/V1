@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import authStorage from "@/utils/authStorage";
 import { XpLevelBar, LevelBadgesShowcase } from "@/components/XpLevelBar";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
-import { MascotModal, FloatingMascot, MascotNamePicker, getMascotMessage } from "@/components/Mascot";
+import { MascotModal, getMascotMessage } from "@/components/Mascot";
 import { AchievementToast } from "@/components/AchievementToast";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
 import { useGamification } from "@/hooks/useGamification";
@@ -577,12 +577,11 @@ export default function ProfileScreen() {
   // ── Gamification ──────────────────────────────────────────────────
   const {
     stats: gamStats, dailyLoginResult, toastAchievement,
-    loadStats, claimDailyLogin, unlockAchievements, saveMascotName, hideToast,
+    loadStats, claimDailyLogin, unlockAchievements, hideToast,
   } = useGamification();
 
   const [mascotVisible, setMascotVisible] = useState(false);
   const [mascotMsg, setMascotMsg] = useState({ message: "", mood: "wave" as any });
-  const [mascotNamePickerOpen, setMascotNamePickerOpen] = useState(false);
   const [dailyLoginShown, setDailyLoginShown] = useState(false);
 
   const isStudent = user?.role === "student";
@@ -950,12 +949,6 @@ export default function ProfileScreen() {
         mascotName={gamStats?.mascotName ?? "Снежа"}
         onClose={() => setMascotVisible(false)}
       />
-      <MascotNamePicker
-        visible={mascotNamePickerOpen}
-        currentName={gamStats?.mascotName ?? "Снежа"}
-        onSave={(name) => saveMascotName(name)}
-        onClose={() => setMascotNamePickerOpen(false)}
-      />
 
       {/* Avatar choice modal */}
       <Modal visible={avatarMenuOpen} transparent animationType="slide" onRequestClose={() => setAvatarMenuOpen(false)}>
@@ -1258,51 +1251,6 @@ export default function ProfileScreen() {
               title="Витрина наград"
             />
 
-            {/* ── Маскот-помощник ── */}
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Маскот-помощник</Text>
-              <View style={[s.levelCard, { backgroundColor: "#ede9fe", borderColor: "#8b5cf640" }]}>
-                <View style={[s.levelIcon, { backgroundColor: "#8b5cf620" }]}>
-                  <Text style={{ fontSize: 30 }}>🦉</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      s.levelTitle,
-                      {
-                        color: "#8b5cf6",
-                        // @ts-ignore web gradient text
-                        backgroundImage: "linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                      },
-                    ]}
-                  >
-                    {gamStats?.mascotName ?? "Снежа"}
-                  </Text>
-                  <Text style={[s.levelSub, { color: colors.mutedForeground }]}>Твой помощник в учёбе</Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const msg = getMascotMessage("idle");
-                      setMascotMsg(msg);
-                      setMascotVisible(true);
-                    }}
-                    style={{ backgroundColor: "#ede9fe", borderRadius: 10, padding: 8, borderWidth: 1, borderColor: "#8b5cf640" }}
-                  >
-                    <Text style={{ fontSize: 16 }}>💬</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setMascotNamePickerOpen(true)}
-                    style={{ backgroundColor: "#ede9fe", borderRadius: 10, padding: 8, borderWidth: 1, borderColor: "#8b5cf640" }}
-                  >
-                    <Feather name="edit-2" size={16} color="#6366f1" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
 
             {/* ── Друзья ── */}
             <View style={s.section}>
@@ -1396,14 +1344,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Floating mascot button for students */}
-      {isStudent && (
-        <FloatingMascot
-          mascotName={gamStats?.mascotName ?? "Снежа"}
-          message={getMascotMessage("idle").message}
-          mood="wave"
-        />
-      )}
     </View>
   );
 }
