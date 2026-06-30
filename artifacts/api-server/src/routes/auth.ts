@@ -6,7 +6,7 @@ import { usersTable, authTokensTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import { generateToken, requireAuth, getUser } from "../lib/auth";
 import { generateInviteCode } from "../lib/inviteCode";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
+import { sendVerificationCode, sendPasswordResetEmail } from "../lib/email";
 
 const router = Router();
 
@@ -14,6 +14,14 @@ const TEACHER_CODE = "422668";
 
 function makeToken() {
   return crypto.randomBytes(32).toString("hex");
+}
+
+function makeCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function minutesFromNow(m: number) {
+  return new Date(Date.now() + m * 60 * 1000);
 }
 
 function hoursFromNow(h: number) {
@@ -142,61 +150,67 @@ router.post("/auth/register", async (req, res) => {
     inviteCode,
   }).returning();
 
-  // Send verification email (non-blocking)
-  const verifyToken = makeToken();
+  // Send 6-digit verification code (non-blocking)
+  const code = makeCode();
   await db.insert(authTokensTable).values({
     userId: user.id,
-    token: verifyToken,
+    token: code,
     type: "email_verification",
-    expiresAt: hoursFromNow(24),
+    expiresAt: minutesFromNow(15),
   });
 
-  sendVerificationEmail(user.email!, verifyToken).catch(() => {});
+  sendVerificationCode(user.email!, code).catch(() => {});
 
   const jwtToken = generateToken({ userId: user.id, role: user.role });
   res.status(201).json({ token: jwtToken, user: PUBLIC_USER_FIELDS(user) });
 });
 
-// ── VERIFY EMAIL ───────────────────────────────────────────────────────
-router.get("/auth/verify-email", async (req, res) => {
-  const { token } = req.query as { token?: string };
-  if (!token) {
-    res.status(400).json({ error: "Токен не указан" });
+// ── VERIFY CODE (6-digit OTP) ──────────────────────────────────────────
+router.post("/auth/verify-code", requireAuth, async (req, res) => {
+  const { userId } = getUser(req);
+  const { code } = req.body;
+
+  if (!code || !/^\d{6}$/.test(code)) {
+    res.status(400).json({ error: "Неверный формат кода" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) {
+    res.status(404).json({ error: "Пользователь не найден" });
+    return;
+  }
+  if (user.emailVerified === "true") {
+    res.json({ ok: true, alreadyVerified: true });
     return;
   }
 
   const [row] = await db.select().from(authTokensTable).where(
     and(
-      eq(authTokensTable.token, token),
+      eq(authTokensTable.userId, userId),
+      eq(authTokensTable.token, code),
       eq(authTokensTable.type, "email_verification"),
       gt(authTokensTable.expiresAt, new Date()),
     )
   );
 
   if (!row) {
-    res.status(400).json({ error: "Ссылка недействительна или истекла" });
+    res.status(400).json({ error: "Неверный или устаревший код. Запросите новый." });
     return;
   }
   if (row.usedAt) {
-    res.status(400).json({ error: "Ссылка уже была использована" });
+    res.status(400).json({ error: "Этот код уже был использован" });
     return;
   }
 
   await db.update(authTokensTable).set({ usedAt: new Date() }).where(eq(authTokensTable.id, row.id));
-  await db.update(usersTable).set({ emailVerified: "true" }).where(eq(usersTable.id, row.userId));
+  await db.update(usersTable).set({ emailVerified: "true" }).where(eq(usersTable.id, userId));
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, row.userId));
-  if (!user) {
-    res.status(404).json({ error: "Пользователь не найден" });
-    return;
-  }
-
-  const jwtToken = generateToken({ userId: user.id, role: user.role });
-  res.json({ token: jwtToken, user: PUBLIC_USER_FIELDS(user), verified: true });
+  res.json({ ok: true });
 });
 
-// ── RESEND VERIFICATION ────────────────────────────────────────────────
-router.post("/auth/resend-verification", requireAuth, async (req, res) => {
+// ── RESEND CODE ────────────────────────────────────────────────────────
+router.post("/auth/resend-code", requireAuth, async (req, res) => {
   const { userId } = getUser(req);
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user || !user.email) {
@@ -208,15 +222,15 @@ router.post("/auth/resend-verification", requireAuth, async (req, res) => {
     return;
   }
 
-  const verifyToken = makeToken();
+  const newCode = makeCode();
   await db.insert(authTokensTable).values({
     userId: user.id,
-    token: verifyToken,
+    token: newCode,
     type: "email_verification",
-    expiresAt: hoursFromNow(24),
+    expiresAt: minutesFromNow(15),
   });
 
-  sendVerificationEmail(user.email, verifyToken).catch(() => {});
+  sendVerificationCode(user.email, newCode).catch(() => {});
   res.json({ ok: true });
 });
 

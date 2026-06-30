@@ -13,21 +13,22 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM ?? `"English Learning" <${process.env.SMTP_USER}>`;
 const APP_URL = process.env.APP_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}`;
 
-export async function sendVerificationEmail(to: string, token: string) {
-  const link = `${APP_URL}/verify-email?token=${token}`;
+export async function sendVerificationCode(to: string, code: string) {
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: "Подтвердите ваш email — English Learning",
+    subject: `${code} — ваш код подтверждения English Learning`,
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:#7c3aed">Подтвердите email</h2>
-        <p>Вы создали аккаунт в приложении <strong>English Learning</strong>.</p>
-        <p>Нажмите кнопку ниже, чтобы подтвердить ваш email-адрес:</p>
-        <a href="${link}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;margin:16px 0">
-          Подтвердить email
-        </a>
-        <p style="color:#888;font-size:13px">Ссылка действительна 24 часа. Если вы не регистрировались — просто проигнорируйте это письмо.</p>
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#7c3aed;margin-bottom:8px">Подтвердите регистрацию</h2>
+        <p style="color:#444;margin-bottom:24px">
+          Вы создали аккаунт в приложении <strong>English Learning</strong>.<br>
+          Введите этот код в приложении для подтверждения:
+        </p>
+        <div style="background:#f5f3ff;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px">
+          <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#7c3aed">${code}</span>
+        </div>
+        <p style="color:#888;font-size:13px">Код действителен 15 минут. Если вы не регистрировались — просто проигнорируйте это письмо.</p>
       </div>
     `,
   });

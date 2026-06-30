@@ -114,7 +114,7 @@ export default function RegisterScreen() {
       }
       await login(data.token, data.user);
       await authStorage.setItem("onboarding_tour_pending", "1");
-      router.replace("/(main)/assignments");
+      router.replace("/(auth)/confirm-email");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {
