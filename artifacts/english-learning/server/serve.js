@@ -3,7 +3,7 @@
  *
  * Serves the output of build.js (static-build/) with two special routes:
  * - GET / or /manifest with expo-platform header → platform manifest JSON
- * - GET / without expo-platform → landing page HTML
+ * - GET / without expo-platform → web build (SPA)
  * Everything else falls through to static file serving from ./static-build/.
  *
  * Zero external dependencies — uses only Node.js built-ins (http, fs, path).
@@ -14,6 +14,7 @@ const fs = require("fs");
 const path = require("path");
 
 const STATIC_ROOT = path.resolve(__dirname, "..", "static-build");
+const WEB_ROOT = path.join(STATIC_ROOT, "web");
 const TEMPLATE_PATH = path.resolve(__dirname, "templates", "landing-page.html");
 const basePath = (process.env.BASE_PATH || "/").replace(/\/+$/, "");
 
@@ -65,6 +66,35 @@ function serveManifest(platform, res) {
   res.end(manifest);
 }
 
+function serveWebBuild(urlPath, res) {
+  const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
+  const filePath = path.join(WEB_ROOT, safePath);
+
+  if (!filePath.startsWith(WEB_ROOT)) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
+
+  if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || "application/octet-stream";
+    res.writeHead(200, { "content-type": contentType });
+    res.end(fs.readFileSync(filePath));
+    return;
+  }
+
+  const indexPath = path.join(WEB_ROOT, "index.html");
+  if (fs.existsSync(indexPath)) {
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(fs.readFileSync(indexPath));
+    return;
+  }
+
+  res.writeHead(404);
+  res.end("Not Found");
+}
+
 function serveLandingPage(req, res, landingPageTemplate, appName) {
   const forwardedProto = req.headers["x-forwarded-proto"];
   const protocol = forwardedProto || "https";
@@ -104,8 +134,15 @@ function serveStaticFile(urlPath, res) {
   res.end(content);
 }
 
+const webBuildExists = fs.existsSync(path.join(WEB_ROOT, "index.html"));
 const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
 const appName = getAppName();
+
+if (webBuildExists) {
+  console.log("Web build found — browser visitors will see the web app");
+} else {
+  console.log("No web build found — browser visitors will see the landing page");
+}
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
@@ -121,15 +158,24 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname === "/" || pathname === "/manifest") {
+  if (pathname === "/manifest") {
     const platform = req.headers["expo-platform"];
     if (platform === "ios" || platform === "android") {
       return serveManifest(platform, res);
     }
+  }
 
-    if (pathname === "/") {
-      return serveLandingPage(req, res, landingPageTemplate, appName);
-    }
+  const platform = req.headers["expo-platform"];
+  if ((pathname === "/" || pathname === "/manifest") && (platform === "ios" || platform === "android")) {
+    return serveManifest(platform, res);
+  }
+
+  if (webBuildExists) {
+    return serveWebBuild(pathname, res);
+  }
+
+  if (pathname === "/") {
+    return serveLandingPage(req, res, landingPageTemplate, appName);
   }
 
   serveStaticFile(pathname, res);

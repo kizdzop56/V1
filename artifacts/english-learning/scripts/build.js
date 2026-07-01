@@ -505,6 +505,46 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
   console.log("Manifests updated");
 }
 
+async function exportWebBuild(domain, expoPublicReplId) {
+  const webOutputDir = path.join(projectRoot, "static-build", "web");
+
+  if (fs.existsSync(webOutputDir)) {
+    fs.rmSync(webOutputDir, { recursive: true });
+  }
+
+  return new Promise((resolve, reject) => {
+    const env = {
+      ...process.env,
+      EXPO_PUBLIC_DOMAIN: domain,
+      EXPO_PUBLIC_REPL_ID: expoPublicReplId || "",
+    };
+
+    const proc = spawn(
+      "pnpm",
+      ["exec", "expo", "export", "--platform", "web", "--output-dir", webOutputDir],
+      { stdio: ["ignore", "pipe", "pipe"], cwd: projectRoot, env },
+    );
+
+    if (proc.stdout) proc.stdout.on("data", (d) => console.log(`[web] ${d.toString().trim()}`));
+    if (proc.stderr) proc.stderr.on("data", (d) => console.error(`[web err] ${d.toString().trim()}`));
+
+    proc.on("close", (code) => {
+      if (code === 0) {
+        console.log("Web build complete →", webOutputDir);
+        resolve();
+      } else {
+        console.warn(`Web build exited with code ${code} — browser visitors may see landing page`);
+        resolve();
+      }
+    });
+
+    proc.on("error", (err) => {
+      console.warn("Web build error:", err.message, "— browser visitors may see landing page");
+      resolve();
+    });
+  });
+}
+
 async function main() {
   console.log("Building static Expo Go deployment...");
 
@@ -555,6 +595,9 @@ async function main() {
 
   console.log("Updating manifests and creating landing page...");
   updateManifests(manifests, timestamp, baseUrl, assetsByHash);
+
+  console.log("Building web version for browser access...");
+  await exportWebBuild(domain, expoPublicReplId);
 
   console.log("Build complete! Deploy to:", baseUrl);
 
