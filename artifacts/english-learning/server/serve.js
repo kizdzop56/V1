@@ -170,6 +170,10 @@ const server = http.createServer((req, res) => {
     return serveManifest(platform, res);
   }
 
+  if (pathname === "/expo") {
+    return serveLandingPage(req, res, landingPageTemplate, appName);
+  }
+
   if (webBuildExists) {
     return serveWebBuild(pathname, res);
   }
