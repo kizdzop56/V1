@@ -68,27 +68,34 @@ function serveManifest(platform, res) {
 
 function serveWebBuild(urlPath, res) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
-  const filePath = path.join(WEB_ROOT, safePath);
 
-  if (!filePath.startsWith(WEB_ROOT)) {
-    res.writeHead(403);
-    res.end("Forbidden");
+  // 1. Try web root first
+  const webFilePath = path.join(WEB_ROOT, safePath);
+  if (webFilePath.startsWith(WEB_ROOT) && fs.existsSync(webFilePath) && !fs.statSync(webFilePath).isDirectory()) {
+    const ext = path.extname(webFilePath).toLowerCase();
+    res.writeHead(200, { "content-type": MIME_TYPES[ext] || "application/octet-stream" });
+    res.end(fs.readFileSync(webFilePath));
     return;
   }
 
-  if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || "application/octet-stream";
-    res.writeHead(200, { "content-type": contentType });
-    res.end(fs.readFileSync(filePath));
+  // 2. Try static root (Expo Go bundle/asset files don't always send expo-platform header)
+  const staticFilePath = path.join(STATIC_ROOT, safePath);
+  if (staticFilePath.startsWith(STATIC_ROOT) && fs.existsSync(staticFilePath) && !fs.statSync(staticFilePath).isDirectory()) {
+    const ext = path.extname(staticFilePath).toLowerCase();
+    res.writeHead(200, { "content-type": MIME_TYPES[ext] || "application/octet-stream" });
+    res.end(fs.readFileSync(staticFilePath));
     return;
   }
 
-  const indexPath = path.join(WEB_ROOT, "index.html");
-  if (fs.existsSync(indexPath)) {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(fs.readFileSync(indexPath));
-    return;
+  // 3. SPA fallback — only for paths without a file extension (app routes like /login, /home)
+  const fileExt = path.extname(urlPath);
+  if (!fileExt) {
+    const indexPath = path.join(WEB_ROOT, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(fs.readFileSync(indexPath));
+      return;
+    }
   }
 
   res.writeHead(404);
