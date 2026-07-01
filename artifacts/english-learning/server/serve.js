@@ -166,18 +166,26 @@ const server = http.createServer((req, res) => {
   }
 
   const platform = req.headers["expo-platform"];
-  if ((pathname === "/" || pathname === "/manifest") && (platform === "ios" || platform === "android")) {
-    return serveManifest(platform, res);
+
+  // Expo Go requests — serve manifest or static bundle files
+  if (platform === "ios" || platform === "android") {
+    if (pathname === "/" || pathname === "/manifest") {
+      return serveManifest(platform, res);
+    }
+    return serveStaticFile(pathname, res);
   }
 
+  // Dedicated Expo Go landing page with QR code
   if (pathname === "/expo") {
     return serveLandingPage(req, res, landingPageTemplate, appName);
   }
 
+  // Browser requests — serve the web build (SPA)
   if (webBuildExists) {
     return serveWebBuild(pathname, res);
   }
 
+  // Fallback: landing page if no web build
   if (pathname === "/") {
     return serveLandingPage(req, res, landingPageTemplate, appName);
   }
