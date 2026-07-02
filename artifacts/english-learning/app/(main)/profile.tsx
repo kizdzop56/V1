@@ -766,35 +766,32 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.5,
+      base64: true,
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
-    // Show local preview immediately for instant feedback
-    setAvatarUrl(asset.uri);
     setSaving(true);
     try {
-      const formData = new FormData();
-      if (Platform.OS === "web") {
-        // On web, fetch the blob from the data/blob URL first
+      let dataUri: string;
+      if (asset.base64) {
+        dataUri = `data:image/jpeg;base64,${asset.base64}`;
+      } else {
+        // Fallback: read via fetch → blob → FileReader
         const blobRes = await fetch(asset.uri);
         const blob = await blobRes.blob();
-        formData.append("file", blob, "avatar.jpg");
-      } else {
-        formData.append("file", { uri: asset.uri, type: "image/jpeg", name: "avatar.jpg" } as any);
+        dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
       }
-      const token = await authStorage.getItem("auth_token");
-      const uploadRes = await fetch(`${baseUrl}/api/upload/image`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { url } = await uploadRes.json();
-      setAvatarUrl(url + "?_t=" + Date.now());
-      await saveProfile({ avatarUrl: url });
+      setAvatarUrl(dataUri);
+      await saveProfile({ avatarUrl: dataUri });
     } catch {
-      // Keep the local preview so user sees something even if upload failed
+      // Keep local preview if something fails
+      setAvatarUrl(asset.uri);
     } finally {
       setSaving(false);
     }

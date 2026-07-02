@@ -4,7 +4,7 @@ import {
   calendarSlotsTable, slotBookingsTable, customBookingRequestsTable,
   usersTable, teacherStudentsTable,
 } from "@workspace/db";
-import { eq, and, inArray, gte } from "drizzle-orm";
+import { eq, and, inArray, gte, lt } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
 
 const router = Router();
@@ -445,6 +445,59 @@ router.patch("/calendar/custom-requests/:id", requireAuth, async (req, res) => {
     .where(eq(customBookingRequestsTable.id, id))
     .returning();
   return res.json(updated);
+});
+
+// ── GET /calendar/history — teacher's past confirmed lessons ──────────
+router.get("/calendar/history", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  if (!isTeacher(caller.role)) return res.status(403).json({ error: "Только учитель" });
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const pastSlots = await db
+    .select()
+    .from(calendarSlotsTable)
+    .where(and(
+      eq(calendarSlotsTable.teacherId, caller.userId),
+      lt(calendarSlotsTable.date, today),
+    ));
+
+  if (pastSlots.length === 0) return res.json([]);
+
+  const slotIds = pastSlots.map((s) => s.id);
+
+  const confirmedBookings = await db
+    .select({
+      bookingId: slotBookingsTable.id,
+      slotId: slotBookingsTable.slotId,
+      studentId: slotBookingsTable.studentId,
+      note: slotBookingsTable.note,
+      studentName: usersTable.name,
+      studentEmoji: usersTable.avatarEmoji,
+      studentColor: usersTable.avatarColor,
+    })
+    .from(slotBookingsTable)
+    .leftJoin(usersTable, eq(usersTable.id, slotBookingsTable.studentId))
+    .where(and(
+      inArray(slotBookingsTable.slotId, slotIds),
+      eq(slotBookingsTable.status, "confirmed"),
+    ));
+
+  const bookingsBySlot: Record<number, typeof confirmedBookings> = {};
+  for (const b of confirmedBookings) {
+    if (!bookingsBySlot[b.slotId]) bookingsBySlot[b.slotId] = [];
+    bookingsBySlot[b.slotId].push(b);
+  }
+
+  const result = pastSlots
+    .map((slot) => ({
+      ...slot,
+      confirmedBookings: bookingsBySlot[slot.id] ?? [],
+    }))
+    .filter((slot) => slot.confirmedBookings.length > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return res.json(result);
 });
 
 export default router;

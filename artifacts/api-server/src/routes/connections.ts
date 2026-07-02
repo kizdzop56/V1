@@ -66,7 +66,7 @@ router.post("/connections/teacher/add-student", requireAuth, async (req, res) =>
   await db.insert(teacherStudentsTable).values({
     teacherId: caller.userId,
     studentId: student.id,
-    status: "pending",
+    status: "accepted",
   });
 
   res.status(201).json({
@@ -76,7 +76,7 @@ router.post("/connections/teacher/add-student", requireAuth, async (req, res) =>
     avatarEmoji: student.avatarEmoji,
     avatarColor: student.avatarColor,
     knowledgeLevel: student.knowledgeLevel,
-    status: "pending",
+    status: "accepted",
   });
 });
 

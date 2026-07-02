@@ -60,6 +60,14 @@ type CustomRequest = {
   studentName?: string | null; teacherName?: string | null;
 };
 type TeacherBasic = { id: number; name: string | null; username: string };
+type LessonHistoryItem = {
+  id: number; teacherId: number; date: string; startTime: string; endTime: string;
+  confirmedBookings: {
+    bookingId: number; slotId: number; studentId: number;
+    studentName: string | null; studentEmoji: string | null; studentColor: string | null;
+    note: string | null;
+  }[];
+};
 
 // ── Date / time helpers ───────────────────────────────────────────────
 const DAY_SHORT = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
@@ -224,7 +232,9 @@ export default function CalendarScreen() {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"schedule" | "requests">("schedule");
+  const [activeTab, setActiveTab] = useState<"schedule" | "requests" | "history">("schedule");
+  const [lessonHistory, setLessonHistory] = useState<LessonHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Delete confirm
   const [deleteSlotId, setDeleteSlotId] = useState<number | null>(null);
@@ -275,6 +285,13 @@ export default function CalendarScreen() {
     setCustomRequests(data);
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    const data = await apiFetch("/api/calendar/history").catch(() => []);
+    setLessonHistory(data);
+    setHistoryLoading(false);
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     Promise.all([loadSlots(selectedDate), loadBookings(), loadCustomRequests()]).finally(() => setLoading(false));
@@ -309,9 +326,11 @@ export default function CalendarScreen() {
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadSlots(selectedDate), loadBookings(), loadCustomRequests()]);
+    const tasks: Promise<any>[] = [loadSlots(selectedDate), loadBookings(), loadCustomRequests()];
+    if (activeTab === "history") tasks.push(loadHistory());
+    await Promise.all(tasks);
     setRefreshing(false);
-  }, [selectedDate, loadSlots, loadBookings, loadCustomRequests]);
+  }, [selectedDate, loadSlots, loadBookings, loadCustomRequests, loadHistory, activeTab]);
 
   // ── Actions ─────────────────────────────────────────────────────────
   const handleAddSlot = async () => {
@@ -965,6 +984,79 @@ export default function CalendarScreen() {
     );
   };
 
+  // ── Teacher: history tab ────────────────────────────────────────────
+  const renderTeacherHistory = () => {
+    if (historyLoading) {
+      return <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} size="large" />;
+    }
+
+    // Group by month
+    const grouped: Record<string, LessonHistoryItem[]> = {};
+    for (const item of lessonHistory) {
+      const d = new Date(item.date + "T00:00:00");
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    }
+    const monthKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+    const monthLabel = (key: string) => {
+      const [y, m] = key.split("-");
+      return `${MONTH_SHORT[Number(m) - 1]} ${y}`;
+    };
+
+    return (
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      >
+        {lessonHistory.length === 0 && (
+          <View style={s.emptyBox}>
+            <Text style={s.emptyEmoji}>📚</Text>
+            <Text style={s.emptyText}>История уроков пуста{"\n"}Подтверждённые занятия появятся здесь</Text>
+          </View>
+        )}
+
+        {monthKeys.map((mk) => (
+          <View key={mk}>
+            <Text style={[s.historyLabel, { marginTop: 8 }]}>— {monthLabel(mk)} —</Text>
+            {grouped[mk].map((item) => (
+              <View
+                key={item.id}
+                style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: "#10b981" }]}
+              >
+                <View style={s.slotTop}>
+                  <View style={[s.slotDot, { backgroundColor: "#10b981" }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.slotTime}>{item.startTime} – {item.endTime}</Text>
+                    <Text style={s.slotSub}>{formatDate(item.date)}</Text>
+                  </View>
+                  <Text style={[s.statusLabel, { color: "#10b981" }]}>Проведён</Text>
+                </View>
+                {item.confirmedBookings.map((b) => (
+                  <View key={b.bookingId} style={[s.bookingRow, { marginTop: 4 }]}>
+                    <View style={{
+                      width: 32, height: 32, borderRadius: 16,
+                      backgroundColor: b.studentColor ?? "#6366f1",
+                      justifyContent: "center", alignItems: "center",
+                    }}>
+                      <Text style={{ fontSize: 16 }}>{b.studentEmoji ?? "🦁"}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                      <Text style={s.bookingName}>{b.studentName ?? "Ученик"}</Text>
+                      {b.note ? <Text style={s.bookingNote}>«{b.note}»</Text> : null}
+                    </View>
+                    <Feather name="check-circle" size={16} color="#10b981" />
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+    );
+  };
+
   // ── Add-slot modal (teacher) ────────────────────────────────────────
   const addStart = `${addStartH}:${addStartM}`;
   const addEnd   = `${addEndH}:${addEndM}`;
@@ -1202,6 +1294,12 @@ export default function CalendarScreen() {
           </Text>
           {pendingCount > 0 && <View style={s.badge}><Text style={s.badgeText}>{pendingCount}</Text></View>}
         </TouchableOpacity>
+        {isTeacherRole && (
+          <TouchableOpacity style={[s.tab, activeTab === "history" && s.tabActive]} onPress={() => { setActiveTab("history"); loadHistory(); }}>
+            <Feather name="book-open" size={14} color={activeTab === "history" ? colors.primary : colors.mutedForeground} />
+            <Text style={[s.tabText, activeTab === "history" && s.tabTextActive]}>История</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {activeTab === "schedule" && renderDatePicker()}
@@ -1210,7 +1308,9 @@ export default function CalendarScreen() {
         ? <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} size="large" />
         : activeTab === "schedule"
           ? isTeacherRole ? renderTeacherSchedule() : renderStudentSchedule()
-          : isTeacherRole ? renderTeacherRequests() : renderStudentBookings()
+          : activeTab === "history" && isTeacherRole
+            ? renderTeacherHistory()
+            : isTeacherRole ? renderTeacherRequests() : renderStudentBookings()
       }
     </View>
   );
