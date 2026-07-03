@@ -807,13 +807,28 @@ export default function ProfileScreen() {
     const prevUrl = avatarUrl;
     setSaving(true);
     try {
-      // Resize to a small square and re-compress so the resulting data URI
-      // stays tiny (a few KB) — the raw picker output can be several MB,
+      // Crop to a centered square first (allowsEditing's crop UI isn't applied
+      // on web/PWA, so non-square photos would otherwise get stretched by the
+      // resize step below), then resize and re-compress so the resulting data
+      // URI stays tiny (a few KB) — the raw picker output can be several MB,
       // which used to bloat every list response (students, leaderboard, etc.)
       // and break loading avatars in production.
+      const actions: ImageManipulator.Action[] = [];
+      if (asset.width && asset.height && asset.width !== asset.height) {
+        const size = Math.min(asset.width, asset.height);
+        actions.push({
+          crop: {
+            originX: Math.round((asset.width - size) / 2),
+            originY: Math.round((asset.height - size) / 2),
+            width: size,
+            height: size,
+          },
+        });
+      }
+      actions.push({ resize: { width: 256, height: 256 } });
       const manipulated = await ImageManipulator.manipulateAsync(
         asset.uri,
-        [{ resize: { width: 256, height: 256 } }],
+        actions,
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
       let dataUri: string;
