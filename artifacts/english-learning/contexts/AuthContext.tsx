@@ -36,6 +36,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (patch: Partial<AuthUser>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,6 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
   }, []);
 
+  const updateUser = useCallback(async (patch: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      authStorage.setItem("auth_user", JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     // End session and mark offline BEFORE clearing token (token must be valid for these requests)
     if (token) {
@@ -115,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

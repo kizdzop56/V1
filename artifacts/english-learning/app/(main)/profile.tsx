@@ -567,7 +567,7 @@ function FriendsModal({
 
 export default function ProfileScreen() {
   const colors = useColors();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const sessionSeconds = useLiveTimer();
@@ -751,26 +751,43 @@ export default function ProfileScreen() {
     } catch { /* silent */ }
   };
 
-  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; avatarUrl?: string | null; bio?: string }) => {
-    if (!user) return;
+  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; avatarUrl?: string | null; bio?: string }): Promise<boolean> => {
+    if (!user) return false;
     setSaving(true);
     try {
       const token = await authStorage.getItem("auth_token");
-      await fetch(`${baseUrl}/api/users/${user.id}/profile`, {
+      const res = await fetch(`${baseUrl}/api/users/${user.id}/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(patch),
       });
-    } catch { /* silent */ } finally {
+      if (!res.ok) return false;
+      // Keep the auth context (and its cached copy in storage) in sync so the
+      // change survives logout/login and app restarts, not just this screen.
+      await updateUser(patch);
+      return true;
+    } catch {
+      return false;
+    } finally {
       setSaving(false);
     }
   };
 
-  const handleAvatarSave = (emoji: string, color: string) => {
+  const handleAvatarSave = async (emoji: string, color: string) => {
+    setAvatarMenuOpen(false);
+    const prevEmoji = avatarEmoji;
+    const prevColor = avatarColor;
+    const prevUrl = avatarUrl;
     setAvatarEmoji(emoji);
     setAvatarColor(color);
     setAvatarUrl(null);
-    saveProfile({ avatarEmoji: emoji, avatarColor: color, avatarUrl: null });
+    const ok = await saveProfile({ avatarEmoji: emoji, avatarColor: color, avatarUrl: null });
+    if (!ok) {
+      setAvatarEmoji(prevEmoji);
+      setAvatarColor(prevColor);
+      setAvatarUrl(prevUrl);
+      Alert.alert("Не удалось сохранить", "Проверьте интернет-соединение и попробуйте снова.");
+    }
   };
 
   const handlePhotoUpload = async () => {
@@ -786,6 +803,7 @@ export default function ProfileScreen() {
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
+    const prevUrl = avatarUrl;
     setSaving(true);
     try {
       let dataUri: string;
@@ -803,10 +821,17 @@ export default function ProfileScreen() {
         });
       }
       setAvatarUrl(dataUri);
-      await saveProfile({ avatarUrl: dataUri });
+      const ok = await saveProfile({ avatarUrl: dataUri });
+      if (!ok) {
+        setAvatarUrl(prevUrl);
+        Alert.alert(
+          "Не удалось сохранить фото",
+          "Попробуйте выбрать фото меньшего размера или другое изображение."
+        );
+      }
     } catch {
-      // Keep local preview if something fails
-      setAvatarUrl(asset.uri);
+      setAvatarUrl(prevUrl);
+      Alert.alert("Не удалось сохранить фото", "Попробуйте ещё раз.");
     } finally {
       setSaving(false);
     }
@@ -814,8 +839,13 @@ export default function ProfileScreen() {
 
   const handleRemovePhoto = async () => {
     setAvatarMenuOpen(false);
+    const prevUrl = avatarUrl;
     setAvatarUrl(null);
-    await saveProfile({ avatarUrl: null });
+    const ok = await saveProfile({ avatarUrl: null });
+    if (!ok) {
+      setAvatarUrl(prevUrl);
+      Alert.alert("Не удалось сохранить", "Проверьте интернет-соединение и попробуйте снова.");
+    }
   };
 
   const handleBioSave = () => {
