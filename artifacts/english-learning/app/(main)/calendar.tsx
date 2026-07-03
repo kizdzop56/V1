@@ -133,6 +133,17 @@ function WheelColumn({ items, value, onChange, fg, muted, hlColor }: WheelColumn
     if (i >= 0) setTimeout(() => scrollTo(i, false), 50);
   }, []);
 
+  // Re-sync the wheel when `value` is changed externally (e.g. auto-advance
+  // after adding a slot), not just from the user's own scroll gesture.
+  useEffect(() => {
+    if (value === localVal) return;
+    const i = items.indexOf(value);
+    if (i >= 0) {
+      setLocalVal(value);
+      scrollTo(i, false);
+    }
+  }, [value]);
+
   const commit = (y: number) => {
     const i = Math.max(0, Math.min(Math.round(y / WHEEL_ITEM_H), items.length - 1));
     scrollTo(i, true);
@@ -342,6 +353,13 @@ export default function CalendarScreen() {
         body: JSON.stringify({ date: selectedDate, startTime: `${addStartH}:${addStartM}`, endTime: `${addEndH}:${addEndM}` }),
       });
       setShowAdd(false);
+      // Advance the picker to start right after this slot's end time,
+      // so re-opening "Добавить слот" doesn't offer the same (now taken) time again.
+      setAddStartH(addEndH);
+      setAddStartM(addEndM);
+      const nextEndTotal = (Number(addEndH) * 60 + Number(addEndM) + 60) % (24 * 60);
+      setAddEndH(String(Math.floor(nextEndTotal / 60)).padStart(2, "0"));
+      setAddEndM(String(nextEndTotal % 60).padStart(2, "0"));
       await loadSlots(selectedDate);
       // Defer scroll until after React re-renders with the new slot
       setTimeout(() => scheduleScrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
