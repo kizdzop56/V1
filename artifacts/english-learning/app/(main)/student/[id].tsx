@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -198,9 +199,12 @@ export default function StudentDetailScreen() {
 
         {/* Profile card */}
         <View style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: student.avatarColor ?? "#6366f1" }]}>
-            <Text style={{ fontSize: 32 }}>{student.avatarEmoji ?? "🦁"}</Text>
-          </View>
+          <AnimatedAvatar
+            size={64}
+            avatarColor={student.avatarColor ?? "#6366f1"}
+            avatarEmoji={student.avatarEmoji}
+            avatarUrl={student.avatarUrl}
+          />
           <Text style={styles.name}>{student.name}</Text>
           <Text style={styles.username}>@{student.username}</Text>
           {student.age && (

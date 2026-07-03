@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -38,7 +39,7 @@ const TYPE_ICONS: Record<string, any> = {
 type CategoryStat = { type: string; avgScore: number | null; count: number };
 type Student = {
   id: number; name: string; avatarEmoji: string | null;
-  avatarColor: string | null; knowledgeLevel: string | null;
+  avatarColor: string | null; avatarUrl?: string | null; knowledgeLevel: string | null;
 };
 type StudentWithStats = Student & { stats: CategoryStat[]; loading: boolean };
 
@@ -183,9 +184,12 @@ export default function AnalysisScreen() {
                 onPress={() => router.push(`/(main)/student/${student.id}` as any)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.avatar, { backgroundColor: student.avatarColor ?? "#6366f1" }]}>
-                  <Text style={{ fontSize: 24 }}>{student.avatarEmoji ?? "🦁"}</Text>
-                </View>
+                <AnimatedAvatar
+                  size={48}
+                  avatarColor={student.avatarColor ?? "#6366f1"}
+                  avatarEmoji={student.avatarEmoji}
+                  avatarUrl={student.avatarUrl}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{student.name}</Text>
                   {student.knowledgeLevel ? (

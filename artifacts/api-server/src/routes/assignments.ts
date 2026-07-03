@@ -97,6 +97,7 @@ router.get("/assignments/teacher-results", requireAuth, async (req, res) => {
     studentName: usersTable.name,
     studentAvatarEmoji: usersTable.avatarEmoji,
     studentAvatarColor: usersTable.avatarColor,
+    studentAvatarUrl: usersTable.avatarUrl,
     assignmentId: assignmentsTable.id,
     assignmentTitle: assignmentsTable.title,
     assignmentType: assignmentsTable.type,

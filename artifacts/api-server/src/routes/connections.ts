@@ -19,6 +19,7 @@ router.get("/connections/by-code/:code", requireAuth, async (req, res) => {
     knowledgeLevel: usersTable.knowledgeLevel,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     inviteCode: usersTable.inviteCode,
   }).from(usersTable).where(eq(usersTable.inviteCode, code));
 
@@ -75,6 +76,7 @@ router.post("/connections/teacher/add-student", requireAuth, async (req, res) =>
     username: student.username,
     avatarEmoji: student.avatarEmoji,
     avatarColor: student.avatarColor,
+    avatarUrl: student.avatarUrl,
     knowledgeLevel: student.knowledgeLevel,
     status: "accepted",
   });
@@ -105,6 +107,7 @@ router.get("/connections/teacher/students", requireAuth, async (req, res) => {
     knowledgeLevel: usersTable.knowledgeLevel,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     inviteCode: usersTable.inviteCode,
     lastSeenAt: usersTable.lastSeenAt,
@@ -137,7 +140,7 @@ router.get("/connections/teacher/pending", requireAuth, async (req, res) => {
   const ids = links.map((l) => l.studentId);
   const students = await db.select({
     id: usersTable.id, name: usersTable.name, username: usersTable.username,
-    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor,
+    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor, avatarUrl: usersTable.avatarUrl,
     knowledgeLevel: usersTable.knowledgeLevel,
   }).from(usersTable).where(inArray(usersTable.id, ids));
 
@@ -187,7 +190,7 @@ router.get("/connections/student/teachers", requireAuth, async (req, res) => {
   const ids = links.map((l) => l.teacherId);
   const teachers = await db.select({
     id: usersTable.id, name: usersTable.name, username: usersTable.username,
-    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor,
+    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor, avatarUrl: usersTable.avatarUrl,
     role: usersTable.role, totalPoints: usersTable.totalPoints,
     lastSeenAt: usersTable.lastSeenAt,
   }).from(usersTable).where(inArray(usersTable.id, ids));
@@ -218,7 +221,7 @@ router.get("/connections/student/teacher-requests", requireAuth, async (req, res
   const ids = links.map((l) => l.teacherId);
   const teachers = await db.select({
     id: usersTable.id, name: usersTable.name, username: usersTable.username,
-    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor,
+    avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor, avatarUrl: usersTable.avatarUrl,
     role: usersTable.role,
   }).from(usersTable).where(inArray(usersTable.id, ids));
 
@@ -304,6 +307,7 @@ router.post("/connections/parent/add-child", requireAuth, async (req, res) => {
     username: student.username,
     avatarEmoji: student.avatarEmoji,
     avatarColor: student.avatarColor,
+    avatarUrl: student.avatarUrl,
     knowledgeLevel: student.knowledgeLevel,
     totalPoints: student.totalPoints,
   });
@@ -329,6 +333,7 @@ router.get("/connections/parent/children", requireAuth, async (req, res) => {
     knowledgeLevel: usersTable.knowledgeLevel,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     inviteCode: usersTable.inviteCode,
   }).from(usersTable).where(inArray(usersTable.id, ids));
@@ -397,6 +402,7 @@ router.post("/connections/friends/request", requireAuth, async (req, res) => {
     username: friend.username,
     avatarEmoji: friend.avatarEmoji,
     avatarColor: friend.avatarColor,
+    avatarUrl: friend.avatarUrl,
     status: "pending",
   });
 });
@@ -424,6 +430,7 @@ router.get("/connections/friends", requireAuth, async (req, res) => {
     username: usersTable.username,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     knowledgeLevel: usersTable.knowledgeLevel,
     lastSeenAt: usersTable.lastSeenAt,
@@ -572,6 +579,7 @@ router.get("/connections/friends/:userId/profile", requireAuth, async (req, res)
     username: usersTable.username,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     knowledgeLevel: usersTable.knowledgeLevel,
     totalPoints: usersTable.totalPoints,
     totalTimeMinutes: usersTable.totalTimeMinutes,

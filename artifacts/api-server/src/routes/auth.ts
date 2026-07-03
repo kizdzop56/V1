@@ -42,6 +42,7 @@ const PUBLIC_USER_FIELDS = (u: typeof usersTable.$inferSelect) => ({
   totalTimeMinutes: u.totalTimeMinutes,
   avatarEmoji: u.avatarEmoji,
   avatarColor: u.avatarColor,
+  avatarUrl: u.avatarUrl,
   bio: u.bio,
   inviteCode: u.inviteCode,
   createdAt: u.createdAt,

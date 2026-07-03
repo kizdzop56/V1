@@ -197,7 +197,7 @@ async function apiFetch(path: string, opts?: RequestInit) {
 
 type FriendRow = {
   friendshipId: number;
-  user: { id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null; totalPoints: number; isOnline?: boolean };
+  user: { id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null; avatarUrl?: string | null; totalPoints: number; isOnline?: boolean };
   status: "pending" | "accepted";
   direction: "sent" | "received";
 };
@@ -205,7 +205,7 @@ type FriendRow = {
 // ── Friends modal ─────────────────────────────────────────────────────
 type TeacherItem = {
   id: number; name: string; username: string;
-  avatarEmoji: string | null; avatarColor: string | null;
+  avatarEmoji: string | null; avatarColor: string | null; avatarUrl?: string | null;
   role: string; totalPoints: number; isOnline?: boolean;
 };
 
@@ -345,9 +345,12 @@ function FriendsModal({
                   {/* Incoming requests */}
                   {pending.filter((f) => f.direction === "received").map((f) => (
                     <View key={f.friendshipId} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: "#fef3c7", borderRadius: 14, padding: 12 }}>
-                      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
-                      </View>
+                      <AnimatedAvatar
+                        size={42}
+                        avatarColor={f.user.avatarColor ?? "#6366f1"}
+                        avatarEmoji={f.user.avatarEmoji}
+                        avatarUrl={(f.user as any).avatarUrl}
+                      />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400e" }}>{f.user.name}</Text>
                         <Text style={{ fontSize: 12, color: "#92400e99" }}>Хочет дружить</Text>
@@ -370,9 +373,12 @@ function FriendsModal({
                       style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
                       <View style={{ position: "relative" }}>
-                        <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                          <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
-                        </View>
+                        <AnimatedAvatar
+                          size={42}
+                          avatarColor={f.user.avatarColor ?? "#6366f1"}
+                          avatarEmoji={f.user.avatarEmoji}
+                          avatarUrl={(f.user as any).avatarUrl}
+                        />
                         <View style={{
                           position: "absolute", bottom: 0, right: 0,
                           width: 13, height: 13, borderRadius: 7,
@@ -399,9 +405,12 @@ function FriendsModal({
                   {/* Pending sent */}
                   {pending.filter((f) => f.direction === "sent").map((f) => (
                     <View key={f.friendshipId} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border, opacity: 0.6 }}>
-                      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: f.user.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ fontSize: 20 }}>{f.user.avatarEmoji ?? "🦁"}</Text>
-                      </View>
+                      <AnimatedAvatar
+                        size={42}
+                        avatarColor={f.user.avatarColor ?? "#6366f1"}
+                        avatarEmoji={f.user.avatarEmoji}
+                        avatarUrl={(f.user as any).avatarUrl}
+                      />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
                         <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Запрос отправлен...</Text>
@@ -427,9 +436,12 @@ function FriendsModal({
                           style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}
                         >
                           <View style={{ position: "relative" }}>
-                            <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                              <Text style={{ fontSize: 20 }}>{t.avatarEmoji ?? "🎓"}</Text>
-                            </View>
+                            <AnimatedAvatar
+                              size={42}
+                              avatarColor={t.avatarColor ?? "#6366f1"}
+                              avatarEmoji={t.avatarEmoji ?? "🎓"}
+                              avatarUrl={(t as any).avatarUrl}
+                            />
                             <View style={{
                               position: "absolute", bottom: 0, right: 0,
                               width: 13, height: 13, borderRadius: 7,
@@ -513,9 +525,12 @@ function FriendsModal({
                   backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14,
                   marginBottom: 14, borderWidth: 1.5, borderColor: "#10b98140",
                 }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: found.avatarColor ?? "#6366f1", justifyContent: "center", alignItems: "center" }}>
-                    <Text style={{ fontSize: 24 }}>{found.avatarEmoji ?? "🦁"}</Text>
-                  </View>
+                  <AnimatedAvatar
+                    size={48}
+                    avatarColor={found.avatarColor ?? "#6366f1"}
+                    avatarEmoji={found.avatarEmoji}
+                    avatarUrl={found.avatarUrl}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name}</Text>
                     <Text style={{ fontSize: 13, color: "#065f46bb" }}>@{found.username}</Text>

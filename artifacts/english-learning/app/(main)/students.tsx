@@ -10,6 +10,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import authStorage from "@/utils/authStorage";
 import { useRouter } from "expo-router";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -36,6 +37,7 @@ type PersonItem = {
   username: string;
   avatarEmoji: string | null;
   avatarColor: string | null;
+  avatarUrl?: string | null;
   knowledgeLevel: string | null;
   totalPoints: number;
   inviteCode: string | null;
@@ -53,13 +55,14 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
         flexDirection: "row", alignItems: "center", gap: 12,
       }}
     >
-      <View style={{ position: "relative" }}>
-        <View style={{
-          width: 48, height: 48, borderRadius: 24,
-          backgroundColor: item.avatarColor ?? "#6366f1",
-          justifyContent: "center", alignItems: "center",
-        }}>
-          <Text style={{ fontSize: 24 }}>{item.avatarEmoji ?? "🦁"}</Text>
+      <View style={{ width: 48, height: 48 }}>
+        <View style={{ position: "absolute", left: -16, top: -16 }}>
+          <AnimatedAvatar
+            size={48}
+            avatarColor={item.avatarColor ?? "#6366f1"}
+            avatarEmoji={item.avatarEmoji}
+            avatarUrl={item.avatarUrl}
+          />
         </View>
         <View style={{
           position: "absolute", bottom: 1, right: 1,
@@ -209,13 +212,12 @@ function AddByCodeModal({
               borderWidth: 1.5, borderColor: "#10b98140",
               flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14,
             }}>
-              <View style={{
-                width: 52, height: 52, borderRadius: 26,
-                backgroundColor: found.avatarColor ?? "#6366f1",
-                justifyContent: "center", alignItems: "center",
-              }}>
-                <Text style={{ fontSize: 26 }}>{found.avatarEmoji ?? "🦁"}</Text>
-              </View>
+              <AnimatedAvatar
+                size={52}
+                avatarColor={found.avatarColor ?? "#6366f1"}
+                avatarEmoji={found.avatarEmoji}
+                avatarUrl={found.avatarUrl}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name}</Text>
                 <Text style={{ fontSize: 13, color: "#065f46bb" }}>@{found.username}</Text>
@@ -411,13 +413,12 @@ export default function StudentsScreen() {
                     backgroundColor: "#fef3c7", borderRadius: 14, padding: 14,
                     borderWidth: 1, borderColor: "#fde68a", marginBottom: 8,
                   }}>
-                    <View style={{
-                      width: 46, height: 46, borderRadius: 23,
-                      backgroundColor: req.student.avatarColor ?? "#6366f1",
-                      justifyContent: "center", alignItems: "center",
-                    }}>
-                      <Text style={{ fontSize: 22 }}>{req.student.avatarEmoji ?? "🦁"}</Text>
-                    </View>
+                    <AnimatedAvatar
+                      size={46}
+                      avatarColor={req.student.avatarColor ?? "#6366f1"}
+                      avatarEmoji={req.student.avatarEmoji}
+                      avatarUrl={req.student.avatarUrl}
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400e" }}>
                         {req.student.name}

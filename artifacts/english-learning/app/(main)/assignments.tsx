@@ -13,6 +13,7 @@ import type { Assignment } from "@workspace/api-client-react";
 import authStorage from "@/utils/authStorage";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
 import { useGamification } from "@/hooks/useGamification";
+import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -48,7 +49,8 @@ const FILTERS = ["Все", "text_test", "audio", "reading", "video"] as const;
 type Filter = typeof FILTERS[number];
 
 type StudentItem = {
-  id: number; name: string; avatarEmoji: string | null; avatarColor: string | null; knowledgeLevel: string | null;
+  id: number; name: string; avatarEmoji: string | null; avatarColor: string | null;
+  avatarUrl?: string | null; knowledgeLevel: string | null;
 };
 
 // ─── Assign Modal ────────────────────────────────────────────────────
@@ -163,13 +165,12 @@ function AssignModal({
                       borderColor: checked ? colors.primary : colors.border,
                     }}
                   >
-                    <View style={{
-                      width: 42, height: 42, borderRadius: 21,
-                      backgroundColor: s.avatarColor ?? "#6366f1",
-                      justifyContent: "center", alignItems: "center",
-                    }}>
-                      <Text style={{ fontSize: 20 }}>{s.avatarEmoji ?? "🦁"}</Text>
-                    </View>
+                    <AnimatedAvatar
+                      size={42}
+                      avatarColor={s.avatarColor ?? "#6366f1"}
+                      avatarEmoji={s.avatarEmoji}
+                      avatarUrl={s.avatarUrl}
+                    />
                     <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }}>
                       {s.name}
                     </Text>
@@ -550,9 +551,12 @@ export default function AssignmentsScreen() {
         activeOpacity={0.75}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (item.studentAvatarColor ?? "#6366f1"), justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontSize: 18 }}>{item.studentAvatarEmoji ?? "🦁"}</Text>
-          </View>
+          <AnimatedAvatar
+            size={40}
+            avatarColor={item.studentAvatarColor ?? "#6366f1"}
+            avatarEmoji={item.studentAvatarEmoji}
+            avatarUrl={item.studentAvatarUrl}
+          />
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{item.studentName}</Text>
             <Text style={{ fontSize: 12, color: colors.mutedForeground }} numberOfLines={1}>{item.assignmentTitle}</Text>

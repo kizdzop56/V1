@@ -26,6 +26,7 @@ router.get("/leaderboard", requireAuth, async (req, res) => {
     totalPoints: usersTable.totalPoints,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
   }).from(usersTable)
     .where(eq(usersTable.role, "student"))
     .orderBy(desc(usersTable.totalPoints));

@@ -22,6 +22,7 @@ router.get("/users", requireAuth, async (req, res) => {
     knowledgeLevel: usersTable.knowledgeLevel,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     totalTimeMinutes: usersTable.totalTimeMinutes,
     createdAt: usersTable.createdAt,
