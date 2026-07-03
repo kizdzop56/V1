@@ -5,6 +5,7 @@ import {
   Clipboard, Image, Alert, KeyboardAvoidingView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -798,20 +799,29 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
+      quality: 0.7,
+      base64: false,
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
     const prevUrl = avatarUrl;
     setSaving(true);
     try {
+      // Resize to a small square and re-compress so the resulting data URI
+      // stays tiny (a few KB) — the raw picker output can be several MB,
+      // which used to bloat every list response (students, leaderboard, etc.)
+      // and break loading avatars in production.
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 256, height: 256 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
       let dataUri: string;
-      if (asset.base64) {
-        dataUri = `data:image/jpeg;base64,${asset.base64}`;
+      if (manipulated.base64) {
+        dataUri = `data:image/jpeg;base64,${manipulated.base64}`;
       } else {
         // Fallback: read via fetch → blob → FileReader
-        const blobRes = await fetch(asset.uri);
+        const blobRes = await fetch(manipulated.uri);
         const blob = await blobRes.blob();
         dataUri = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -819,6 +829,11 @@ export default function ProfileScreen() {
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
+      }
+      if (dataUri.length > 500_000) {
+        setAvatarUrl(prevUrl);
+        Alert.alert("Фото слишком большое", "Попробуйте выбрать другое изображение.");
+        return;
       }
       setAvatarUrl(dataUri);
       const ok = await saveProfile({ avatarUrl: dataUri });

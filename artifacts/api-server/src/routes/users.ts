@@ -119,6 +119,15 @@ router.patch("/users/:id/profile", requireAuth, async (req, res) => {
 
   const { bio, avatarEmoji, avatarColor, avatarUrl, name } = req.body;
 
+  // Guard against oversized avatar payloads (e.g. an uncompressed data URI).
+  // A large avatarUrl bloats every list response that includes this user
+  // (students, leaderboard, friends, etc.) and can break avatar loading
+  // entirely in production.
+  if (typeof avatarUrl === "string" && avatarUrl.length > 500_000) {
+    res.status(413).json({ error: "Изображение слишком большое" });
+    return;
+  }
+
   const updateData: Record<string, any> = { updatedAt: new Date() };
   if (bio !== undefined) updateData.bio = bio;
   if (avatarEmoji !== undefined) updateData.avatarEmoji = avatarEmoji;
