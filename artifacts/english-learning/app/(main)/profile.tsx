@@ -580,6 +580,10 @@ export default function ProfileScreen() {
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(user?.bio ?? "");
   const [bioLoaded, setBioLoaded] = useState(false);
+  const [username, setUsername] = useState(user?.username ?? "");
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState(user?.username ?? "");
+  const [usernameSaving, setUsernameSaving] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
@@ -752,7 +756,7 @@ export default function ProfileScreen() {
     } catch { /* silent */ }
   };
 
-  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; avatarUrl?: string | null; bio?: string }): Promise<boolean> => {
+  const saveProfile = async (patch: { avatarEmoji?: string; avatarColor?: string; avatarUrl?: string | null; bio?: string; username?: string }): Promise<boolean> => {
     if (!user) return false;
     setSaving(true);
     try {
@@ -771,6 +775,36 @@ export default function ProfileScreen() {
       return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUsernameSave = async () => {
+    if (!user) return;
+    const trimmed = usernameInput.trim();
+    if (!trimmed || trimmed === username) {
+      setEditingUsername(false);
+      return;
+    }
+    setUsernameSaving(true);
+    try {
+      const token = await authStorage.getItem("auth_token");
+      const res = await fetch(`${baseUrl}/api/users/${user.id}/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ username: trimmed }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        Alert.alert("Не удалось сохранить", data.error ?? "Попробуйте другой никнейм.");
+        return;
+      }
+      setUsername(trimmed);
+      await updateUser({ username: trimmed });
+      setEditingUsername(false);
+    } catch {
+      Alert.alert("Не удалось сохранить", "Проверьте интернет-соединение и попробуйте снова.");
+    } finally {
+      setUsernameSaving(false);
     }
   };
 
@@ -1081,7 +1115,43 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={s.name}>{user.name}</Text>
-          <Text style={s.username}>@{user.username}</Text>
+          {editingUsername ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <TextInput
+                style={{
+                  fontSize: 14, color: colors.foreground, borderWidth: 1, borderColor: colors.primary,
+                  borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, minWidth: 140,
+                }}
+                value={usernameInput}
+                onChangeText={setUsernameInput}
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="никнейм"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              {usernameSaving ? (
+                <ActivityIndicator size={16} color={colors.primary} />
+              ) : (
+                <>
+                  <TouchableOpacity onPress={handleUsernameSave}>
+                    <Feather name="check" size={18} color="#10b981" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setUsernameInput(username); setEditingUsername(false); }}>
+                    <Feather name="x" size={18} color={colors.destructive} />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}
+              onPress={() => { setUsernameInput(username); setEditingUsername(true); }}
+            >
+              <Text style={s.username}>@{username}</Text>
+              <Feather name="edit-2" size={12} color={colors.primary} />
+            </TouchableOpacity>
+          )}
 
           {/* Online status badge */}
           <View style={{

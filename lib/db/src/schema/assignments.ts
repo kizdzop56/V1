@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, timestamp, pgEnum, jsonb, boolean } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const assignmentTypeEnum = pgEnum("assignment_type", ["text_test", "audio", "reading", "video"]);
+export const assignmentTypeEnum = pgEnum("assignment_type", ["text_test", "audio", "reading", "video", "free_form"]);
 export const assignmentSourceEnum = pgEnum("assignment_source", ["app_suggested", "teacher_created"]);
 
 export const assignmentsTable = pgTable("assignments", {

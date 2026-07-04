@@ -205,8 +205,7 @@ export default function StudentDetailScreen() {
             avatarEmoji={student.avatarEmoji}
             avatarUrl={student.avatarUrl}
           />
-          <Text style={styles.name}>{student.name}</Text>
-          <Text style={styles.username}>@{student.username}</Text>
+          <Text style={styles.name}>{student.name} ({student.username})</Text>
           {student.age && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{student.age} лет</Text>

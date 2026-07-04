@@ -12,11 +12,41 @@ const router = Router();
 router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
   const assignmentId = Number(req.params["id"]);
   const user = getUser(req);
-  const { answers, recordingUrl } = req.body;
+  const { answers, recordingUrl, textAnswer, attachmentUrl } = req.body;
 
   const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, assignmentId));
   if (!assignment) {
     res.status(404).json({ error: "Assignment not found" });
+    return;
+  }
+
+  // ── Free-form assignments: no auto-grading, teacher grades manually ──
+  if (assignment.type === "free_form") {
+    if (!textAnswer?.trim() && !attachmentUrl?.trim()) {
+      res.status(400).json({ error: "Добавьте текст ответа или прикрепите файл" });
+      return;
+    }
+    const [submission] = await db.insert(submissionsTable).values({
+      studentId: user.userId,
+      assignmentId,
+      score: 0,
+      correctCount: 0,
+      totalQuestions: 0,
+      pointsEarned: 0,
+      textAnswer: textAnswer?.trim() || null,
+      attachmentUrl: attachmentUrl?.trim() || null,
+      status: "pending",
+    }).returning();
+
+    res.json({
+      submissionId: submission.id,
+      pending: true,
+      score: 0,
+      totalQuestions: 0,
+      correctCount: 0,
+      pointsEarned: 0,
+      results: [],
+    });
     return;
   }
 
@@ -52,6 +82,7 @@ router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
     totalQuestions,
     pointsEarned,
     recordingUrl: recordingUrl || null,
+    status: "graded",
   }).returning();
 
   if (results.length > 0) {
@@ -91,6 +122,47 @@ router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
   });
 });
 
+// ── Teacher: grade a pending free-form submission ─────────────────────
+router.patch("/submissions/:id/grade", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  const submissionId = Number(req.params["id"]);
+  const { pointsEarned, feedback } = req.body;
+
+  const [submission] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, submissionId));
+  if (!submission) { res.status(404).json({ error: "Submission not found" }); return; }
+
+  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, submission.assignmentId));
+  if (!assignment) { res.status(404).json({ error: "Assignment not found" }); return; }
+
+  const isOwnerTeacher = assignment.createdBy === caller.userId;
+  if (caller.role !== "admin" && !(isOwnerTeacher && caller.role === "teacher")) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const points = Math.max(0, Math.min(assignment.points, Number(pointsEarned) || 0));
+  const score = assignment.points > 0 ? Math.round((points / assignment.points) * 100) : 0;
+
+  const [updated] = await db.update(submissionsTable)
+    .set({
+      status: "graded",
+      pointsEarned: points,
+      score,
+      teacherFeedback: feedback?.trim() || null,
+    })
+    .where(eq(submissionsTable.id, submissionId))
+    .returning();
+
+  if (points > 0) {
+    const [userData] = await db.select({ totalPoints: usersTable.totalPoints })
+      .from(usersTable).where(eq(usersTable.id, submission.studentId));
+    await db.update(usersTable)
+      .set({ totalPoints: (userData?.totalPoints || 0) + points })
+      .where(eq(usersTable.id, submission.studentId));
+  }
+
+  res.json(updated);
+});
+
 router.get("/assignments/:id/submissions", requireAuth, async (req, res) => {
   const assignmentId = Number(req.params["id"]);
 
@@ -105,6 +177,10 @@ router.get("/assignments/:id/submissions", requireAuth, async (req, res) => {
     totalQuestions: submissionsTable.totalQuestions,
     pointsEarned: submissionsTable.pointsEarned,
     recordingUrl: submissionsTable.recordingUrl,
+    textAnswer: submissionsTable.textAnswer,
+    attachmentUrl: submissionsTable.attachmentUrl,
+    status: submissionsTable.status,
+    teacherFeedback: submissionsTable.teacherFeedback,
     submittedAt: submissionsTable.submittedAt,
   }).from(submissionsTable)
     .leftJoin(usersTable, eq(submissionsTable.studentId, usersTable.id))
@@ -142,6 +218,10 @@ router.get("/students/:id/submissions", requireAuth, async (req, res) => {
     totalQuestions: submissionsTable.totalQuestions,
     pointsEarned: submissionsTable.pointsEarned,
     recordingUrl: submissionsTable.recordingUrl,
+    textAnswer: submissionsTable.textAnswer,
+    attachmentUrl: submissionsTable.attachmentUrl,
+    status: submissionsTable.status,
+    teacherFeedback: submissionsTable.teacherFeedback,
     submittedAt: submissionsTable.submittedAt,
   }).from(submissionsTable)
     .leftJoin(usersTable, eq(submissionsTable.studentId, usersTable.id))

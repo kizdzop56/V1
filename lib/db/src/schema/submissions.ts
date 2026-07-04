@@ -13,6 +13,10 @@ export const submissionsTable = pgTable("submissions", {
   totalQuestions: integer("total_questions").notNull().default(0),
   pointsEarned: integer("points_earned").notNull().default(0),
   recordingUrl: text("recording_url"),
+  textAnswer: text("text_answer"),
+  attachmentUrl: text("attachment_url"),
+  status: text("status").notNull().default("graded"),
+  teacherFeedback: text("teacher_feedback"),
   submittedAt: timestamp("submitted_at").notNull().defaultNow(),
 });
 

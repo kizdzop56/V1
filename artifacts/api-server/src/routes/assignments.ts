@@ -116,6 +116,11 @@ router.get("/assignments/teacher-results", requireAuth, async (req, res) => {
       score: submissionsTable.score,
       correctCount: submissionsTable.correctCount,
       totalQuestions: submissionsTable.totalQuestions,
+      pointsEarned: submissionsTable.pointsEarned,
+      textAnswer: submissionsTable.textAnswer,
+      attachmentUrl: submissionsTable.attachmentUrl,
+      status: submissionsTable.status,
+      teacherFeedback: submissionsTable.teacherFeedback,
       submittedAt: submissionsTable.submittedAt,
     }).from(submissionsTable)
       .where(and(
@@ -180,6 +185,10 @@ router.get("/submissions/:submissionId/review", requireAuth, async (req, res) =>
     submittedAt: submissionsTable.submittedAt,
     studentId: submissionsTable.studentId,
     assignmentId: submissionsTable.assignmentId,
+    textAnswer: submissionsTable.textAnswer,
+    attachmentUrl: submissionsTable.attachmentUrl,
+    status: submissionsTable.status,
+    teacherFeedback: submissionsTable.teacherFeedback,
   }).from(submissionsTable).where(eq(submissionsTable.id, submissionId));
 
   if (!submission) { res.status(404).json({ error: "Submission not found" }); return; }

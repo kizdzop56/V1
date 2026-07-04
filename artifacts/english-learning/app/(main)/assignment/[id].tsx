@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Alert, TextInput, Linking, Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -61,6 +62,7 @@ const TYPE_COLORS: Record<string, string> = {
   audio: "#06b6d4",
   reading: "#10b981",
   video: "#f59e0b",
+  free_form: "#ec4899",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -68,6 +70,7 @@ const TYPE_LABELS: Record<string, string> = {
   audio: "Аудирование",
   reading: "Чтение",
   video: "Видео",
+  free_form: "Свободный ответ",
 };
 
 function formatTime(seconds: number) {
@@ -95,6 +98,11 @@ export default function AssignmentDetailScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  // Free-form assignment: text/photo answer, no auto-grading
+  const [freeFormText, setFreeFormText] = useState("");
+  const [freeFormAttachment, setFreeFormAttachment] = useState<string | null>(null);
+  const [freeFormUploading, setFreeFormUploading] = useState(false);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -160,14 +168,22 @@ export default function AssignmentDetailScreen() {
     setSubmitting(true);
     const currentAnswers = forcedAnswers ?? answers;
     try {
-      const answerList = (assignment.questions || []).map((q: Question) => ({
-        questionId: q.id,
-        answer: currentAnswers[q.id] || "",
-      }));
-      const data = await apiFetch(`/api/assignments/${assignmentId}/submit`, {
-        method: "POST",
-        body: JSON.stringify({ answers: answerList }),
-      });
+      let data: any;
+      if (assignment.type === "free_form") {
+        data = await apiFetch(`/api/assignments/${assignmentId}/submit`, {
+          method: "POST",
+          body: JSON.stringify({ textAnswer: freeFormText, attachmentUrl: freeFormAttachment }),
+        });
+      } else {
+        const answerList = (assignment.questions || []).map((q: Question) => ({
+          questionId: q.id,
+          answer: currentAnswers[q.id] || "",
+        }));
+        data = await apiFetch(`/api/assignments/${assignmentId}/submit`, {
+          method: "POST",
+          body: JSON.stringify({ answers: answerList }),
+        });
+      }
       setResult(data);
       setSubmitted(true);
     } catch (e: any) {
@@ -175,10 +191,59 @@ export default function AssignmentDetailScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [assignment, answers, assignmentId, submitting]);
+  }, [assignment, answers, assignmentId, submitting, freeFormText, freeFormAttachment]);
+
+  const handleAttachPhoto = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== "granted") {
+      Alert.alert("Нет доступа", "Разрешите доступ к галерее, чтобы прикрепить фото.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setFreeFormUploading(true);
+    try {
+      const token = await authStorage.getItem("auth_token");
+      const form = new FormData();
+      const filename = asset.uri.split("/").pop() || "photo.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const ext = match ? match[1] : "jpg";
+      if (Platform.OS === "web") {
+        const blobRes = await fetch(asset.uri);
+        const blob = await blobRes.blob();
+        form.append("file", blob, filename);
+      } else {
+        form.append("file", { uri: asset.uri, name: filename, type: `image/${ext}` } as any);
+      }
+      const res = await fetch(`${BASE_URL}/api/upload/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token ?? ""}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Ошибка загрузки");
+      setFreeFormAttachment(data.url);
+    } catch (e: any) {
+      Alert.alert("Не удалось загрузить фото", e.message ?? "Попробуйте снова.");
+    } finally {
+      setFreeFormUploading(false);
+    }
+  }, []);
 
   // Called when student presses the submit button manually — checks for unanswered questions
   const handleSubmitPressed = useCallback(() => {
+    if (assignment?.type === "free_form") {
+      if (!freeFormText.trim() && !freeFormAttachment) {
+        Alert.alert("Добавьте ответ", "Напишите текст ответа или прикрепите фото.");
+        return;
+      }
+      handleSubmit();
+      return;
+    }
     const questions = assignment?.questions ?? [];
     if (questions.length === 0) {
       handleSubmit();
@@ -460,7 +525,7 @@ export default function AssignmentDetailScreen() {
         </View>
 
         {/* Result after submission */}
-        {submitted && result && (
+        {submitted && result && assignment.type !== "free_form" && (
           <View style={[styles.resultCard, { borderColor: result.score >= 70 ? colors.success : colors.destructive }]}>
             {timerExpired && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
@@ -660,13 +725,88 @@ export default function AssignmentDetailScreen() {
           </View>
         )}
 
+        {/* Free-form answer: text + optional photo, teacher grades manually */}
+        {assignment.type === "free_form" && !isTeacherRole && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={styles.sectionTitle}>Ваш ответ</Text>
+            {submitted ? (
+              <View style={styles.content}>
+                {!!(result?.textAnswer || freeFormText) && (
+                  <Text style={styles.contentText}>{result?.textAnswer ?? freeFormText}</Text>
+                )}
+                {!!(result?.attachmentUrl || freeFormAttachment) && (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setZoomImg((result?.attachmentUrl ?? freeFormAttachment)!)}
+                    style={{ marginTop: 10, borderRadius: 12, overflow: "hidden" }}
+                  >
+                    <Image
+                      source={{ uri: result?.attachmentUrl ?? freeFormAttachment! }}
+                      style={{ width: "100%", height: 200 }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  style={[styles.answerInput, { minHeight: 100, textAlignVertical: "top" }]}
+                  value={freeFormText}
+                  onChangeText={setFreeFormText}
+                  placeholder="Напишите ответ..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  editable={!inputsDisabled}
+                />
+                {freeFormAttachment ? (
+                  <View style={{ marginTop: 10 }}>
+                    <Image source={{ uri: freeFormAttachment }} style={{ width: "100%", height: 200, borderRadius: 12 }} resizeMode="cover" />
+                    <TouchableOpacity
+                      onPress={() => setFreeFormAttachment(null)}
+                      style={{ marginTop: 8, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
+                    >
+                      <Feather name="x-circle" size={14} color={colors.destructive} />
+                      <Text style={{ fontSize: 13, color: colors.destructive, fontWeight: "600" }}>Убрать фото</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.mediaBtn, { backgroundColor: colors.muted, marginTop: 10 }]}
+                    onPress={handleAttachPhoto}
+                    disabled={freeFormUploading || inputsDisabled}
+                  >
+                    {freeFormUploading
+                      ? <ActivityIndicator color={colors.foreground} size="small" />
+                      : <>
+                          <Feather name="camera" size={16} color={colors.foreground} />
+                          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Прикрепить фото</Text>
+                        </>
+                    }
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {submitted && assignment.type === "free_form" && (
+          <View style={{ backgroundColor: "#fdf4ff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#ec489940", flexDirection: "row", gap: 10 }}>
+            <Feather name="clock" size={18} color="#ec4899" style={{ marginTop: 1 }} />
+            <Text style={{ fontSize: 13, color: "#9d174d", flex: 1, lineHeight: 19 }}>
+              Ответ отправлен на проверку учителю. Баллы начислятся после оценки.
+            </Text>
+          </View>
+        )}
+
         {/* Submit button — shown for all assignment types, not just those with questions */}
         {!isTeacherRole && !submitted && !timerExpired && (
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitPressed} disabled={submitting}>
             {submitting
               ? <ActivityIndicator color="#fff" />
               : <Text style={styles.submitText}>
-                  {(assignment.questions || []).length === 0 ? "Отметить как выполненное" : "Отправить ответы"}
+                  {assignment.type === "free_form" ? "Отправить ответ"
+                    : (assignment.questions || []).length === 0 ? "Отметить как выполненное" : "Отправить ответы"}
                 </Text>
             }
           </TouchableOpacity>

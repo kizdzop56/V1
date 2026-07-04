@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, Alert, Image, Linking,
+  ActivityIndicator, Platform, Alert, Image, Linking, TextInput,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -50,6 +50,10 @@ type ResultRow = {
     totalQuestions: number;
     pointsEarned: number;
     submittedAt: string;
+    textAnswer: string | null;
+    attachmentUrl: string | null;
+    status: string | null;
+    teacherFeedback: string | null;
   } | null;
   answers: Array<{
     id: number;
@@ -74,6 +78,9 @@ export default function TeacherResultsScreen() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [zoomImg, setZoomImg] = useState<string | null>(null);
+  const [gradePoints, setGradePoints] = useState<Record<number, string>>({});
+  const [gradeFeedback, setGradeFeedback] = useState<Record<number, string>>({});
+  const [gradingId, setGradingId] = useState<number | null>(null);
 
   const assignmentTitle = results[0]?.assignmentTitle ?? "Задание";
 
@@ -96,6 +103,31 @@ export default function TeacherResultsScreen() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  const handleGrade = async (row: ResultRow) => {
+    const sub = row.submission!;
+    const raw = gradePoints[sub.id] ?? String(row.assignmentPoints);
+    const points = parseInt(raw, 10);
+    if (isNaN(points) || points < 0) {
+      Alert.alert("Ошибка", "Введите корректное число баллов");
+      return;
+    }
+    setGradingId(sub.id);
+    try {
+      const updated = await apiFetch(`/api/submissions/${sub.id}/grade`, {
+        method: "PATCH",
+        body: JSON.stringify({ points, feedback: gradeFeedback[sub.id] ?? "" }),
+      });
+      setResults(prev => prev.map(r => r.assignedTaskId === row.assignedTaskId
+        ? { ...r, submission: { ...r.submission!, ...updated } }
+        : r
+      ));
+    } catch (e: any) {
+      Alert.alert("Ошибка", e.message);
+    } finally {
+      setGradingId(null);
+    }
   };
 
   const handleUnassign = (row: ResultRow) => {
@@ -316,9 +348,11 @@ export default function TeacherResultsScreen() {
               <Text style={s.sectionLabel}>Выполнили · {submitted.length}</Text>
               {submitted.map((r) => {
                 const sub = r.submission!;
+                const isPendingReview = sub.status === "pending";
                 const scoreColor = sub.score >= 70 ? "#10b981" : sub.score >= 50 ? "#f59e0b" : "#ef4444";
                 const isExpanded = expanded.has(r.assignedTaskId);
                 const isDeleting = deletingId === r.assignedTaskId;
+                const isGrading = gradingId === sub.id;
                 return (
                   <View key={r.assignedTaskId} style={s.studentCard}>
                     <View style={s.studentRow}>
@@ -330,13 +364,19 @@ export default function TeacherResultsScreen() {
                           {r.studentName}
                         </Text>
                         <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                          {sub.correctCount}/{sub.totalQuestions} правильных
+                          {isPendingReview ? "Ждёт проверки" : `${sub.correctCount}/${sub.totalQuestions} правильных`}
                         </Text>
                       </View>
-                      <View style={s.scoreBox}>
-                        <Text style={[s.scoreNum, { color: scoreColor }]}>{sub.score}%</Text>
-                        <Text style={s.scoreSub}>+{sub.pointsEarned} ⭐</Text>
-                      </View>
+                      {isPendingReview ? (
+                        <View style={s.pendingTag}>
+                          <Text style={{ fontSize: 12, fontWeight: "600", color: "#92400e" }}>На проверке</Text>
+                        </View>
+                      ) : (
+                        <View style={s.scoreBox}>
+                          <Text style={[s.scoreNum, { color: scoreColor }]}>{sub.score}%</Text>
+                          <Text style={s.scoreSub}>+{sub.pointsEarned} ⭐</Text>
+                        </View>
+                      )}
                       <TouchableOpacity
                         style={s.deleteBtn}
                         onPress={() => handleUnassign(r)}
@@ -349,7 +389,64 @@ export default function TeacherResultsScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    {r.answers.length > 0 && (
+                    {isPendingReview && (
+                      <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        {!!sub.textAnswer && (
+                          <Text style={{ fontSize: 13, color: colors.foreground, marginBottom: 8 }}>{sub.textAnswer}</Text>
+                        )}
+                        {!!sub.attachmentUrl && (
+                          <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => setZoomImg(sub.attachmentUrl!)}
+                            style={{ borderRadius: 10, overflow: "hidden", marginBottom: 10 }}
+                          >
+                            <Image source={{ uri: sub.attachmentUrl }} style={{ width: "100%", height: 180 }} resizeMode="cover" />
+                          </TouchableOpacity>
+                        )}
+                        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                          <TextInput
+                            style={{
+                              width: 70, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                              paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: colors.foreground,
+                            }}
+                            keyboardType="number-pad"
+                            placeholder={String(r.assignmentPoints)}
+                            placeholderTextColor={colors.mutedForeground}
+                            value={gradePoints[sub.id] ?? ""}
+                            onChangeText={(v) => setGradePoints(prev => ({ ...prev, [sub.id]: v }))}
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                              paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: colors.foreground,
+                            }}
+                            placeholder="Комментарий (необязательно)"
+                            placeholderTextColor={colors.mutedForeground}
+                            value={gradeFeedback[sub.id] ?? ""}
+                            onChangeText={(v) => setGradeFeedback(prev => ({ ...prev, [sub.id]: v }))}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={{
+                            marginTop: 10, backgroundColor: colors.primary, borderRadius: 10,
+                            paddingVertical: 10, alignItems: "center", flexDirection: "row",
+                            justifyContent: "center", gap: 6,
+                          }}
+                          onPress={() => handleGrade(r)}
+                          disabled={isGrading}
+                        >
+                          {isGrading
+                            ? <ActivityIndicator color="#fff" size="small" />
+                            : <>
+                                <Feather name="check" size={16} color="#fff" />
+                                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Оценить</Text>
+                              </>
+                          }
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {!isPendingReview && r.answers.length > 0 && (
                       <TouchableOpacity
                         style={s.expandBtn}
                         onPress={() => toggleExpand(r.assignedTaskId)}

@@ -30,10 +30,11 @@ async function apiFetch(path: string, options?: RequestInit) {
 }
 
 const TYPES = [
-  { key: "text_test", label: "Тест",        icon: "edit-3"     },
-  { key: "audio",     label: "Аудирование", icon: "headphones" },
-  { key: "reading",   label: "Чтение",      icon: "book"       },
-  { key: "video",     label: "Видео",       icon: "video"      },
+  { key: "text_test", label: "Тест",           icon: "edit-3"     },
+  { key: "audio",     label: "Аудирование",    icon: "headphones" },
+  { key: "reading",   label: "Чтение",         icon: "book"       },
+  { key: "video",     label: "Видео",          icon: "video"      },
+  { key: "free_form", label: "Свободный ответ", icon: "message-square" },
 ] as const;
 type AssignmentType = typeof TYPES[number]["key"];
 
@@ -173,7 +174,8 @@ export default function CreateAssignmentScreen() {
     }
 
     // ── Question validation — every added question must be fully filled ─
-    for (let i = 0; i < questions.length; i++) {
+    // (not applicable to free-form assignments — no questions/answer key)
+    for (let i = 0; type !== "free_form" && i < questions.length; i++) {
       const q = questions[i];
       if (!q.text.trim()) {
         set("formError", `Вопрос ${i + 1}: введите текст вопроса`);
@@ -197,7 +199,7 @@ export default function CreateAssignmentScreen() {
       }
     }
 
-    const questionPayload = questions
+    const questionPayload = type === "free_form" ? [] : questions
       .filter(q => q.text.trim())
       .map((q, i) => {
         if (q.format === "choice") {
@@ -619,7 +621,18 @@ export default function CreateAssignmentScreen() {
           </View>
         )}
 
+        {/* Свободный ответ — пояснение вместо вопросов */}
+        {type === "free_form" && (
+          <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#8b5cf640", flexDirection: "row", gap: 10 }}>
+            <Feather name="info" size={18} color="#7c3aed" style={{ marginTop: 1 }} />
+            <Text style={{ fontSize: 13, color: "#5b21b6", flex: 1, lineHeight: 19 }}>
+              Ученик пришлёт текстовый ответ и/или фото. Автоматической проверки нет — вы сами оцените ответ и начислите баллы.
+            </Text>
+          </View>
+        )}
+
         {/* Вопросы */}
+        {type !== "free_form" && (
         <View style={s.section}>
           <Text style={s.sectionTitle}>Вопросы</Text>
           {questions.map((q, qi) => (
@@ -695,6 +708,7 @@ export default function CreateAssignmentScreen() {
             <Text style={{ fontSize: 14, fontWeight: "600", color: colors.mutedForeground }}>Добавить вопрос</Text>
           </TouchableOpacity>
         </View>
+        )}
 
         {!!formError && (
           <View style={{ backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#fca5a5" }}>

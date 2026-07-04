@@ -117,7 +117,7 @@ router.patch("/users/:id/profile", requireAuth, async (req, res) => {
     return;
   }
 
-  const { bio, avatarEmoji, avatarColor, avatarUrl, name } = req.body;
+  const { bio, avatarEmoji, avatarColor, avatarUrl, name, username } = req.body;
 
   // Guard against oversized avatar payloads (e.g. an uncompressed data URI).
   // A large avatarUrl bloats every list response that includes this user
@@ -134,6 +134,25 @@ router.patch("/users/:id/profile", requireAuth, async (req, res) => {
   if (avatarColor !== undefined) updateData.avatarColor = avatarColor;
   if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
   if (name !== undefined && name.trim()) updateData.name = name.trim();
+
+  if (username !== undefined) {
+    const trimmed = String(username).trim();
+    if (!trimmed) {
+      res.status(400).json({ error: "Никнейм не может быть пустым" });
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+      res.status(400).json({ error: "Никнейм: 3-20 символов, только латиница, цифры и _" });
+      return;
+    }
+    const [taken] = await db.select({ id: usersTable.id }).from(usersTable)
+      .where(eq(usersTable.username, trimmed));
+    if (taken && taken.id !== id) {
+      res.status(409).json({ error: "Этот никнейм уже занят" });
+      return;
+    }
+    updateData.username = trimmed;
+  }
 
   const [updated] = await db.update(usersTable)
     .set(updateData)

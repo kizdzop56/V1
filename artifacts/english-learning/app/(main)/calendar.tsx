@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, Modal,
+  ActivityIndicator, TextInput, RefreshControl, Modal, Alert,
 } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -92,6 +93,11 @@ function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
+}
+function formatDateWithDay(dateStr: string | null) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}, ${DAY_SHORT[d.getDay()]}`;
 }
 
 // ── Past-slot helper ──────────────────────────────────────────────────
@@ -310,13 +316,26 @@ export default function CalendarScreen() {
 
   useEffect(() => { loadSlots(selectedDate); }, [selectedDate]);
 
-  // Auto-refresh every 30 s so past slots disappear without manual tab switch
+  // Refresh every time this screen comes into focus (e.g. switching tabs,
+  // coming back from another screen, or right after a teacher adds a
+  // student) so newly available slots/connections show up immediately
+  // instead of waiting on the polling interval below.
+  useFocusEffect(
+    useCallback(() => {
+      loadSlots(selectedDate);
+      loadBookings();
+      loadCustomRequests();
+    }, [selectedDate, loadSlots, loadBookings, loadCustomRequests]),
+  );
+
+  // Auto-refresh every 10 s so past slots disappear and new ones/connections
+  // appear without needing a manual tab switch.
   useEffect(() => {
     const id = setInterval(() => {
       loadSlots(selectedDate);
       loadBookings();
       loadCustomRequests();
-    }, 30_000);
+    }, 10_000);
     return () => clearInterval(id);
   }, [selectedDate, loadSlots, loadBookings, loadCustomRequests]);
 
@@ -727,7 +746,7 @@ export default function CalendarScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.reqName}>{b.studentName ?? "Ученик"}</Text>
-                <Text style={s.reqTime}>{formatDate(b.date)}, {b.startTime} – {b.endTime}</Text>
+                <Text style={s.reqTime}>{formatDateWithDay(b.date)}, {b.startTime} – {b.endTime}</Text>
               </View>
             </View>
             {b.note ? <Text style={s.reqNote}>«{b.note}»</Text> : null}
@@ -754,7 +773,7 @@ export default function CalendarScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.reqName}>{cr.studentName ?? "Ученик"}</Text>
-                <Text style={s.reqTime}>{formatDate(cr.date)}, {cr.startTime} – {cr.endTime}</Text>
+                <Text style={s.reqTime}>{formatDateWithDay(cr.date)}, {cr.startTime} – {cr.endTime}</Text>
                 <Text style={[s.reqTime, { color: "#8b5cf6", fontSize: 11 }]}>Предлагает своё время</Text>
               </View>
             </View>
@@ -905,7 +924,7 @@ export default function CalendarScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.reqName}>{b.teacherName ?? "Учитель"}</Text>
-              <Text style={s.reqTime}>{formatDate(b.date)}, {b.startTime} – {b.endTime}</Text>
+              <Text style={s.reqTime}>{formatDateWithDay(b.date)}, {b.startTime} – {b.endTime}</Text>
             </View>
             <Text style={[s.statusLabel, { color: statusColor }]}>{statusLabel}</Text>
           </View>
@@ -982,7 +1001,7 @@ export default function CalendarScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.reqName}>{cr.teacherName ?? "Учитель"}</Text>
-                      <Text style={s.reqTime}>{formatDate(cr.date)}, {cr.startTime} – {cr.endTime}</Text>
+                      <Text style={s.reqTime}>{formatDateWithDay(cr.date)}, {cr.startTime} – {cr.endTime}</Text>
                       <Text style={[s.reqTime, { fontSize: 11, color: "#8b5cf6" }]}>Мой запрос на время</Text>
                     </View>
                     <Text style={[s.statusLabel, { color: crColor }]}>{crLabel}</Text>
