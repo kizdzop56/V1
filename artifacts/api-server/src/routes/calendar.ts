@@ -21,6 +21,7 @@ function isInPast(date: string, time: string): boolean {
 // Teacher: own slots + booking info for selected date
 // Student: connected teachers' slots with status for current user
 router.get("/calendar/slots", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
   const date = typeof req.query.date === "string" ? req.query.date : null;
 
@@ -256,6 +257,7 @@ router.delete("/calendar/bookings/:id", requireAuth, async (req, res) => {
 // Teacher: all pending booking requests for their slots
 // Student: all own bookings (any status), sorted by date
 router.get("/calendar/bookings", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
 
   if (isTeacher(caller.role)) {
@@ -347,6 +349,7 @@ router.post("/calendar/custom-requests", requireAuth, async (req, res) => {
 // ── GET /calendar/custom-requests ─────────────────────────────────────
 // Teacher: pending incoming requests / Student: all own requests
 router.get("/calendar/custom-requests", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
 
   if (isTeacher(caller.role)) {
@@ -449,6 +452,7 @@ router.patch("/calendar/custom-requests/:id", requireAuth, async (req, res) => {
 
 // ── GET /calendar/history — teacher's past confirmed lessons ──────────
 router.get("/calendar/history", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
   if (!isTeacher(caller.role)) return res.status(403).json({ error: "Только учитель" });
 
