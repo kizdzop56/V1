@@ -798,17 +798,19 @@ export default function AssignmentDetailScreen() {
         )}
       </ScrollView>
 
-      {/* ── Progress bar ── */}
-      <View style={[s.progressBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 70 : 16) }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 16 }}>📚</Text>
-            <Text style={s.progressLabel} numberOfLines={1}>{assignment.title}</Text>
+      {/* ── Progress bubble ── */}
+      <View style={[s.progressOuter, { bottom: insets.bottom + (Platform.OS === "web" ? 16 : 12) }]}>
+        <View style={s.progressBubble}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontSize: 15 }}>📚</Text>
+              <Text style={s.progressLabel} numberOfLines={1}>{assignment.title}</Text>
+            </View>
+            <Text style={s.progressPct}>{Math.round(progressPct)}%</Text>
           </View>
-          <Text style={s.progressPct}>{Math.round(progressPct)}%</Text>
-        </View>
-        <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${progressPct}%` }]} />
+          <View style={s.progressTrack}>
+            <View style={[s.progressFill, { width: `${progressPct}%` }]} />
+          </View>
         </View>
       </View>
     </View>
@@ -887,16 +889,25 @@ const s = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   nextBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  progressBar: {
-    paddingHorizontal: 16, paddingTop: 12,
-    backgroundColor: CARD_BG,
-    borderTopWidth: 1, borderTopColor: BORDER,
+  progressOuter: {
+    position: "absolute",
+    left: 16, right: 16,
+  },
+  progressBubble: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 12,
+    shadowColor: "#7c3aed",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   progressLabel: { fontSize: 12, fontWeight: "600", color: TEXT_MID, maxWidth: 200 },
-  progressPct: { fontSize: 12, fontWeight: "700", color: TEXT_MUTED },
-  progressTrack: { height: 10, borderRadius: 5, backgroundColor: "#e2e8f0" },
+  progressPct: { fontSize: 12, fontWeight: "700", color: PRIMARY },
+  progressTrack: { height: 8, borderRadius: 4, backgroundColor: "#ede9fe" },
   progressFill: {
-    height: "100%", borderRadius: 5,
+    height: "100%", borderRadius: 4,
     backgroundColor: ORANGE,
   },
 });
