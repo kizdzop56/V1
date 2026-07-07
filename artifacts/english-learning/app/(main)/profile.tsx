@@ -222,7 +222,9 @@ function FriendsModal({
   const [friends, setFriends] = useState<FriendRow[]>([]);
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [addMode, setAddMode] = useState<"code" | "username">("code");
   const [code, setCode] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
   const [found, setFound] = useState<any>(null);
   const [searching, setSearching] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -254,6 +256,8 @@ function FriendsModal({
     return () => { if (pollerRef.current) { clearInterval(pollerRef.current); pollerRef.current = null; } };
   }, [visible, loadFriends]);
 
+  const resetAddForm = () => { setCode(""); setUsernameInput(""); setFound(null); setAddError(""); };
+
   // Auto-search when exactly 6 chars entered
   const handleCodeChange = async (raw: string) => {
     const t = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -278,13 +282,35 @@ function FriendsModal({
     }
   };
 
+  const handleUsernameSearch = async (raw: string) => {
+    const val = raw.replace(/\s/g, "");
+    setUsernameInput(val);
+    setFound(null);
+    setAddError("");
+    if (val.length < 2) return;
+    setSearching(true);
+    try {
+      const data = await apiFetch(`/api/connections/by-username/${encodeURIComponent(val)}`);
+      if (data.role !== "student") {
+        setAddError("Этот пользователь не является учеником");
+      } else {
+        setFound(data);
+      }
+    } catch {
+      setAddError("Пользователь с таким псевдонимом не найден");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const sendRequest = async () => {
     if (!found) return;
     setConfirming(true); setAddError("");
     try {
-      await apiFetch("/api/connections/friends/request", { method: "POST", body: JSON.stringify({ code }) });
+      const sendCode = found.inviteCode ?? code;
+      await apiFetch("/api/connections/friends/request", { method: "POST", body: JSON.stringify({ code: sendCode }) });
       await loadFriends();
-      setTab("list"); setCode(""); setFound(null);
+      setTab("list"); resetAddForm();
     } catch (e: any) { setAddError(e.message ?? "Ошибка отправки запроса"); }
     finally { setConfirming(false); }
   };
@@ -474,38 +500,87 @@ function FriendsModal({
             </ScrollView>
           ) : (
             <View>
-              <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
-                Попроси друга открыть Профиль и назвать свой код
-              </Text>
-
-              {/* Code input — auto-searches on 6 chars */}
-              <View style={{ position: "relative", marginBottom: 6 }}>
-                <TextInput
-                  style={{
-                    backgroundColor: colors.card, borderRadius: 14,
-                    borderWidth: 2,
-                    borderColor: addError ? colors.destructive : found ? "#10b981" : colors.border,
-                    paddingHorizontal: 16, paddingVertical: 16,
-                    fontSize: 28, fontWeight: "900", letterSpacing: 8,
-                    color: colors.foreground, textAlign: "center", textTransform: "uppercase",
-                  }}
-                  placeholder="_ _ _ _ _ _"
-                  placeholderTextColor={colors.mutedForeground + "80"}
-                  value={code}
-                  onChangeText={handleCodeChange}
-                  maxLength={6}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
-                {searching && (
-                  <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
-                    <ActivityIndicator color={colors.primary} size="small" />
-                  </View>
-                )}
+              {/* Mode switcher */}
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                {(["code", "username"] as const).map((m) => (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => { setAddMode(m); resetAddForm(); }}
+                    style={{
+                      flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
+                      backgroundColor: addMode === m ? colors.primary + "18" : "transparent",
+                      borderWidth: 1.5, borderColor: addMode === m ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: addMode === m ? colors.primary : colors.mutedForeground }}>
+                      {m === "code" ? "По коду" : "По псевдониму"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", marginBottom: 14 }}>
-                Введите 6-значный код — поиск произойдёт автоматически
-              </Text>
+
+              {addMode === "code" ? (
+                <>
+                  <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                    Попроси друга открыть Профиль и назвать свой код
+                  </Text>
+                  <View style={{ position: "relative", marginBottom: 6 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: colors.card, borderRadius: 14,
+                        borderWidth: 2,
+                        borderColor: addError ? colors.destructive : found ? "#10b981" : colors.border,
+                        paddingHorizontal: 16, paddingVertical: 16,
+                        fontSize: 28, fontWeight: "900", letterSpacing: 8,
+                        color: colors.foreground, textAlign: "center", textTransform: "uppercase",
+                      }}
+                      placeholder="_ _ _ _ _ _"
+                      placeholderTextColor={colors.mutedForeground + "80"}
+                      value={code}
+                      onChangeText={handleCodeChange}
+                      maxLength={6}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                    />
+                    {searching && (
+                      <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
+                        <ActivityIndicator color={colors.primary} size="small" />
+                      </View>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", marginBottom: 14 }}>
+                    Введите 6-значный код — поиск произойдёт автоматически
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                    Введи псевдоним (@username) друга
+                  </Text>
+                  <View style={{ position: "relative", marginBottom: 14 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: colors.card, borderRadius: 14,
+                        borderWidth: 2,
+                        borderColor: addError ? colors.destructive : found ? "#10b981" : colors.border,
+                        paddingHorizontal: 16, paddingVertical: 14,
+                        fontSize: 16, color: colors.foreground,
+                      }}
+                      placeholder="@псевдоним"
+                      placeholderTextColor={colors.mutedForeground + "80"}
+                      value={usernameInput}
+                      onChangeText={handleUsernameSearch}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {searching && (
+                      <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
+                        <ActivityIndicator color={colors.primary} size="small" />
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
 
               {/* Error */}
               {!!addError && (
