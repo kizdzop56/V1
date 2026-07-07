@@ -103,15 +103,17 @@ function AddByCodeModal({
   title: string;
 }) {
   const colors = useColors();
+  const [mode, setMode] = useState<"code" | "username">("code");
   const [code, setCode] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
   const [searching, setSearching] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
   const [found, setFound] = useState<any>(null);
 
-  const reset = () => { setCode(""); setFound(null); setError(""); };
+  const reset = () => { setCode(""); setUsernameInput(""); setFound(null); setError(""); };
 
-  // Auto-search when exactly 6 chars entered
+  // Auto-search when exactly 6 chars entered (invite code)
   const handleCodeChange = async (raw: string) => {
     const t = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
     setCode(t);
@@ -135,12 +137,33 @@ function AddByCodeModal({
     }
   };
 
+  // Search by username on button press
+  const handleUsernameSearch = async () => {
+    const q = usernameInput.trim().toLowerCase();
+    if (!q) return;
+    setFound(null);
+    setError("");
+    setSearching(true);
+    try {
+      const data = await apiFetch(`/api/connections/by-username/${encodeURIComponent(q)}`);
+      if (data.role !== "student") {
+        setError("Этот пользователь не является учеником");
+      } else {
+        setFound(data);
+      }
+    } catch {
+      setError("Пользователь с таким псевдонимом не найден");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const confirm = async () => {
     if (!found) return;
     setConfirming(true); setError("");
     try {
       const result = await apiFetch(endpoint, {
-        method: "POST", body: JSON.stringify({ code }),
+        method: "POST", body: JSON.stringify({ code: found.inviteCode }),
       });
       onAdded(result);
       reset(); onClose();
@@ -149,50 +172,119 @@ function AddByCodeModal({
     } finally { setConfirming(false); }
   };
 
-  const borderColor = error ? colors.destructive : found ? "#10b981" : colors.border;
+  const codeBorderColor = error && mode === "code" ? colors.destructive : found && mode === "code" ? "#10b981" : colors.border;
+  const usernameBorderColor = error && mode === "username" ? colors.destructive : found && mode === "username" ? "#10b981" : colors.border;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { onClose(); reset(); }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
         <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground, marginBottom: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground, marginBottom: 16 }}>
             {title}
           </Text>
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 20 }}>
-            Ученик найдёт свой код в разделе «Профиль»
-          </Text>
 
-          {/* Code input */}
-          <View style={{ position: "relative", marginBottom: 6 }}>
-            <TextInput
+          {/* Mode switcher */}
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
+            <TouchableOpacity
+              onPress={() => { setMode("code"); setFound(null); setError(""); }}
               style={{
-                backgroundColor: colors.card,
-                borderRadius: 14, borderWidth: 2, borderColor,
-                paddingHorizontal: 16, paddingVertical: 16,
-                fontSize: 28, fontWeight: "900", letterSpacing: 8,
-                color: colors.foreground, textTransform: "uppercase", textAlign: "center",
+                flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: "center",
+                backgroundColor: mode === "code" ? colors.primary + "18" : colors.muted,
+                borderWidth: 1.5, borderColor: mode === "code" ? colors.primary : "transparent",
               }}
-              placeholder="_ _ _ _ _ _"
-              placeholderTextColor={colors.mutedForeground + "80"}
-              value={code}
-              onChangeText={handleCodeChange}
-              maxLength={6}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              autoFocus
-            />
-            {searching && (
-              <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
-                <ActivityIndicator color={colors.primary} size="small" />
-              </View>
-            )}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "700", color: mode === "code" ? colors.primary : colors.mutedForeground }}>
+                По коду
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setMode("username"); setFound(null); setError(""); }}
+              style={{
+                flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: "center",
+                backgroundColor: mode === "username" ? colors.primary + "18" : colors.muted,
+                borderWidth: 1.5, borderColor: mode === "username" ? colors.primary : "transparent",
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "700", color: mode === "username" ? colors.primary : colors.mutedForeground }}>
+                По псевдониму
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Hint */}
-          <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }}>
-            Введите 6-значный код — поиск произойдёт автоматически
-          </Text>
+          {/* Code input */}
+          {mode === "code" && (
+            <>
+              <View style={{ position: "relative", marginBottom: 6 }}>
+                <TextInput
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 14, borderWidth: 2, borderColor: codeBorderColor,
+                    paddingHorizontal: 16, paddingVertical: 16,
+                    fontSize: 28, fontWeight: "900", letterSpacing: 8,
+                    color: colors.foreground, textTransform: "uppercase", textAlign: "center",
+                  }}
+                  placeholder="_ _ _ _ _ _"
+                  placeholderTextColor={colors.mutedForeground + "80"}
+                  value={code}
+                  onChangeText={handleCodeChange}
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoFocus
+                />
+                {searching && (
+                  <View style={{ position: "absolute", right: 16, top: 0, bottom: 0, justifyContent: "center" }}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                  </View>
+                )}
+              </View>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }}>
+                Ученик найдёт свой код в разделе «Профиль» · поиск автоматически
+              </Text>
+            </>
+          )}
+
+          {/* Username input */}
+          {mode === "username" && (
+            <>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                <View style={{
+                  flex: 1, flexDirection: "row", alignItems: "center",
+                  backgroundColor: colors.card, borderRadius: 14, borderWidth: 2,
+                  borderColor: usernameBorderColor, paddingHorizontal: 14,
+                }}>
+                  <Text style={{ fontSize: 16, color: colors.mutedForeground, marginRight: 4 }}>@</Text>
+                  <TextInput
+                    style={{ flex: 1, fontSize: 16, color: colors.foreground, paddingVertical: 14 }}
+                    placeholder="псевдоним"
+                    placeholderTextColor={colors.mutedForeground + "80"}
+                    value={usernameInput}
+                    onChangeText={(t) => { setUsernameInput(t); setFound(null); setError(""); }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoFocus
+                    onSubmitEditing={handleUsernameSearch}
+                    returnKeyType="search"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleUsernameSearch}
+                  disabled={searching || !usernameInput.trim()}
+                  style={{
+                    backgroundColor: colors.primary, borderRadius: 14,
+                    paddingHorizontal: 16, justifyContent: "center", alignItems: "center",
+                    opacity: searching || !usernameInput.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {searching
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Feather name="search" size={20} color="#fff" />
+                  }
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
           {/* Error */}
           {!!error && (

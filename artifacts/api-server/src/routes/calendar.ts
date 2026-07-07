@@ -491,11 +491,11 @@ router.get("/calendar/history", requireAuth, async (req, res) => {
   }
 
   const result = allSlots
+    .filter((slot) => isInPast(slot.date, slot.endTime))
     .map((slot) => ({
       ...slot,
       confirmedBookings: bookingsBySlot[slot.id] ?? [],
     }))
-    .filter((slot) => slot.confirmedBookings.length > 0)
     .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
 
   return res.json(result);

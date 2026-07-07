@@ -120,15 +120,23 @@ router.post("/auth/register", async (req, res) => {
     }
   }
 
+  // Email check first: if it exists but unverified, delete old account so it can be reused
+  const [existingEmail] = await db.select({ id: usersTable.id, emailVerified: usersTable.emailVerified })
+    .from(usersTable).where(eq(usersTable.email, emailTrimmed));
+  if (existingEmail) {
+    if (existingEmail.emailVerified === "true") {
+      res.status(400).json({ error: "Этот email уже используется" });
+      return;
+    }
+    // Unverified — clear the old record (and its tokens) to allow fresh registration
+    await db.delete(authTokensTable).where(eq(authTokensTable.userId, existingEmail.id));
+    await db.delete(usersTable).where(eq(usersTable.id, existingEmail.id));
+  }
+
+  // Username check (after potential deletion of unverified user with same email)
   const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.username, username));
   if (existingUser) {
     res.status(400).json({ error: "Этот псевдоним уже занят" });
-    return;
-  }
-
-  const [existingEmail] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, emailTrimmed));
-  if (existingEmail) {
-    res.status(400).json({ error: "Этот email уже используется" });
     return;
   }
 

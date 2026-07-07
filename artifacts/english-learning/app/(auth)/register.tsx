@@ -249,7 +249,7 @@ export default function RegisterScreen() {
                 <TextInput
                   style={s.input}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={(t) => setName(t.replace(/[^а-яёА-ЯЁ\s\-]/g, ""))}
                   placeholder="Введите имя"
                   placeholderTextColor={colors.mutedForeground}
                 />
@@ -260,7 +260,7 @@ export default function RegisterScreen() {
                 <TextInput
                   style={s.input}
                   value={surname}
-                  onChangeText={setSurname}
+                  onChangeText={(t) => setSurname(t.replace(/[^а-яёА-ЯЁ\s\-]/g, ""))}
                   placeholder="Введите фамилию"
                   placeholderTextColor={colors.mutedForeground}
                 />

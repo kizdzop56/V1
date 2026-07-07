@@ -30,6 +30,28 @@ router.get("/connections/by-code/:code", requireAuth, async (req, res) => {
   res.json(user);
 });
 
+// ── Find user by username (pseudonym) ───────────────────────────────
+router.get("/connections/by-username/:username", requireAuth, async (req, res) => {
+  const username = (req.params["username"] as string).toLowerCase().trim();
+  const [user] = await db.select({
+    id: usersTable.id,
+    name: usersTable.name,
+    username: usersTable.username,
+    role: usersTable.role,
+    knowledgeLevel: usersTable.knowledgeLevel,
+    avatarEmoji: usersTable.avatarEmoji,
+    avatarColor: usersTable.avatarColor,
+    avatarUrl: usersTable.avatarUrl,
+    inviteCode: usersTable.inviteCode,
+  }).from(usersTable).where(eq(usersTable.username, username));
+
+  if (!user) {
+    res.status(404).json({ error: "Пользователь с таким псевдонимом не найден" });
+    return;
+  }
+  res.json(user);
+});
+
 // ── Teacher: send request to student ────────────────────────────────
 router.post("/connections/teacher/add-student", requireAuth, async (req, res) => {
   const caller = getUser(req);
