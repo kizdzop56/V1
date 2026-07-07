@@ -126,7 +126,7 @@ router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
 router.patch("/submissions/:id/grade", requireAuth, async (req, res) => {
   const caller = getUser(req);
   const submissionId = Number(req.params["id"]);
-  const { pointsEarned, feedback } = req.body;
+  const { correctCount, totalQuestions, feedback } = req.body;
 
   const [submission] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, submissionId));
   if (!submission) { res.status(404).json({ error: "Submission not found" }); return; }
@@ -139,14 +139,18 @@ router.patch("/submissions/:id/grade", requireAuth, async (req, res) => {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
-  const points = Math.max(0, Math.min(assignment.points, Number(pointsEarned) || 0));
-  const score = assignment.points > 0 ? Math.round((points / assignment.points) * 100) : 0;
+  const total = Math.max(1, Math.round(Number(totalQuestions) || 1));
+  const correct = Math.max(0, Math.min(total, Math.round(Number(correctCount) || 0)));
+  const score = Math.round((correct / total) * 100);
+  const points = Math.round((correct / total) * assignment.points);
 
   const [updated] = await db.update(submissionsTable)
     .set({
       status: "graded",
       pointsEarned: points,
       score,
+      correctCount: correct,
+      totalQuestions: total,
       teacherFeedback: feedback?.trim() || null,
     })
     .where(eq(submissionsTable.id, submissionId))

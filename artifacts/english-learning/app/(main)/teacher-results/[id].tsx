@@ -78,7 +78,8 @@ export default function TeacherResultsScreen() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [zoomImg, setZoomImg] = useState<string | null>(null);
-  const [gradePoints, setGradePoints] = useState<Record<number, string>>({});
+  const [gradeCorrect, setGradeCorrect] = useState<Record<number, string>>({});
+  const [gradeTotal, setGradeTotal] = useState<Record<number, string>>({});
   const [gradeFeedback, setGradeFeedback] = useState<Record<number, string>>({});
   const [gradingId, setGradingId] = useState<number | null>(null);
 
@@ -107,17 +108,19 @@ export default function TeacherResultsScreen() {
 
   const handleGrade = async (row: ResultRow) => {
     const sub = row.submission!;
-    const raw = gradePoints[sub.id] ?? String(row.assignmentPoints);
-    const points = parseInt(raw, 10);
-    if (isNaN(points) || points < 0) {
-      Alert.alert("Ошибка", "Введите корректное число баллов");
+    const correctRaw = gradeCorrect[sub.id] ?? "";
+    const totalRaw = gradeTotal[sub.id] ?? "";
+    const correctNum = parseInt(correctRaw, 10);
+    const totalNum = parseInt(totalRaw, 10);
+    if (isNaN(correctNum) || isNaN(totalNum) || totalNum < 1 || correctNum < 0 || correctNum > totalNum) {
+      Alert.alert("Ошибка", "Укажите корректное количество правильных ответов и вопросов");
       return;
     }
     setGradingId(sub.id);
     try {
       const updated = await apiFetch(`/api/submissions/${sub.id}/grade`, {
         method: "PATCH",
-        body: JSON.stringify({ points, feedback: gradeFeedback[sub.id] ?? "" }),
+        body: JSON.stringify({ correctCount: correctNum, totalQuestions: totalNum, feedback: gradeFeedback[sub.id] ?? "" }),
       });
       setResults(prev => prev.map(r => r.assignedTaskId === row.assignedTaskId
         ? { ...r, submission: { ...r.submission!, ...updated } }
@@ -403,24 +406,68 @@ export default function TeacherResultsScreen() {
                             <Image source={{ uri: sub.attachmentUrl }} style={{ width: "100%", height: 180 }} resizeMode="cover" />
                           </TouchableOpacity>
                         )}
-                        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                        {/* Grading inputs: correct / total */}
+                        <View style={{ marginTop: 4, marginBottom: 8 }}>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                            Результат проверки
+                          </Text>
+                          <View style={{ flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Правильных ответов</Text>
+                              <TextInput
+                                style={{
+                                  borderWidth: 1.5, borderColor: "#10b98160", borderRadius: 10,
+                                  paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+                                  fontWeight: "700", color: "#10b981",
+                                  backgroundColor: "#f0fdf4", textAlign: "center",
+                                }}
+                                keyboardType="number-pad"
+                                placeholder="0"
+                                placeholderTextColor={colors.mutedForeground}
+                                value={gradeCorrect[sub.id] ?? ""}
+                                onChangeText={(v) => setGradeCorrect(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") }))}
+                              />
+                            </View>
+                            <Text style={{ fontSize: 22, color: colors.mutedForeground, fontWeight: "300", marginTop: 16 }}>/</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Всего вопросов</Text>
+                              <TextInput
+                                style={{
+                                  borderWidth: 1.5, borderColor: colors.border, borderRadius: 10,
+                                  paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+                                  fontWeight: "700", color: colors.foreground,
+                                  textAlign: "center",
+                                }}
+                                keyboardType="number-pad"
+                                placeholder="10"
+                                placeholderTextColor={colors.mutedForeground}
+                                value={gradeTotal[sub.id] ?? ""}
+                                onChangeText={(v) => setGradeTotal(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") }))}
+                              />
+                            </View>
+                            {/* Live score preview */}
+                            {(() => {
+                              const c = parseInt(gradeCorrect[sub.id] ?? "", 10);
+                              const t = parseInt(gradeTotal[sub.id] ?? "", 10);
+                              if (!isNaN(c) && !isNaN(t) && t > 0) {
+                                const pct = Math.round((c / t) * 100);
+                                const col = pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+                                return (
+                                  <View style={{ alignItems: "center", marginTop: 16 }}>
+                                    <Text style={{ fontSize: 22, fontWeight: "900", color: col }}>{pct}%</Text>
+                                  </View>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </View>
                           <TextInput
                             style={{
-                              width: 70, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-                              paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: colors.foreground,
+                              borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+                              paddingHorizontal: 12, paddingVertical: 10, fontSize: 13,
+                              color: colors.foreground, marginBottom: 2,
                             }}
-                            keyboardType="number-pad"
-                            placeholder={String(r.assignmentPoints)}
-                            placeholderTextColor={colors.mutedForeground}
-                            value={gradePoints[sub.id] ?? ""}
-                            onChangeText={(v) => setGradePoints(prev => ({ ...prev, [sub.id]: v }))}
-                          />
-                          <TextInput
-                            style={{
-                              flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-                              paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: colors.foreground,
-                            }}
-                            placeholder="Комментарий (необязательно)"
+                            placeholder="Комментарий учителя (необязательно)"
                             placeholderTextColor={colors.mutedForeground}
                             value={gradeFeedback[sub.id] ?? ""}
                             onChangeText={(v) => setGradeFeedback(prev => ({ ...prev, [sub.id]: v }))}
@@ -428,8 +475,8 @@ export default function TeacherResultsScreen() {
                         </View>
                         <TouchableOpacity
                           style={{
-                            marginTop: 10, backgroundColor: colors.primary, borderRadius: 10,
-                            paddingVertical: 10, alignItems: "center", flexDirection: "row",
+                            marginTop: 6, backgroundColor: colors.primary, borderRadius: 10,
+                            paddingVertical: 12, alignItems: "center", flexDirection: "row",
                             justifyContent: "center", gap: 6,
                           }}
                           onPress={() => handleGrade(r)}
@@ -438,8 +485,8 @@ export default function TeacherResultsScreen() {
                           {isGrading
                             ? <ActivityIndicator color="#fff" size="small" />
                             : <>
-                                <Feather name="check" size={16} color="#fff" />
-                                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Оценить</Text>
+                                <Feather name="check-circle" size={16} color="#fff" />
+                                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Выставить оценку</Text>
                               </>
                           }
                         </TouchableOpacity>
