@@ -32,6 +32,7 @@ const PUBLIC_USER_FIELDS = (u: typeof usersTable.$inferSelect) => ({
   id: u.id,
   username: u.username,
   name: u.name,
+  surname: u.surname,
   role: u.role,
   age: u.age,
   dateOfBirth: u.dateOfBirth,
@@ -89,10 +90,21 @@ router.post("/auth/login", async (req, res) => {
 
 // ── REGISTER ───────────────────────────────────────────────────────────
 router.post("/auth/register", async (req, res) => {
-  const { username, password, name, role, parentId, teacherCode, email } = req.body;
+  const { username, password, name, surname, role, parentId, teacherCode, email } = req.body;
 
   if (!username || !password || !name || !role) {
     res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  if (!email || !email.trim()) {
+    res.status(400).json({ error: "Введите email" });
+    return;
+  }
+
+  const emailTrimmed = email.toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+    res.status(400).json({ error: "Некорректный формат email" });
     return;
   }
 
@@ -114,6 +126,12 @@ router.post("/auth/register", async (req, res) => {
     return;
   }
 
+  const [existingEmail] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, emailTrimmed));
+  if (existingEmail) {
+    res.status(400).json({ error: "Этот email уже используется" });
+    return;
+  }
+
   // Generate unique invite code
   let inviteCode = generateInviteCode();
   let attempts = 0;
@@ -132,12 +150,24 @@ router.post("/auth/register", async (req, res) => {
     username,
     passwordHash,
     name,
+    surname: surname?.trim() || null,
+    email: emailTrimmed,
     role: dbRole,
     emailVerified: "false",
     parentId: role === "student" && parentId ? parentId : null,
     totalPoints: 0,
     inviteCode,
   }).returning();
+
+  // Send email verification code
+  const verificationCode = makeCode();
+  await db.insert(authTokensTable).values({
+    userId: user.id,
+    token: verificationCode,
+    type: "email_verification",
+    expiresAt: minutesFromNow(15),
+  });
+  sendVerificationCode(emailTrimmed, verificationCode).catch(() => {});
 
   const jwtToken = generateToken({ userId: user.id, role: user.role });
   res.status(201).json({ token: jwtToken, user: PUBLIC_USER_FIELDS(user) });

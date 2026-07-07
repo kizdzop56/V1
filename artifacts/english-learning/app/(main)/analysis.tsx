@@ -38,7 +38,7 @@ const TYPE_ICONS: Record<string, any> = {
 
 type CategoryStat = { type: string; avgScore: number | null; count: number };
 type Student = {
-  id: number; name: string; username: string; avatarEmoji: string | null;
+  id: number; name: string; surname?: string | null; username: string; avatarEmoji: string | null;
   avatarColor: string | null; avatarUrl?: string | null; knowledgeLevel: string | null;
 };
 type StudentWithStats = Student & { stats: CategoryStat[]; loading: boolean };
@@ -191,7 +191,9 @@ export default function AnalysisScreen() {
                   avatarUrl={student.avatarUrl}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{student.username} ({student.name})</Text>
+                  <Text style={styles.name}>
+                    {student.username}{student.name || student.surname ? ` (${[student.name, student.surname].filter(Boolean).join(" ")})` : ""}
+                  </Text>
                   {student.knowledgeLevel ? (
                     <Text style={styles.sub}>{student.knowledgeLevel}</Text>
                   ) : null}

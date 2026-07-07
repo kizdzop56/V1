@@ -23,6 +23,7 @@ router.get("/leaderboard", requireAuth, async (req, res) => {
   const students = await db.select({
     userId: usersTable.id,
     name: usersTable.name,
+    surname: usersTable.surname,
     username: usersTable.username,
     totalPoints: usersTable.totalPoints,
     avatarEmoji: usersTable.avatarEmoji,
@@ -50,6 +51,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
   let students = await db.select({
     id: usersTable.id,
     name: usersTable.name,
+    surname: usersTable.surname,
     username: usersTable.username,
     avatarEmoji: usersTable.avatarEmoji,
     avatarColor: usersTable.avatarColor,
@@ -120,7 +122,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
   for (const a of audioScoresRaw) audioMap[a.studentId] = Math.round(Number(a.avgScore) || 0);
 
   type Entry = {
-    userId: number; name: string; username: string;
+    userId: number; name: string; surname: string | null; username: string;
     avatarEmoji: string | null; avatarColor: string | null; avatarUrl: string | null;
     value: number; rank: number;
   };
@@ -131,6 +133,7 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
       .map((s, i) => ({
         userId: s.id,
         name: s.name,
+        surname: s.surname,
         username: s.username,
         avatarEmoji: s.avatarEmoji,
         avatarColor: s.avatarColor,

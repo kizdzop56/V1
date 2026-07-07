@@ -19,5 +19,9 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  if (!user.emailVerified) {
+    return <Redirect href="/(auth)/confirm-email" />;
+  }
+
   return <Redirect href="/(main)/profile" />;
 }

@@ -49,7 +49,7 @@ const FILTERS = ["Все", "text_test", "audio", "reading", "video"] as const;
 type Filter = typeof FILTERS[number];
 
 type StudentItem = {
-  id: number; name: string; username: string; avatarEmoji: string | null; avatarColor: string | null;
+  id: number; name: string; surname?: string | null; username: string; avatarEmoji: string | null; avatarColor: string | null;
   avatarUrl?: string | null; knowledgeLevel: string | null;
 };
 
@@ -172,7 +172,7 @@ function AssignModal({
                       avatarUrl={s.avatarUrl}
                     />
                     <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }}>
-                      {s.username} ({s.name})
+                      {s.username}{s.name || s.surname ? ` (${[s.name, s.surname].filter(Boolean).join(" ")})` : ""}
                     </Text>
                     <View style={{
                       width: 22, height: 22, borderRadius: 11,

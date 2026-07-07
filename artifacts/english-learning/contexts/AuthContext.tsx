@@ -14,6 +14,7 @@ export interface AuthUser {
   id: number;
   username: string;
   name: string;
+  surname?: string | null;
   role: "student" | "parent" | "admin" | "teacher";
   age: number | null;
   dateOfBirth: string | null;

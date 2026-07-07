@@ -22,6 +22,8 @@ export default function RegisterScreen() {
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -72,12 +74,15 @@ export default function RegisterScreen() {
 
   const isFormValid =
     name.trim().length > 0 &&
+    email.trim().length > 0 &&
     username.trim().length > 0 &&
     password.length >= 6 &&
     (role !== "teacher" || teacherCode.trim().length > 0);
 
   const handleDetailsNext = () => {
-    if (!name.trim()) { setError("Введите ваше полное имя"); return; }
+    if (!name.trim()) { setError("Введите ваше имя"); return; }
+    if (!email.trim()) { setError("Введите ваш email"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Некорректный формат email"); return; }
     if (!username.trim()) { setError("Введите ваш псевдоним"); return; }
     if (password.length < 6) { setError("Пароль должен содержать не менее 6 символов"); return; }
     if (role === "teacher") {
@@ -101,6 +106,8 @@ export default function RegisterScreen() {
         username: username.trim(),
         password,
         name: name.trim(),
+        surname: surname.trim() || undefined,
+        email: email.trim(),
         role,
         teacherCode: role === "teacher" ? teacherCode.trim() : undefined,
       };
@@ -116,7 +123,7 @@ export default function RegisterScreen() {
         return;
       }
       await login(data.token, data.user);
-      router.replace("/(main)/profile");
+      router.replace("/(auth)/confirm-email");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {
@@ -237,21 +244,30 @@ export default function RegisterScreen() {
                   : "Управляйте заданиями и учениками"}
               </Text>
 
-              <Text style={s.fieldLabel}>
-                {role === "student" ? "Настоящее имя" : "Полное имя"}
-              </Text>
+              <Text style={s.fieldLabel}>Имя</Text>
               <View style={s.inputRow}>
                 <TextInput
                   style={s.input}
                   value={name}
                   onChangeText={setName}
-                  placeholder="Введите ваше имя"
+                  placeholder="Введите имя"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+
+              <Text style={s.fieldLabel}>Фамилия</Text>
+              <View style={s.inputRow}>
+                <TextInput
+                  style={s.input}
+                  value={surname}
+                  onChangeText={setSurname}
+                  placeholder="Введите фамилию"
                   placeholderTextColor={colors.mutedForeground}
                 />
               </View>
               {role === "student" && (
                 <Text style={s.teacherCodeHint}>
-                  Настоящее имя видно только учителю — другие ученики его не увидят.
+                  Имя и фамилия видны только учителю — другие ученики их не увидят.
                 </Text>
               )}
 
@@ -272,6 +288,23 @@ export default function RegisterScreen() {
                   Псевдоним виден всем ученикам. Должен быть уникальным.
                 </Text>
               )}
+
+              <Text style={s.fieldLabel}>Email</Text>
+              <View style={s.inputRow}>
+                <TextInput
+                  style={s.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Введите email"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                />
+              </View>
+              <Text style={s.teacherCodeHint}>
+                На этот адрес придёт код подтверждения.
+              </Text>
 
               <Text style={s.fieldLabel}>Пароль</Text>
               <View style={s.inputRow}>

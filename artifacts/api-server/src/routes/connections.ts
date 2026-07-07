@@ -102,6 +102,7 @@ router.get("/connections/teacher/students", requireAuth, async (req, res) => {
   const students = await db.select({
     id: usersTable.id,
     name: usersTable.name,
+    surname: usersTable.surname,
     username: usersTable.username,
     role: usersTable.role,
     knowledgeLevel: usersTable.knowledgeLevel,
@@ -139,7 +140,7 @@ router.get("/connections/teacher/pending", requireAuth, async (req, res) => {
 
   const ids = links.map((l) => l.studentId);
   const students = await db.select({
-    id: usersTable.id, name: usersTable.name, username: usersTable.username,
+    id: usersTable.id, name: usersTable.name, surname: usersTable.surname, username: usersTable.username,
     avatarEmoji: usersTable.avatarEmoji, avatarColor: usersTable.avatarColor, avatarUrl: usersTable.avatarUrl,
     knowledgeLevel: usersTable.knowledgeLevel,
   }).from(usersTable).where(inArray(usersTable.id, ids));

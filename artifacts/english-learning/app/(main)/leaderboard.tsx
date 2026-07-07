@@ -31,6 +31,7 @@ const AGE_GROUPS: AgeGroup[] = [
 type CategoryEntry = {
   userId: number;
   name: string;
+  surname?: string | null;
   username: string;
   avatarEmoji: string | null;
   avatarColor: string | null;
@@ -143,8 +144,8 @@ export default function LeaderboardScreen() {
           }
         </View>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-          {user?.role === "teacher" || user?.role === "admin"
-            ? `${item.username} (${item.name})`
+          {(user?.role === "teacher" || user?.role === "admin") && (item.name || item.surname)
+            ? `${item.username} (${[item.name, item.surname].filter(Boolean).join(" ")})`
             : item.username}{isMe ? " (Я)" : ""}
         </Text>
         <Text style={{ fontSize: 15, fontWeight: "800", color: isMe ? activeCat.color : colors.foreground }}>
