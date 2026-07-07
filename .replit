@@ -46,6 +46,10 @@ channel = "stable-25_05"
 packages = ["gir-rs"]
 
 [[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
 localPort = 8080
 externalPort = 8080
 
@@ -55,8 +59,4 @@ externalPort = 8081
 
 [[ports]]
 localPort = 22710
-externalPort = 80
-
-[[ports]]
-localPort = 5000
 externalPort = 80
