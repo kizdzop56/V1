@@ -4,7 +4,7 @@ import {
   calendarSlotsTable, slotBookingsTable, customBookingRequestsTable,
   usersTable, teacherStudentsTable,
 } from "@workspace/db";
-import { eq, and, inArray, gte, lt } from "drizzle-orm";
+import { eq, and, inArray, gte, lt, lte } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
 
 const router = Router();
@@ -450,25 +450,20 @@ router.patch("/calendar/custom-requests/:id", requireAuth, async (req, res) => {
   return res.json(updated);
 });
 
-// ── GET /calendar/history — teacher's past confirmed lessons ──────────
+// ── GET /calendar/history — teacher's all confirmed lessons (past + upcoming) ──
 router.get("/calendar/history", requireAuth, async (req, res) => {
   res.set("Cache-Control", "no-store");
   const caller = getUser(req);
   if (!isTeacher(caller.role)) return res.status(403).json({ error: "Только учитель" });
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const pastSlots = await db
+  const allSlots = await db
     .select()
     .from(calendarSlotsTable)
-    .where(and(
-      eq(calendarSlotsTable.teacherId, caller.userId),
-      lt(calendarSlotsTable.date, today),
-    ));
+    .where(eq(calendarSlotsTable.teacherId, caller.userId));
 
-  if (pastSlots.length === 0) return res.json([]);
+  if (allSlots.length === 0) return res.json([]);
 
-  const slotIds = pastSlots.map((s) => s.id);
+  const slotIds = allSlots.map((s) => s.id);
 
   const confirmedBookings = await db
     .select({
@@ -477,6 +472,8 @@ router.get("/calendar/history", requireAuth, async (req, res) => {
       studentId: slotBookingsTable.studentId,
       note: slotBookingsTable.note,
       studentName: usersTable.name,
+      studentSurname: usersTable.surname,
+      studentUsername: usersTable.username,
       studentEmoji: usersTable.avatarEmoji,
       studentColor: usersTable.avatarColor,
     })
@@ -493,15 +490,59 @@ router.get("/calendar/history", requireAuth, async (req, res) => {
     bookingsBySlot[b.slotId].push(b);
   }
 
-  const result = pastSlots
+  const result = allSlots
     .map((slot) => ({
       ...slot,
       confirmedBookings: bookingsBySlot[slot.id] ?? [],
     }))
     .filter((slot) => slot.confirmedBookings.length > 0)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
 
   return res.json(result);
+});
+
+// ── POST /calendar/slots/:slotId/assign — teacher assigns student directly ──
+router.post("/calendar/slots/:slotId/assign", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  if (!isTeacher(caller.role)) return res.status(403).json({ error: "Только учитель" });
+
+  const slotId = Number(req.params.slotId);
+  const { studentId, note } = req.body as { studentId: number; note?: string };
+  if (!studentId) return res.status(400).json({ error: "Укажите ученика" });
+
+  const [slot] = await db
+    .select()
+    .from(calendarSlotsTable)
+    .where(and(eq(calendarSlotsTable.id, slotId), eq(calendarSlotsTable.teacherId, caller.userId)));
+  if (!slot) return res.status(404).json({ error: "Слот не найден" });
+
+  // Reject all pending bookings for this slot
+  await db
+    .update(slotBookingsTable)
+    .set({ status: "rejected" })
+    .where(and(eq(slotBookingsTable.slotId, slotId), eq(slotBookingsTable.status, "pending")));
+
+  // Upsert confirmed booking for the assigned student
+  const existing = await db
+    .select()
+    .from(slotBookingsTable)
+    .where(and(eq(slotBookingsTable.slotId, slotId), eq(slotBookingsTable.studentId, studentId)));
+
+  let booking;
+  if (existing.length > 0) {
+    [booking] = await db
+      .update(slotBookingsTable)
+      .set({ status: "confirmed", note: note ?? existing[0].note })
+      .where(eq(slotBookingsTable.id, existing[0].id))
+      .returning();
+  } else {
+    [booking] = await db
+      .insert(slotBookingsTable)
+      .values({ slotId, studentId, status: "confirmed", note: note ?? null })
+      .returning();
+  }
+
+  return res.status(201).json(booking);
 });
 
 export default router;

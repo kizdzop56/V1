@@ -66,7 +66,8 @@ type LessonHistoryItem = {
   id: number; teacherId: number; date: string; startTime: string; endTime: string;
   confirmedBookings: {
     bookingId: number; slotId: number; studentId: number;
-    studentName: string | null; studentEmoji: string | null; studentColor: string | null;
+    studentName: string | null; studentSurname: string | null; studentUsername: string | null;
+    studentEmoji: string | null; studentColor: string | null;
     note: string | null;
   }[];
 };
@@ -287,6 +288,13 @@ export default function CalendarScreen() {
   const [crSaving, setCrSaving] = useState(false);
   const [crError, setCrError] = useState<string | null>(null);
 
+  // Assign student modal (teacher)
+  const [assignSlot, setAssignSlot] = useState<TeacherSlot | null>(null);
+  const [assignStudents, setAssignStudents] = useState<{ id: number; name: string | null; surname: string | null; username: string; avatarEmoji: string | null; avatarColor: string | null }[]>([]);
+  const [assignStudentId, setAssignStudentId] = useState<number | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+
   // ── Data loading ────────────────────────────────────────────────────
   const loadSlots = useCallback(async (date: string) => {
     const data = await apiFetch(`/api/calendar/slots?date=${date}`).catch(() => []);
@@ -461,6 +469,31 @@ export default function CalendarScreen() {
     } finally { setCrSaving(false); }
   };
 
+  const handleOpenAssign = async (slot: TeacherSlot) => {
+    setAssignSlot(slot);
+    setAssignStudentId(null);
+    setAssignError(null);
+    const students = await apiFetch("/api/connections/teacher/students").catch(() => []);
+    setAssignStudents(students);
+  };
+
+  const handleAssign = async () => {
+    if (!assignSlot || !assignStudentId || assigning) return;
+    setAssigning(true);
+    setAssignError(null);
+    try {
+      await apiFetch(`/api/calendar/slots/${assignSlot.id}/assign`, {
+        method: "POST",
+        body: JSON.stringify({ studentId: assignStudentId }),
+      });
+      setAssignSlot(null);
+      await Promise.all([loadSlots(selectedDate), loadHistory()]);
+      setActiveTab("history");
+    } catch (e: any) {
+      setAssignError(e?.message ?? "Не удалось назначить ученика");
+    } finally { setAssigning(false); }
+  };
+
   // ── Styles ──────────────────────────────────────────────────────────
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -630,7 +663,7 @@ export default function CalendarScreen() {
     const pending = slot.bookings.filter((b) => b.status === "pending");
     const confirmed = slot.bookings.find((b) => b.status === "confirmed");
     const isBusy = !!confirmed;
-    const borderColor = dimmed ? colors.border : (isBusy ? "#ef4444" : "#10b981");
+    const borderColor = dimmed ? colors.border : (isBusy ? "#6366f1" : "#10b981");
     const dotColor   = dimmed ? colors.mutedForeground : borderColor;
     return (
       <View key={slot.id} style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: borderColor, opacity: dimmed ? 0.55 : 1 }]}>
@@ -652,12 +685,12 @@ export default function CalendarScreen() {
 
         {confirmed && (
           <View style={s.bookingRow}>
-            <Feather name="check-circle" size={16} color="#10b981" />
+            <Feather name="check-circle" size={16} color="#6366f1" />
             <View style={{ flex: 1 }}>
               <Text style={s.bookingName}>{confirmed.studentName ?? "Ученик"}</Text>
               {confirmed.note ? <Text style={s.bookingNote}>«{confirmed.note}»</Text> : null}
             </View>
-            <Text style={[s.statusLabel, { color: "#10b981" }]}>Подтверждено</Text>
+            <Text style={[s.statusLabel, { color: "#6366f1" }]}>Подтверждено</Text>
           </View>
         )}
 
@@ -678,6 +711,16 @@ export default function CalendarScreen() {
             </View>
           </View>
         ))}
+
+        {!dimmed && !isBusy && pending.length === 0 && (
+          <TouchableOpacity
+            style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}
+            onPress={() => handleOpenAssign(slot)}
+          >
+            <Feather name="user-plus" size={14} color={colors.primary} />
+            <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Назначить ученика</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -1058,37 +1101,49 @@ export default function CalendarScreen() {
         {monthKeys.map((mk) => (
           <View key={mk}>
             <Text style={[s.historyLabel, { marginTop: 8 }]}>— {monthLabel(mk)} —</Text>
-            {grouped[mk].map((item) => (
-              <View
-                key={item.id}
-                style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: "#10b981" }]}
-              >
-                <View style={s.slotTop}>
-                  <View style={[s.slotDot, { backgroundColor: "#10b981" }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.slotTime}>{item.startTime} – {item.endTime}</Text>
-                    <Text style={s.slotSub}>{formatDate(item.date)}</Text>
+            {grouped[mk].map((item) => {
+              const isPast = item.date < todayStr() || (item.date === todayStr() && item.endTime <= `${new Date().getHours().toString().padStart(2,"0")}:${new Date().getMinutes().toString().padStart(2,"0")}`);
+              const accent = isPast ? "#10b981" : colors.primary;
+              const statusLabel = isPast ? "Проведён" : "Запланирован";
+              const statusIcon = isPast ? "check-circle" : "clock";
+              return (
+                <View
+                  key={item.id}
+                  style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: accent }]}
+                >
+                  <View style={s.slotTop}>
+                    <View style={[s.slotDot, { backgroundColor: accent }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.slotTime}>{item.startTime} – {item.endTime}</Text>
+                      <Text style={s.slotSub}>{formatDate(item.date)}</Text>
+                    </View>
+                    <Text style={[s.statusLabel, { color: accent }]}>{statusLabel}</Text>
                   </View>
-                  <Text style={[s.statusLabel, { color: "#10b981" }]}>Проведён</Text>
+                  {item.confirmedBookings.map((b) => {
+                    const displayName = b.studentName && b.studentSurname
+                      ? `${b.studentName} ${b.studentSurname}`
+                      : b.studentName ?? b.studentUsername ?? "Ученик";
+                    return (
+                      <View key={b.bookingId} style={[s.bookingRow, { marginTop: 4 }]}>
+                        <View style={{
+                          width: 32, height: 32, borderRadius: 16,
+                          backgroundColor: b.studentColor ?? "#6366f1",
+                          justifyContent: "center", alignItems: "center",
+                        }}>
+                          <Text style={{ fontSize: 16 }}>{b.studentEmoji ?? "🦁"}</Text>
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                          <Text style={s.bookingName}>{displayName}</Text>
+                          {b.studentUsername ? <Text style={[s.bookingNote, { color: colors.mutedForeground }]}>@{b.studentUsername}</Text> : null}
+                          {b.note ? <Text style={s.bookingNote}>«{b.note}»</Text> : null}
+                        </View>
+                        <Feather name={statusIcon} size={16} color={accent} />
+                      </View>
+                    );
+                  })}
                 </View>
-                {item.confirmedBookings.map((b) => (
-                  <View key={b.bookingId} style={[s.bookingRow, { marginTop: 4 }]}>
-                    <View style={{
-                      width: 32, height: 32, borderRadius: 16,
-                      backgroundColor: b.studentColor ?? "#6366f1",
-                      justifyContent: "center", alignItems: "center",
-                    }}>
-                      <Text style={{ fontSize: 16 }}>{b.studentEmoji ?? "🦁"}</Text>
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                      <Text style={s.bookingName}>{b.studentName ?? "Ученик"}</Text>
-                      {b.note ? <Text style={s.bookingNote}>«{b.note}»</Text> : null}
-                    </View>
-                    <Feather name="check-circle" size={16} color="#10b981" />
-                  </View>
-                ))}
-              </View>
-            ))}
+              );
+            })}
           </View>
         ))}
       </ScrollView>
@@ -1299,6 +1354,79 @@ export default function CalendarScreen() {
     </Modal>
   );
 
+  const renderAssignModal = () => (
+    <Modal visible={!!assignSlot} transparent animationType="slide" onRequestClose={() => setAssignSlot(null)}>
+      <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setAssignSlot(null)}>
+        <TouchableOpacity style={s.sheet} activeOpacity={1}>
+          <View style={s.handle} />
+          <Text style={s.sheetTitle}>
+            Назначить ученика{"\n"}{assignSlot?.startTime} – {assignSlot?.endTime} · {formatDate(assignSlot?.date ?? null)}
+          </Text>
+
+          {assignStudents.length === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: 24, gap: 8 }}>
+              <Feather name="users" size={32} color={colors.mutedForeground} />
+              <Text style={{ color: colors.mutedForeground, fontSize: 14, textAlign: "center" }}>
+                Нет подключённых учеников.{"\n"}Сначала добавьте ученика.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+              {assignStudents.map((st) => {
+                const selected = st.id === assignStudentId;
+                const displayName = st.name && st.surname
+                  ? `${st.name} ${st.surname}`
+                  : st.name ?? st.username;
+                return (
+                  <TouchableOpacity
+                    key={st.id}
+                    style={{
+                      flexDirection: "row", alignItems: "center", gap: 12,
+                      padding: 12, borderRadius: 14, marginBottom: 8,
+                      backgroundColor: selected ? colors.primary + "18" : colors.muted,
+                      borderWidth: 1.5, borderColor: selected ? colors.primary : "transparent",
+                    }}
+                    onPress={() => setAssignStudentId(st.id)}
+                  >
+                    <View style={{
+                      width: 38, height: 38, borderRadius: 19,
+                      backgroundColor: st.avatarColor ?? "#6366f1",
+                      justifyContent: "center", alignItems: "center",
+                    }}>
+                      <Text style={{ fontSize: 18 }}>{st.avatarEmoji ?? "🦁"}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>{displayName}</Text>
+                      <Text style={{ fontSize: 12, color: colors.mutedForeground }}>@{st.username}</Text>
+                    </View>
+                    {selected && <Feather name="check-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {assignError && (
+            <View style={{ backgroundColor: "#fee2e2", borderRadius: 10, padding: 10, marginBottom: 10, marginTop: 8 }}>
+              <Text style={{ color: "#dc2626", fontSize: 13, textAlign: "center" }}>⚠ {assignError}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[s.primaryBtn, { marginTop: 12 }, (!assignStudentId || assigning) && { opacity: 0.4 }]}
+            onPress={handleAssign}
+            disabled={!assignStudentId || assigning}
+          >
+            {assigning
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={s.primaryBtnText}>Назначить</Text>
+            }
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   const pendingCount = isTeacherRole ? bookings.length + customRequests.length : 0;
 
   return (
@@ -1306,6 +1434,7 @@ export default function CalendarScreen() {
       {renderAddSlotModal()}
       {renderCustomReqModal()}
       {renderBookModal()}
+      {renderAssignModal()}
       <ConfirmModal
         visible={deleteSlotId !== null}
         title="Удалить слот?"
