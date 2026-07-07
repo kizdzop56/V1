@@ -25,10 +25,10 @@ async function apiFetch(path: string) {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео",
+  text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",
 };
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b",
+  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
 };
 
 type Answer = {
@@ -47,6 +47,10 @@ type ReviewData = {
   totalQuestions: number;
   pointsEarned: number;
   submittedAt: string;
+  textAnswer: string | null;
+  attachmentUrl: string | null;
+  status: string | null;
+  teacherFeedback: string | null;
   assignment: { id: number; title: string; type: string; points: number; mediaUrl: string | null; imageUrl: string | null } | null;
   answers: Answer[];
 };
@@ -260,6 +264,71 @@ export default function SubmissionReviewScreen() {
             </View>
           </View>
         </View>
+
+        {/* Free-form student answer block */}
+        {data.assignment?.type === "free_form" && (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={s.sectionTitle}>Ответ ученика</Text>
+            {data.status === "pending" ? (
+              <View style={{ backgroundColor: "#fdf4ff", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#ec489940", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <Feather name="clock" size={16} color="#ec4899" />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#9d174d" }}>Ожидает оценки учителя</Text>
+                </View>
+                {!!data.textAnswer && (
+                  <View style={{ backgroundColor: "#fff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#ec489920" }}>
+                    <Text style={{ fontSize: 14, color: "#1f2937", lineHeight: 20 }}>{data.textAnswer}</Text>
+                  </View>
+                )}
+                {!!data.attachmentUrl && (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setZoomImg(data.attachmentUrl!)}
+                    style={{ borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#ec489940" }}
+                  >
+                    <Image source={{ uri: data.attachmentUrl }} style={{ width: "100%", height: 200 }} resizeMode="cover" />
+                    <View style={{ position: "absolute", bottom: 8, right: 8, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Feather name="zoom-in" size={12} color="#fff" />
+                    </View>
+                  </TouchableOpacity>
+                )}
+                {!data.textAnswer && !data.attachmentUrl && (
+                  <Text style={{ fontSize: 13, color: "#9d174d" }}>Ученик не приложил текст или фото</Text>
+                )}
+              </View>
+            ) : (
+              <View style={{ backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#86efac", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <Feather name="check-circle" size={16} color="#10b981" />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#065f46" }}>Проверено учителем</Text>
+                </View>
+                {!!data.textAnswer && (
+                  <View style={{ backgroundColor: "#fff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#86efac" }}>
+                    <Text style={{ fontSize: 14, color: "#1f2937", lineHeight: 20 }}>{data.textAnswer}</Text>
+                  </View>
+                )}
+                {!!data.attachmentUrl && (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setZoomImg(data.attachmentUrl!)}
+                    style={{ borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#86efac" }}
+                  >
+                    <Image source={{ uri: data.attachmentUrl }} style={{ width: "100%", height: 200 }} resizeMode="cover" />
+                    <View style={{ position: "absolute", bottom: 8, right: 8, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Feather name="zoom-in" size={12} color="#fff" />
+                    </View>
+                  </TouchableOpacity>
+                )}
+                {!!data.teacherFeedback && (
+                  <View style={{ backgroundColor: "#ecfdf5", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#6ee7b7" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#065f46", marginBottom: 3 }}>Комментарий учителя</Text>
+                    <Text style={{ fontSize: 13, color: "#064e3b", lineHeight: 19 }}>{data.teacherFeedback}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Mistakes first */}
         {wrong.length > 0 && (

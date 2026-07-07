@@ -216,6 +216,7 @@ export default function CreateAssignmentScreen() {
     // Determine mediaUrl for audio/video types
     const finalMediaUrl = type === "audio" ? (audioUrl.trim() || mediaUrl.trim() || undefined)
       : type === "video" ? (videoUrl.trim() || mediaUrl.trim() || undefined)
+      : type === "free_form" ? (audioUrl.trim() || videoUrl.trim() || undefined)
       : undefined;
     // For reading: optional supplementary audio/video
     const suppAudio = type === "reading" ? audioUrl.trim() || undefined : undefined;
@@ -621,14 +622,55 @@ export default function CreateAssignmentScreen() {
           </View>
         )}
 
-        {/* Свободный ответ — пояснение вместо вопросов */}
+        {/* Свободный ответ — пояснение + необязательные медиа */}
         {type === "free_form" && (
-          <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#8b5cf640", flexDirection: "row", gap: 10 }}>
-            <Feather name="info" size={18} color="#7c3aed" style={{ marginTop: 1 }} />
-            <Text style={{ fontSize: 13, color: "#5b21b6", flex: 1, lineHeight: 19 }}>
-              Ученик пришлёт текстовый ответ и/или фото. Автоматической проверки нет — вы сами оцените ответ и начислите баллы.
-            </Text>
-          </View>
+          <>
+            <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "#8b5cf640", flexDirection: "row", gap: 10 }}>
+              <Feather name="info" size={18} color="#7c3aed" style={{ marginTop: 1 }} />
+              <Text style={{ fontSize: 13, color: "#5b21b6", flex: 1, lineHeight: 19 }}>
+                Ученик пришлёт текстовый ответ и/или фото. Автоматической проверки нет — вы сами оцените ответ и начислите баллы.
+              </Text>
+            </View>
+            {renderMediaSection(
+              "image",
+              imageUrl, v => set("imageUrl", v),
+              imageInputMode, v => set("imageInputMode", v),
+              uploadedImageName, () => setSt(p => ({ ...p, imageUrl: "", uploadedImageName: "" })),
+              imageInputRef,
+              "#8b5cf6", "image",
+              "Изображение к заданию (необязательно)",
+              "https://example.com/image.jpg",
+              "image/*",
+            )}
+            {renderMediaSection(
+              "audio",
+              audioUrl, v => set("audioUrl", v),
+              audioInputMode, v => {
+                if (v === "url") setSt(p => ({ ...p, audioInputMode: "url", audioUrl: "", uploadedAudioName: "" }));
+                else set("audioInputMode", "file");
+              },
+              uploadedAudioName, () => setSt(p => ({ ...p, audioUrl: "", uploadedAudioName: "" })),
+              audioInputRef,
+              "#06b6d4", "headphones",
+              "Аудио к заданию (необязательно)",
+              "https://example.com/audio.mp3",
+              "audio/*",
+            )}
+            {renderMediaSection(
+              "video",
+              videoUrl, v => set("videoUrl", v),
+              videoInputMode, v => {
+                if (v === "url") setSt(p => ({ ...p, videoInputMode: "url", videoUrl: "", uploadedVideoName: "" }));
+                else set("videoInputMode", "file");
+              },
+              uploadedVideoName, () => setSt(p => ({ ...p, videoUrl: "", uploadedVideoName: "" })),
+              videoInputRef,
+              "#f59e0b", "video",
+              "Видео к заданию (необязательно)",
+              "https://youtube.com/watch?v=... или https://example.com/video.mp4",
+              "video/*",
+            )}
+          </>
         )}
 
         {/* Вопросы */}
