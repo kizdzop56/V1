@@ -41,7 +41,7 @@ export default function VerifyEmailScreen() {
         await login(data.token, data.user);
         await authStorage.setItem("onboarding_tour_pending", "1");
         setStatus("success");
-        setTimeout(() => router.replace("/(main)/assignments"), 2000);
+        setTimeout(() => router.replace("/(main)/profile"), 2000);
       } catch {
         setErrorMsg("Ошибка соединения");
         setStatus("error");

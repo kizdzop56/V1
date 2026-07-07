@@ -49,7 +49,7 @@ export default function LoginScreen() {
         return;
       }
       await login(data.token, data.user);
-      router.replace("/(main)/assignments");
+      router.replace("/(main)/profile");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {

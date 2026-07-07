@@ -89,7 +89,7 @@ export default function ConfirmEmailScreen() {
         await authStorage.setItem("auth_user", JSON.stringify(updated));
         await login(token!, updated);
       }
-      router.replace("/(main)/assignments");
+      router.replace("/(main)/profile");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {

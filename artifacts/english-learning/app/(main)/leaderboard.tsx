@@ -31,6 +31,7 @@ const AGE_GROUPS: AgeGroup[] = [
 type CategoryEntry = {
   userId: number;
   name: string;
+  username: string;
   avatarEmoji: string | null;
   avatarColor: string | null;
   avatarUrl: string | null;
@@ -142,7 +143,9 @@ export default function LeaderboardScreen() {
           }
         </View>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-          {item.name}{isMe ? " (Я)" : ""}
+          {user?.role === "teacher" || user?.role === "admin"
+            ? `${item.username} (${item.name})`
+            : item.username}{isMe ? " (Я)" : ""}
         </Text>
         <Text style={{ fontSize: 15, fontWeight: "800", color: isMe ? activeCat.color : colors.foreground }}>
           {activeCat.formatValue(item.value)}

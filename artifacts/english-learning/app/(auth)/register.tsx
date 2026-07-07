@@ -116,7 +116,7 @@ export default function RegisterScreen() {
         return;
       }
       await login(data.token, data.user);
-      router.replace("/(main)/assignments");
+      router.replace("/(main)/profile");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
     } finally {
@@ -237,7 +237,9 @@ export default function RegisterScreen() {
                   : "Управляйте заданиями и учениками"}
               </Text>
 
-              <Text style={s.fieldLabel}>Полное имя</Text>
+              <Text style={s.fieldLabel}>
+                {role === "student" ? "Настоящее имя" : "Полное имя"}
+              </Text>
               <View style={s.inputRow}>
                 <TextInput
                   style={s.input}
@@ -247,19 +249,29 @@ export default function RegisterScreen() {
                   placeholderTextColor={colors.mutedForeground}
                 />
               </View>
+              {role === "student" && (
+                <Text style={s.teacherCodeHint}>
+                  Настоящее имя видно только учителю — другие ученики его не увидят.
+                </Text>
+              )}
 
-              <Text style={s.fieldLabel}>Ваш псевдоним</Text>
+              <Text style={s.fieldLabel}>Псевдоним</Text>
               <View style={s.inputRow}>
                 <TextInput
                   style={s.input}
                   value={username}
                   onChangeText={setUsername}
-                  placeholder="Придумайте уникальный логин"
+                  placeholder={role === "student" ? "Придумайте псевдоним" : "Придумайте уникальный логин"}
                   placeholderTextColor={colors.mutedForeground}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
               </View>
+              {role === "student" && (
+                <Text style={s.teacherCodeHint}>
+                  Псевдоним виден всем ученикам. Должен быть уникальным.
+                </Text>
+              )}
 
               <Text style={s.fieldLabel}>Пароль</Text>
               <View style={s.inputRow}>

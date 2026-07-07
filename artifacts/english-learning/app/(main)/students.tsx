@@ -73,7 +73,7 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>{item.name} ({item.username})</Text>
+        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>{item.username} ({item.name})</Text>
       </View>
 
       <View style={{ alignItems: "flex-end", gap: 6 }}>
@@ -218,7 +218,7 @@ function AddByCodeModal({
                 avatarUrl={found.avatarUrl}
               />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name} ({found.username})</Text>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.username} ({found.name})</Text>
               </View>
               <Feather name="check-circle" size={26} color="#10b981" />
             </View>
@@ -419,7 +419,7 @@ export default function StudentsScreen() {
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400e" }}>
-                        {req.student.name} ({req.student.username})
+                        {req.student.username} ({req.student.name})
                       </Text>
                       <Text style={{ fontSize: 12, color: "#92400eaa" }}>
                         Ожидает ответа...
