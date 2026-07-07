@@ -7,8 +7,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
+
+if (Platform.OS === "web" && typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = "input, textarea { outline: none !important; }";
+  document.head.appendChild(style);
+}
 
 SplashScreen.preventAutoHideAsync();
 
