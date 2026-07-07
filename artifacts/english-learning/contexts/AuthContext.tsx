@@ -65,11 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await authStorage.setItem("auth_user", JSON.stringify(freshUser));
               setToken(storedToken);
               setUser(freshUser);
-            } else {
+            } else if (res.status === 401) {
+              // Token invalid or expired — clear session
               await authStorage.removeItem("auth_token");
               await authStorage.removeItem("auth_user");
+            } else {
+              // Server error (502/503/etc) — keep cached session
+              setToken(storedToken);
+              setUser(JSON.parse(storedUser));
             }
           } catch {
+            // Network error — keep cached session
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
           }
