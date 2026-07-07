@@ -15,7 +15,7 @@ if (!isEmailConfigured()) {
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
-const FROM = "English Learning <onboarding@resend.dev>";
+const FROM = "Englishlearning <onboarding@resend.dev>";
 const APP_URL = process.env.APP_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}`;
 
 export async function sendVerificationCode(to: string, code: string) {
