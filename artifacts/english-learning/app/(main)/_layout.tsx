@@ -134,6 +134,14 @@ function CustomTabBar({ state, descriptors, navigation, onFirstVisit }: CustomTa
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
+  // Hide the tab bar on full-screen quiz/detail screens
+  const currentRouteName = state.routes[state.index]?.name ?? "";
+  const hideTabBar = [
+    "assignment/[id]",
+    "submission-review/[id]",
+  ].includes(currentRouteName);
+  if (hideTabBar) return null;
+
   const visibleRoutes = state.routes.filter(
     (route: any) => descriptors[route.key].options.tabBarIcon !== undefined
   );
