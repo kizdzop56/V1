@@ -80,6 +80,8 @@ router.get("/assignments/my-tasks", requireAuth, async (req, res) => {
     .where(and(
       eq(assignedTasksTable.studentId, caller.userId),
       isNull(submissionsTable.id),
+      isNull(assignmentsTable.deletedAt),
+      eq(assignmentsTable.isDraft, false),
     ));
 
   res.json(tasks);
