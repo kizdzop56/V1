@@ -714,7 +714,11 @@ export default function CalendarScreen() {
 
         {!dimmed && !isBusy && pending.length === 0 && (
           <TouchableOpacity
-            style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              paddingHorizontal: 14, paddingVertical: 10,
+              borderTopWidth: 1, borderTopColor: colors.border,
+            }}
             onPress={() => handleOpenAssign(slot)}
           >
             <Feather name="user-plus" size={14} color={colors.primary} />

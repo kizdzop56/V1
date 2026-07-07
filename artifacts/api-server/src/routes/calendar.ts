@@ -490,8 +490,11 @@ router.get("/calendar/history", requireAuth, async (req, res) => {
     bookingsBySlot[b.slotId].push(b);
   }
 
+  // Compare by date only to avoid UTC/local timezone mismatch.
+  // Slots whose date is today or earlier are treated as history.
+  const todayUTC = new Date().toISOString().slice(0, 10);
   const result = allSlots
-    .filter((slot) => isInPast(slot.date, slot.endTime))
+    .filter((slot) => slot.date <= todayUTC)
     .map((slot) => ({
       ...slot,
       confirmedBookings: bookingsBySlot[slot.id] ?? [],
