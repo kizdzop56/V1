@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Uploaded user files (persisted on disk, not committed to git)
+/uploads/

@@ -6,7 +6,9 @@ import { requireAuth } from "../lib/auth";
 
 const router = Router();
 
-const uploadDir = "/tmp/uploads";
+// Use a persistent directory at the workspace root so files survive server restarts.
+// process.cwd() is artifacts/api-server/ when pnpm runs the script, so ../../uploads = workspace root /uploads.
+const uploadDir = path.resolve(process.cwd(), "../../uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
