@@ -121,6 +121,12 @@ export default function AssignmentDetailScreen() {
   const autoSubmitRef = useRef(false);
   const answersRef = useRef<Record<number, string>>({});
 
+  // Audio player (web only — hidden <audio> element)
+  const audioRef = useRef<any>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+
   const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
   const isStudent = user?.role === "student";
 
@@ -308,6 +314,32 @@ export default function AssignmentDetailScreen() {
   const openMedia = () => {
     if (!mediaUrl) return;
     Linking.openURL(mediaUrl.startsWith("http") ? mediaUrl : `https://${mediaUrl}`);
+  };
+
+  const toggleAudio = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (audioPlaying) {
+      el.pause();
+      setAudioPlaying(false);
+    } else {
+      el.play().catch(() => {});
+      setAudioPlaying(true);
+    }
+  };
+
+  const replayAudio = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = 0;
+    el.play().catch(() => {});
+    setAudioPlaying(true);
+  };
+
+  const formatAudioTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const hasTimer = isStudent && !!assignment.timeLimitMinutes && !submitted;
@@ -577,33 +609,53 @@ export default function AssignmentDetailScreen() {
         {/* ── Audio player card ── */}
         {showAudioBlock && (
           <View style={[s.card, { marginBottom: 12 }]}>
+            {/* Hidden web audio element — no controls */}
+            {Platform.OS === "web" && mediaUrl && (
+              // @ts-ignore
+              <audio
+                ref={audioRef}
+                src={mediaUrl}
+                style={{ display: "none" }}
+                onEnded={() => setAudioPlaying(false)}
+                onLoadedMetadata={(e: any) => setAudioDuration(e.target.duration)}
+                onTimeUpdate={(e: any) => setAudioCurrentTime(e.target.currentTime)}
+              />
+            )}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <TouchableOpacity
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: ORANGE, justifyContent: "center", alignItems: "center" }}
-                onPress={openMedia}
+                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: ORANGE, justifyContent: "center", alignItems: "center" }}
+                onPress={Platform.OS === "web" ? toggleAudio : openMedia}
               >
-                <Feather name="play" size={18} color="#fff" />
+                <Feather name={audioPlaying ? "pause" : "play"} size={20} color="#fff" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                {/* Waveform decoration */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 2, height: 28 }}>
-                  {Array.from({ length: 28 }).map((_, i) => (
-                    <View key={i} style={{ width: 3, borderRadius: 2, height: 4 + (Math.sin(i * 0.8) * 8 + 8) * 0.7, backgroundColor: i < 10 ? ORANGE : BORDER }} />
-                  ))}
+                {/* Waveform bars — orange for played portion, grey for rest */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 2, height: 32 }}>
+                  {Array.from({ length: 30 }).map((_, i) => {
+                    const fraction = audioDuration ? audioCurrentTime / audioDuration : 0;
+                    const played = i / 30 < fraction;
+                    return (
+                      <View
+                        key={i}
+                        style={{
+                          width: 3, borderRadius: 2,
+                          height: 6 + Math.abs(Math.sin(i * 0.7 + 1) * 14),
+                          backgroundColor: played ? ORANGE : (audioPlaying && i / 30 < fraction + 0.05 ? ORANGE : BORDER),
+                        }}
+                      />
+                    );
+                  })}
                 </View>
               </View>
-              <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "500" }}>
-                {assignment.timeLimitMinutes ? `${assignment.timeLimitMinutes}:00` : "0:30"}
+              <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "600", minWidth: 36 }}>
+                {audioDuration ? formatAudioTime(audioDuration) : "—:——"}
               </Text>
             </View>
-            {Platform.OS === "web" && mediaUrl && (
-              <View style={{ marginTop: 10 }}>
-                {/* @ts-ignore */}
-                <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />
-              </View>
-            )}
             <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <TouchableOpacity style={[s.chipBtn]} onPress={openMedia}>
+              <TouchableOpacity
+                style={[s.chipBtn]}
+                onPress={Platform.OS === "web" ? replayAudio : openMedia}
+              >
                 <Feather name="refresh-cw" size={12} color={SLATE} />
                 <Text style={s.chipBtnText}>Слушать снова</Text>
               </TouchableOpacity>
