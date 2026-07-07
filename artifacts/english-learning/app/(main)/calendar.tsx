@@ -751,13 +751,6 @@ export default function CalendarScreen() {
 
         {active.map((slot) => renderTeacherSlotCard(slot, false))}
 
-        {past.length > 0 && (
-          <>
-            <Text style={s.historyLabel}>— История —</Text>
-            {past.map((slot) => renderTeacherSlotCard(slot, true))}
-          </>
-        )}
-
         <TouchableOpacity style={s.addBtn} onPress={() => setShowAdd(true)}>
           <Feather name="plus-circle" size={18} color={colors.primary} />
           <Text style={s.addBtnText}>Добавить слот</Text>
@@ -892,27 +885,6 @@ export default function CalendarScreen() {
             </View>
           );
         })}
-
-        {past.length > 0 && (
-          <>
-            <Text style={s.historyLabel}>— История —</Text>
-            {past.map((slot) => {
-              const meta = STATUS_CFG[slot.status];
-              return (
-                <View key={slot.id} style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: colors.border, opacity: 0.5 }]}>
-                  <View style={s.slotTop}>
-                    <View style={[s.slotDot, { backgroundColor: colors.mutedForeground }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.slotTime}>{slot.startTime} – {slot.endTime}</Text>
-                      {slot.teacherName && <Text style={s.slotSub}>{slot.teacherName}</Text>}
-                    </View>
-                    <Text style={[s.statusLabel, { color: meta.color }]}>{meta.label}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </>
-        )}
 
         {/* Button to request custom time */}
         <TouchableOpacity style={[s.addBtn, { borderColor: "#8b5cf6" }]} onPress={handleOpenCustomReq}>
@@ -1115,7 +1087,7 @@ export default function CalendarScreen() {
                     <View style={[s.slotDot, { backgroundColor: accent }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.slotTime}>{item.startTime} – {item.endTime}</Text>
-                      <Text style={s.slotSub}>{formatDate(item.date)}</Text>
+                      <Text style={s.slotSub}>{formatDateWithDay(item.date)}</Text>
                     </View>
                     <Text style={[s.statusLabel, { color: accent }]}>{statusLabel}</Text>
                   </View>
