@@ -475,11 +475,18 @@ export default function TeacherResultsScreen() {
                             onChangeText={(v) => setGradeFeedback(prev => ({ ...prev, [sub.id]: v }))}
                           />
                         </View>
-                        {!!gradeError[sub.id] && (
-                          <View style={{ backgroundColor: "#fef2f2", borderRadius: 8, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "#fca5a5" }}>
-                            <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>{gradeError[sub.id]}</Text>
-                          </View>
-                        )}
+                        {!!gradeError[sub.id] && (() => {
+                          const c = parseInt(gradeCorrect[sub.id] ?? "", 10);
+                          const t = parseInt(gradeTotal[sub.id] ?? "", 10);
+                          const inputsOk = !isNaN(c) && !isNaN(t) && t >= 1 && c >= 0 && c <= t;
+                          // Hide the validation-specific error as soon as inputs become valid
+                          if (inputsOk && gradeError[sub.id] === "Укажите корректное количество правильных ответов и вопросов") return null;
+                          return (
+                            <View style={{ backgroundColor: "#fef2f2", borderRadius: 8, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "#fca5a5" }}>
+                              <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>{gradeError[sub.id]}</Text>
+                            </View>
+                          );
+                        })()}
                         <TouchableOpacity
                           style={{
                             marginTop: 6, backgroundColor: colors.primary, borderRadius: 10,
