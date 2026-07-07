@@ -41,7 +41,20 @@ export default function ConfirmEmailScreen() {
       inputs.current[CODE_LEN - 1]?.focus();
       return;
     }
-    const char = text.slice(-1);
+
+    let char: string;
+    if (text.length === 0) {
+      char = "";
+    } else if (text.length === 1) {
+      char = text;
+    } else {
+      // Box already had a digit — find the newly typed one
+      const existing = digits[idx];
+      const stripped = existing ? text.replace(existing, "") : text;
+      const clean = stripped.replace(/\D/g, "");
+      char = clean.slice(0, 1) || text.replace(/\D/g, "").slice(-1);
+    }
+
     if (char && !/\d/.test(char)) return;
     const next = [...digits];
     next[idx] = char;
@@ -181,7 +194,17 @@ export default function ConfirmEmailScreen() {
         {/* OTP boxes */}
         <View style={s.digitRow}>
           {digits.map((d, i) => (
-            <View key={i} style={[s.digitBox, d ? s.digitBoxFilled : null]}>
+            <TouchableOpacity
+              key={i}
+              activeOpacity={1}
+              style={[s.digitBox, d ? s.digitBoxFilled : null]}
+              onPress={() => {
+                // On tap, go to the first empty box (or this box if all filled)
+                const firstEmpty = digits.findIndex(v => !v);
+                const target = firstEmpty === -1 ? i : Math.min(i, firstEmpty);
+                inputs.current[target]?.focus();
+              }}
+            >
               <TextInput
                 ref={r => { inputs.current[i] = r; }}
                 style={[s.digitText, Platform.OS === "web" && { outlineStyle: "none" } as any]}
@@ -193,7 +216,7 @@ export default function ConfirmEmailScreen() {
                 selectTextOnFocus
                 caretHidden
               />
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
