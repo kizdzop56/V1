@@ -9,7 +9,6 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import authStorage from "@/utils/authStorage";
 
@@ -57,14 +56,6 @@ type AssignmentDetail = {
   questions: Question[];
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6",
-  audio: "#06b6d4",
-  reading: "#10b981",
-  video: "#f59e0b",
-  free_form: "#ec4899",
-};
-
 const TYPE_LABELS: Record<string, string> = {
   text_test: "Тест",
   audio: "Аудирование",
@@ -79,10 +70,24 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// ─── Colour palette (light quiz theme) ───────────────────────────────────────
+const QUIZ_BG = "#f5f3ff";
+const CARD_BG = "#ffffff";
+const PRIMARY = "#7c3aed";
+const PRIMARY_LIGHT = "#f5f3ff";
+const PRIMARY_DARK = "#6d28d9";
+const ORANGE = "#f97316";
+const SUCCESS = "#22c55e";
+const DANGER = "#ef4444";
+const TEXT_DARK = "#1e1b4b";
+const TEXT_MID = "#4b5563";
+const TEXT_MUTED = "#94a3b8";
+const BORDER = "#e2e8f0";
+const SLATE = "#64748b";
+
 export default function AssignmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const assignmentId = parseInt(id || "0", 10);
-  const colors = useColors();
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -99,23 +104,25 @@ export default function AssignmentDetailScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
 
-  // Free-form assignment: text/photo answer, no auto-grading
+  // Step-by-step navigation
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [imgExpanded, setImgExpanded] = useState(false);
+  const [readingExpanded, setReadingExpanded] = useState(false);
+
+  // Free-form
   const [freeFormText, setFreeFormText] = useState("");
   const [freeFormAttachment, setFreeFormAttachment] = useState<string | null>(null);
   const [freeFormUploading, setFreeFormUploading] = useState(false);
 
-  // Timer state
+  // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [timerExpired, setTimerExpired] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSubmitRef = useRef(false);
+  const answersRef = useRef<Record<number, string>>({});
 
-  const isAdmin = user?.role === "admin";
   const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
   const isStudent = user?.role === "student";
-
-  // Keep a ref to latest answers so auto-submit captures them without closure issues
-  const answersRef = useRef<Record<number, string>>({});
 
   // Load assignment
   useEffect(() => {
@@ -128,6 +135,7 @@ export default function AssignmentDetailScreen() {
     setFetchError(null);
     setTimeLeft(null);
     setTimerExpired(false);
+    setCurrentQuestionIndex(0);
     autoSubmitRef.current = false;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     apiFetch(`/api/assignments/${assignmentId}`)
@@ -136,35 +144,26 @@ export default function AssignmentDetailScreen() {
       .finally(() => setIsLoading(false));
   }, [assignmentId]);
 
-  // Start timer when assignment loads (students only)
+  // Timer
   useEffect(() => {
     if (!assignment || !isStudent || submitted) return;
     if (!assignment.timeLimitMinutes) return;
-
     const totalSeconds = assignment.timeLimitMinutes * 60;
     setTimeLeft(totalSeconds);
-
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          setTimerExpired(true);
-          return 0;
+          clearInterval(timerRef.current!); timerRef.current = null;
+          setTimerExpired(true); return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    return () => {
-      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    };
+    return () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
   }, [assignment?.id, isStudent]);
 
-  // Auto-submit when timer expires
   const handleSubmit = useCallback(async (forcedAnswers?: Record<number, string>) => {
-    if (!assignment) return;
-    if (submitting) return;
+    if (!assignment || submitting) return;
     setSubmitting(true);
     const currentAnswers = forcedAnswers ?? answers;
     try {
@@ -196,15 +195,12 @@ export default function AssignmentDetailScreen() {
   const handleAttachPhoto = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== "granted") {
-      Alert.alert("Нет доступа", "Разрешите доступ к галерее, чтобы прикрепить фото.");
+      Alert.alert("Нет доступа", "Разрешите доступ к галерее.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7 });
+    if (res.canceled || !res.assets[0]) return;
+    const asset = res.assets[0];
     setFreeFormUploading(true);
     try {
       const token = await authStorage.getItem("auth_token");
@@ -219,14 +215,14 @@ export default function AssignmentDetailScreen() {
       } else {
         form.append("file", { uri: asset.uri, name: filename, type: `image/${ext}` } as any);
       }
-      const res = await fetch(`${BASE_URL}/api/upload/image`, {
+      const uploadRes = await fetch(`${BASE_URL}/api/upload/image`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token ?? ""}` },
         body: form,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Ошибка загрузки");
-      setFreeFormAttachment(data.url);
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error ?? "Ошибка загрузки");
+      setFreeFormAttachment(uploadData.url);
     } catch (e: any) {
       Alert.alert("Не удалось загрузить фото", e.message ?? "Попробуйте снова.");
     } finally {
@@ -234,7 +230,6 @@ export default function AssignmentDetailScreen() {
     }
   }, []);
 
-  // Called when student presses the submit button manually — checks for unanswered questions
   const handleSubmitPressed = useCallback(() => {
     if (assignment?.type === "free_form") {
       if (!freeFormText.trim() && !freeFormAttachment) {
@@ -245,10 +240,7 @@ export default function AssignmentDetailScreen() {
       return;
     }
     const questions = assignment?.questions ?? [];
-    if (questions.length === 0) {
-      handleSubmit();
-      return;
-    }
+    if (questions.length === 0) { handleSubmit(); return; }
     const empty = questions.filter((q: Question) => !answers[q.id]?.trim());
     if (empty.length === 0) {
       handleSubmit();
@@ -256,564 +248,655 @@ export default function AssignmentDetailScreen() {
       setUnansweredCount(empty.length);
       setShowUnansweredModal(true);
     }
-  }, [assignment, answers, handleSubmit]);
+  }, [assignment, answers, handleSubmit, freeFormText, freeFormAttachment]);
 
-  // Keep answersRef in sync so auto-submit always sends the latest answers
-  useEffect(() => {
-    answersRef.current = answers;
-  }, [answers]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
-  // Auto-submit when timer expires (call directly — never inside setState)
   useEffect(() => {
     if (timerExpired && !submitted && !autoSubmitRef.current) {
       autoSubmitRef.current = true;
       handleSubmit(answersRef.current);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerExpired]);
 
-  const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-      paddingHorizontal: 20, paddingBottom: 12,
-      flexDirection: "row", alignItems: "center", gap: 12,
-    },
-    backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-    headerTitle: { fontSize: 18, fontWeight: "800", color: colors.foreground, flex: 1 },
-    scroll: { paddingHorizontal: 20, paddingBottom: insets.bottom + (Platform.OS === "web" ? 110 : 130) },
-    card: {
-      backgroundColor: colors.card, borderRadius: 16, padding: 16,
-      marginBottom: 16, borderWidth: 0,
-      shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
-    },
-    assignTitle: { fontSize: 20, fontWeight: "800", color: colors.foreground, marginBottom: 6 },
-    assignDesc: { fontSize: 14, color: colors.mutedForeground, lineHeight: 20, marginBottom: 12 },
-    metaRow: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-    badge: {
-      paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
-      flexDirection: "row", alignItems: "center", gap: 4,
-    },
-    badgeText: { fontSize: 12, fontWeight: "600" },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.foreground, marginBottom: 12 },
-    questionCard: {
-      backgroundColor: colors.card, borderRadius: 14, padding: 14,
-      borderWidth: 1, borderColor: colors.border, marginBottom: 10,
-    },
-    questionText: { fontSize: 15, fontWeight: "600", color: colors.foreground, marginBottom: 10 },
-    answerInput: {
-      borderWidth: 1.5, borderColor: colors.border, borderRadius: 10,
-      paddingHorizontal: 12, paddingVertical: 10,
-      fontSize: 15, color: colors.foreground,
-      backgroundColor: colors.card,
-      ...(Platform.OS === "web" ? { outlineWidth: 0 } as any : {}),
-    },
-    answerCorrect: { borderColor: colors.success, backgroundColor: "#f0fdf4" },
-    answerWrong: { borderColor: colors.destructive, backgroundColor: "#fef2f2" },
-    correctLabel: { fontSize: 12, color: colors.success, fontWeight: "600", marginTop: 6 },
-    wrongLabel: { fontSize: 12, color: colors.destructive, fontWeight: "600", marginTop: 6 },
-    submitBtn: {
-      backgroundColor: colors.primary, borderRadius: 14,
-      paddingVertical: 16, alignItems: "center",
-    },
-    submitText: { fontSize: 16, fontWeight: "700", color: colors.primaryForeground },
-    resultCard: {
-      backgroundColor: colors.card, borderRadius: 16, padding: 20,
-      borderWidth: 1.5, marginBottom: 16, alignItems: "center",
-    },
-    resultScore: { fontSize: 48, fontWeight: "900", marginBottom: 4 },
-    resultLabel: { fontSize: 16, color: colors.mutedForeground, marginBottom: 8 },
-    resultPoints: {
-      flexDirection: "row", alignItems: "center", gap: 6,
-      backgroundColor: "#fef3c7", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    },
-    resultPointsText: { fontSize: 16, fontWeight: "700", color: "#92400e" },
-    content: {
-      backgroundColor: colors.muted, borderRadius: 12, padding: 14,
-      marginBottom: 16, borderWidth: 1, borderColor: colors.border,
-    },
-    contentText: { fontSize: 14, color: colors.foreground, lineHeight: 22 },
-    loading: { flex: 1, justifyContent: "center", alignItems: "center" },
-    mediaBtn: {
-      borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16,
-      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    },
-    mediaHint: { fontSize: 13, color: colors.mutedForeground, marginBottom: 10, lineHeight: 18 },
-    timerBanner: {
-      flexDirection: "row", alignItems: "center", gap: 8,
-      borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-      marginBottom: 14, borderWidth: 1.5,
-    },
-    timerText: { fontSize: 22, fontWeight: "900", fontVariant: ["tabular-nums"] as any },
-  });
-
+  // ─── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
-    return <View style={[styles.container, styles.loading]}><ActivityIndicator color={colors.primary} size="large" /></View>;
+    return (
+      <View style={{ flex: 1, backgroundColor: QUIZ_BG, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={PRIMARY} size="large" />
+      </View>
+    );
   }
 
   if (fetchError || !assignment) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={colors.foreground} />
+      <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
+        <View style={{ paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <TouchableOpacity onPress={() => router.back()} style={s.iconBtn}>
+            <Feather name="arrow-left" size={20} color={SLATE} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Задание</Text>
+          <Text style={s.headerTitle}>Задание</Text>
         </View>
-        <View style={styles.loading}>
-          <Feather name="alert-circle" size={40} color={colors.destructive} />
-          <Text style={{ marginTop: 12, fontSize: 15, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
-            {fetchError ?? "Задание не найдено"}
-          </Text>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 }}>
+          <Feather name="alert-circle" size={40} color={DANGER} />
+          <Text style={{ marginTop: 12, fontSize: 15, color: TEXT_MID, textAlign: "center" }}>{fetchError ?? "Задание не найдено"}</Text>
           <TouchableOpacity
-            style={{ marginTop: 16, backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
-            onPress={() => {
-              setIsLoading(true);
-              setFetchError(null);
-              apiFetch(`/api/assignments/${assignmentId}`)
-                .then(setAssignment)
-                .catch((e: Error) => setFetchError(e.message))
-                .finally(() => setIsLoading(false));
-            }}
+            style={{ marginTop: 16, backgroundColor: PRIMARY, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
+            onPress={() => { setIsLoading(true); setFetchError(null); apiFetch(`/api/assignments/${assignmentId}`).then(setAssignment).catch((e: Error) => setFetchError(e.message)).finally(() => setIsLoading(false)); }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Повторить</Text>
+            <Text style={{ color: "#fff", fontWeight: "700" }}>Повторить</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  const typeColor = TYPE_COLORS[assignment.type] || colors.primary;
+  const questions = assignment.questions || [];
   const mediaUrl = assignment.mediaUrl || (assignment.type !== "reading" ? assignment.content : null);
   const textContent = assignment.type === "reading" ? assignment.content : null;
   const imageUrl = assignment.imageUrl;
 
-  // Detect what kind of media the URL is
-  const isAudioUrl = (url: string) => /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(url) || url.includes("/upload/audio");
+  const isAudioUrl = (url: string) => /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(url) || url.includes("/upload/audio") || url.includes("/upload/student-recording");
   const isVideoUrl = (url: string) => url.includes("youtube") || url.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("/upload/video");
-
-  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (assignment.type !== "audio" && isVideoUrl(mediaUrl)));
+  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (!isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
   const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (!showVideoBlock && isAudioUrl(mediaUrl)));
-
-  const openMedia = () => {
-    if (!mediaUrl) return;
-    const url = mediaUrl.startsWith("http") ? mediaUrl : `https://${mediaUrl}`;
-    Linking.openURL(url);
-  };
 
   const youtubeEmbed = mediaUrl
     ? mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
     : null;
 
-  // Timer display helpers
+  const openMedia = () => {
+    if (!mediaUrl) return;
+    Linking.openURL(mediaUrl.startsWith("http") ? mediaUrl : `https://${mediaUrl}`);
+  };
+
   const hasTimer = isStudent && !!assignment.timeLimitMinutes && !submitted;
   const timerWarning = timeLeft !== null && timeLeft < 60;
   const timerDanger = timeLeft !== null && timeLeft < 30;
-  const timerColor = timerDanger ? colors.destructive : timerWarning ? "#f59e0b" : colors.success;
+  const timerColor = timerDanger ? DANGER : timerWarning ? ORANGE : SUCCESS;
   const inputsDisabled = submitted || timerExpired;
 
+  const totalSteps = questions.length > 0 ? questions.length : 1;
+  const answeredCount = questions.filter(q => !!answers[q.id]?.trim()).length;
+  const progressPct = submitted ? 100 : questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+
+  // ─── TEACHER VIEW: classic scroll layout ─────────────────────────────────
+  if (isTeacherRole) {
+    return (
+      <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
+        <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+        {/* Header */}
+        <View style={[s.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
+          <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={20} color={SLATE} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle} numberOfLines={1}>{assignment.title}</Text>
+        </View>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
+          {/* Info */}
+          <View style={s.card}>
+            <Text style={s.assignTitle}>{assignment.title}</Text>
+            <Text style={[s.bodyText, { marginBottom: 10 }]}>{assignment.description}</Text>
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+              <View style={[s.badge, { backgroundColor: "#ede9fe" }]}>
+                <Text style={[s.badgeText, { color: PRIMARY }]}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
+              </View>
+              <View style={[s.badge, { backgroundColor: "#fef3c7" }]}>
+                <Feather name="star" size={11} color="#92400e" />
+                <Text style={[s.badgeText, { color: "#92400e" }]}>{assignment.points > 0 ? `${assignment.points} очков` : "Баллы по проверке"}</Text>
+              </View>
+            </View>
+          </View>
+          {/* Image */}
+          {imageUrl && (
+            <TouchableOpacity onPress={() => setZoomImg(imageUrl)} style={[s.card, { padding: 0, overflow: "hidden" }]} activeOpacity={0.9}>
+              <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 200, borderRadius: 14 }} resizeMode="cover" />
+            </TouchableOpacity>
+          )}
+          {/* Media */}
+          {textContent && <View style={s.card}><Text style={s.sectionTitle}>Текст для чтения</Text><Text style={s.bodyText}>{textContent}</Text></View>}
+          {showAudioBlock && (
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Аудио</Text>
+              {Platform.OS === "web" ? (/* @ts-ignore */ <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />) : (
+                <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#06b6d4" }]} onPress={openMedia}>
+                  <Feather name="headphones" size={16} color="#fff" />
+                  <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть аудио</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {showVideoBlock && (
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Видео</Text>
+              {Platform.OS === "web" && youtubeEmbed?.includes("embed") && (
+                <View style={{ borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+                  {/* @ts-ignore */}
+                  <iframe src={youtubeEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
+                </View>
+              )}
+              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
+                <Feather name="play-circle" size={16} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть видео</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {/* Questions — teacher sees correct answers */}
+          {questions.length > 0 && (
+            <View>
+              <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Вопросы</Text>
+              {questions.map((q, i) => (
+                <View key={q.id} style={[s.card, { marginBottom: 10 }]}>
+                  <Text style={[s.bodyText, { fontWeight: "600", color: TEXT_DARK, marginBottom: 8 }]}>{i + 1}. {q.text}</Text>
+                  {q.correctAnswer && (
+                    <View style={{ backgroundColor: "#f0fdf4", borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: SUCCESS }}>
+                      <Text style={{ color: SUCCESS, fontWeight: "600", fontSize: 14 }}>✓ {q.correctAnswer}</Text>
+                    </View>
+                  )}
+                  {Array.isArray(q.options) && q.options.map((opt, oi) => (
+                    <View key={oi} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: opt === q.correctAnswer ? SUCCESS : BORDER }} />
+                      <Text style={{ fontSize: 13, color: opt === q.correctAnswer ? SUCCESS : TEXT_MID, fontWeight: opt === q.correctAnswer ? "600" : "400" }}>{opt}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ─── SUBMITTED RESULT SCREEN ─────────────────────────────────────────────
+  if (submitted && result) {
+    const isFreeForm = assignment.type === "free_form";
+    const score = result.score ?? 0;
+    const passed = score >= 70;
+
+    return (
+      <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
+        <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+        <View style={[s.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
+          <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={20} color={SLATE} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Результат</Text>
+        </View>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
+          {/* Score card */}
+          <View style={[s.card, { alignItems: "center", paddingVertical: 30, marginBottom: 16 }]}>
+            <View style={{
+              width: 90, height: 90, borderRadius: 45, marginBottom: 16,
+              backgroundColor: passed ? "#f0fdf4" : "#fef2f2",
+              borderWidth: 3, borderColor: passed ? SUCCESS : DANGER,
+              justifyContent: "center", alignItems: "center",
+            }}>
+              <Text style={{ fontSize: 28, fontWeight: "900", color: passed ? SUCCESS : DANGER }}>
+                {isFreeForm ? "✓" : `${score}%`}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 20, fontWeight: "800", color: TEXT_DARK, marginBottom: 4 }}>
+              {isFreeForm ? "Ответ отправлен!" : passed ? "Отлично!" : "Можно лучше!"}
+            </Text>
+            {!isFreeForm && (
+              <Text style={{ fontSize: 14, color: TEXT_MID, marginBottom: 14 }}>
+                {result.correctCount}/{result.totalQuestions} правильных ответов
+              </Text>
+            )}
+            {result.pointsEarned > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fef3c7", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}>
+                <Feather name="star" size={15} color="#92400e" />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400e" }}>+{result.pointsEarned} очков!</Text>
+              </View>
+            )}
+            {isFreeForm && (
+              <Text style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", marginTop: 8, lineHeight: 19 }}>
+                Баллы начислятся после проверки учителем
+              </Text>
+            )}
+            {timerExpired && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}>
+                <Feather name="clock" size={13} color={TEXT_MUTED} />
+                <Text style={{ fontSize: 12, color: TEXT_MUTED }}>Сдано автоматически по истечении времени</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Per-question results */}
+          {!isFreeForm && questions.length > 0 && result.results && (
+            <View>
+              <Text style={[s.sectionTitle, { marginBottom: 10 }]}>Ответы</Text>
+              {questions.map((q, i) => {
+                const qr = result.results.find((r: any) => r.questionId === q.id);
+                const correct = qr?.isCorrect;
+                return (
+                  <View key={q.id} style={[s.card, { marginBottom: 10, borderWidth: 1.5, borderColor: correct ? SUCCESS + "60" : DANGER + "60" }]}>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: correct ? SUCCESS : DANGER, justifyContent: "center", alignItems: "center", marginTop: 1 }}>
+                        <Feather name={correct ? "check" : "x"} size={13} color="#fff" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: TEXT_DARK, marginBottom: 4 }}>{i + 1}. {q.text}</Text>
+                        <Text style={{ fontSize: 12, color: correct ? SUCCESS : DANGER, fontWeight: "600" }}>
+                          {correct ? "Верно!" : `Ваш ответ: ${answers[q.id] || "(пусто)"}`}
+                        </Text>
+                        {!correct && qr?.correctAnswer && (
+                          <Text style={{ fontSize: 12, color: TEXT_MID, marginTop: 2 }}>
+                            Правильно: {qr.correctAnswer}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[s.nextBtn, { marginTop: 8 }]}
+            onPress={() => router.back()}
+          >
+            <Text style={s.nextBtnText}>Вернуться к заданиям</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ─── STEP-BY-STEP STUDENT QUIZ ────────────────────────────────────────────
+  const isFreeForm = assignment.type === "free_form";
+  const currentQ = isFreeForm ? null : questions[currentQuestionIndex];
+  const isLastStep = isFreeForm ? true : currentQuestionIndex >= questions.length - 1;
+  const currentAnswered = currentQ ? !!answers[currentQ.id]?.trim() : false;
+
+  const goNext = () => {
+    if (!isLastStep) {
+      setCurrentQuestionIndex(i => i + 1);
+      setImgExpanded(false);
+    } else {
+      handleSubmitPressed();
+    }
+  };
+
+  const topPad = insets.top + (Platform.OS === "web" ? 67 : 16);
+
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
       <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
       <ConfirmModal
         visible={showUnansweredModal}
         title="Не все вопросы отвечены"
-        message={`Вы оставили без ответа ${unansweredCount} ${
-          unansweredCount === 1 ? "вопрос" :
-          unansweredCount < 5 ? "вопроса" : "вопросов"
-        }. Отправить с пустыми полями?`}
+        message={`Вы оставили без ответа ${unansweredCount} ${unansweredCount === 1 ? "вопрос" : unansweredCount < 5 ? "вопроса" : "вопросов"}. Отправить с пустыми полями?`}
         confirmText="Отправить всё равно"
         cancelText="Вернуться и ответить"
         onConfirm={() => { setShowUnansweredModal(false); handleSubmit(); }}
         onCancel={() => setShowUnansweredModal(false)}
       />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{assignment.title}</Text>
 
-        {/* Timer badge in header */}
-        {hasTimer && timeLeft !== null && (
-          <View style={[styles.timerBanner, {
-            borderColor: timerColor + "60",
-            backgroundColor: timerColor + "12",
-            paddingHorizontal: 10, paddingVertical: 6,
-            marginBottom: 0,
-          }]}>
-            <Feather name="clock" size={16} color={timerColor} />
-            <Text style={[styles.timerText, { fontSize: 17, color: timerColor }]}>
-              {formatTime(timeLeft)}
-            </Text>
+      {/* ── Top bar ── */}
+      <View style={[s.topBar, { paddingTop: topPad }]}>
+        <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
+          <Feather name="x" size={18} color={SLATE} />
+        </TouchableOpacity>
+
+        <Text style={s.stepCounter}>
+          {isFreeForm ? assignment.title : `${currentQuestionIndex + 1} / ${questions.length}`}
+        </Text>
+
+        {hasTimer && timeLeft !== null ? (
+          <View style={[s.timerBadge, { borderColor: timerColor + "50", backgroundColor: timerColor + "15" }]}>
+            <Feather name="clock" size={13} color={timerColor} />
+            <Text style={[s.timerText, { color: timerColor }]}>{formatTime(timeLeft)}</Text>
           </View>
+        ) : (
+          <View style={{ width: 36 }} />
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      {/* ── Type label ── */}
+      <Text style={s.typeLabel}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
 
+      {/* ── Scrollable content ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Timer expired banner */}
         {timerExpired && !submitted && (
-          <View style={{
-            backgroundColor: "#fef2f2", borderRadius: 14, padding: 14,
-            borderWidth: 1.5, borderColor: "#fca5a5", marginBottom: 16,
-            flexDirection: "row", alignItems: "center", gap: 10,
-          }}>
-            <Feather name="clock" size={20} color={colors.destructive} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.destructive }}>Время вышло!</Text>
-              <Text style={{ fontSize: 12, color: colors.destructive, marginTop: 2 }}>
-                {submitting ? "Ответы отправляются…" : "Не удалось отправить автоматически"}
-              </Text>
-            </View>
-            {submitting ? (
-              <ActivityIndicator color={colors.destructive} />
-            ) : (
+          <View style={{ backgroundColor: "#fef2f2", borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: "#fca5a5", marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Feather name="clock" size={18} color={DANGER} />
+            <Text style={{ fontSize: 14, fontWeight: "700", color: DANGER, flex: 1 }}>
+              {submitting ? "Ответы отправляются…" : "Время вышло!"}
+            </Text>
+          </View>
+        )}
+
+        {/* ── Audio player card ── */}
+        {showAudioBlock && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <TouchableOpacity
-                onPress={() => {
-                  autoSubmitRef.current = false;
-                  setAnswers(prev => { handleSubmit(prev); return prev; });
-                }}
-                style={{ backgroundColor: colors.destructive, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: ORANGE, justifyContent: "center", alignItems: "center" }}
+                onPress={openMedia}
               >
-                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Повторить</Text>
+                <Feather name="play" size={18} color="#fff" />
               </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {/* Timer running banner (shown inside scroll on mobile) */}
-        {hasTimer && timeLeft !== null && !timerExpired && Platform.OS !== "web" && (
-          <View style={[styles.timerBanner, {
-            borderColor: timerColor + "60",
-            backgroundColor: timerColor + "12",
-            marginBottom: 12,
-          }]}>
-            <Feather name="clock" size={20} color={timerColor} />
-            <Text style={{ fontSize: 14, color: timerColor, fontWeight: "700", flex: 1 }}>
-              Оставшееся время:
-            </Text>
-            <Text style={[styles.timerText, { color: timerColor }]}>
-              {formatTime(timeLeft)}
-            </Text>
-          </View>
-        )}
-
-        {/* Info card */}
-        <View style={styles.card}>
-          <Text style={styles.assignTitle}>{assignment.title}</Text>
-          <Text style={styles.assignDesc}>{assignment.description}</Text>
-          <View style={styles.metaRow}>
-            <View style={[styles.badge, { backgroundColor: typeColor + "18" }]}>
-              <Text style={[styles.badgeText, { color: typeColor }]}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: "#fef3c7" }]}>
-              <Feather name="star" size={12} color="#92400e" />
-              <Text style={[styles.badgeText, { color: "#92400e" }]}>
-                {assignment.points > 0 ? `${assignment.points} очков` : "Баллы по проверке"}
+              <View style={{ flex: 1 }}>
+                {/* Waveform decoration */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 2, height: 28 }}>
+                  {Array.from({ length: 28 }).map((_, i) => (
+                    <View key={i} style={{ width: 3, borderRadius: 2, height: 4 + (Math.sin(i * 0.8) * 8 + 8) * 0.7, backgroundColor: i < 10 ? ORANGE : BORDER }} />
+                  ))}
+                </View>
+              </View>
+              <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "500" }}>
+                {assignment.timeLimitMinutes ? `${assignment.timeLimitMinutes}:00` : "0:30"}
               </Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: colors.muted }]}>
-              <Feather name="users" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{assignment.ageMin}–{assignment.ageMax} лет</Text>
-            </View>
-            {assignment.timeLimitMinutes ? (
-              <View style={[styles.badge, { backgroundColor: "#f59e0b18" }]}>
-                <Feather name="clock" size={12} color="#92400e" />
-                <Text style={[styles.badgeText, { color: "#92400e" }]}>{assignment.timeLimitMinutes} мин</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Result after submission */}
-        {submitted && result && assignment.type !== "free_form" && (
-          <View style={[styles.resultCard, { borderColor: result.score >= 70 ? colors.success : colors.destructive }]}>
-            {timerExpired && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Feather name="clock" size={14} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Время истекло — задание сдано автоматически</Text>
-              </View>
-            )}
-            <Text style={[styles.resultScore, { color: result.score >= 70 ? colors.success : colors.destructive }]}>
-              {result.score}%
-            </Text>
-            <Text style={styles.resultLabel}>{result.correctCount}/{result.totalQuestions} правильно</Text>
-            <View style={styles.resultPoints}>
-              <Feather name="star" size={16} color="#92400e" />
-              <Text style={styles.resultPointsText}>+{result.pointsEarned} очков!</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Image */}
-        {imageUrl ? (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setZoomImg(imageUrl)}
-            style={[styles.content, { padding: 0, overflow: "hidden" }]}
-          >
-            <Image
-              source={{ uri: imageUrl }}
-              style={{ width: "100%", height: 240, borderRadius: 12 }}
-              resizeMode="contain"
-            />
-            <View style={{
-              position: "absolute", bottom: 8, right: 8,
-              backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8,
-              paddingHorizontal: 8, paddingVertical: 4,
-              flexDirection: "row", alignItems: "center", gap: 4,
-            }}>
-              <Feather name="zoom-in" size={12} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Reading text */}
-        {textContent && (
-          <View style={styles.content}>
-            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>Текст для чтения</Text>
-            <Text style={styles.contentText}>{textContent}</Text>
-          </View>
-        )}
-
-        {/* Video */}
-        {showVideoBlock && (
-          <View style={[styles.content, { gap: 8 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#f59e0b20", justifyContent: "center", alignItems: "center" }}>
-                <Feather name="video" size={17} color="#f59e0b" />
-              </View>
-              <Text style={styles.sectionTitle}>Видео</Text>
-            </View>
-            {!isTeacherRole && (
-              <Text style={styles.mediaHint}>📺 Сначала посмотрите видео, затем ответьте на вопросы</Text>
-            )}
-            {Platform.OS === "web" && youtubeEmbed && youtubeEmbed.includes("embed") ? (
-              <View style={{ borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+            {Platform.OS === "web" && mediaUrl && (
+              <View style={{ marginTop: 10 }}>
                 {/* @ts-ignore */}
-                <iframe
-                  src={youtubeEmbed}
-                  style={{ width: "100%", height: 220, border: "none" }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />
+              </View>
+            )}
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+              <TouchableOpacity style={[s.chipBtn]} onPress={openMedia}>
+                <Feather name="refresh-cw" size={12} color={SLATE} />
+                <Text style={s.chipBtnText}>Слушать снова</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ── Video card ── */}
+        {showVideoBlock && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            {Platform.OS === "web" && youtubeEmbed?.includes("embed") ? (
+              <View style={{ borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+                {/* @ts-ignore */}
+                <iframe src={youtubeEmbed} style={{ width: "100%", height: 180, border: "none" }} allowFullScreen />
               </View>
             ) : null}
-            <TouchableOpacity style={[styles.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
-              <Feather name="play-circle" size={18} color="#fff" />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
+            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
+              <Feather name="play-circle" size={16} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть видео</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Audio */}
-        {showAudioBlock && (
-          <View style={[styles.content, { gap: 8 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "#06b6d420", justifyContent: "center", alignItems: "center" }}>
-                <Feather name="headphones" size={17} color="#06b6d4" />
+        {/* ── Reading text card (collapsible) ── */}
+        {textContent && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }} onPress={() => setReadingExpanded(e => !e)}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#d1fae5", justifyContent: "center", alignItems: "center" }}>
+                  <Feather name="book-open" size={14} color={SUCCESS} />
+                </View>
+                <Text style={[s.sectionTitle, { marginBottom: 0 }]}>Текст для чтения</Text>
               </View>
-              <Text style={styles.sectionTitle}>Аудио</Text>
-            </View>
-            {!isTeacherRole && (
-              <Text style={styles.mediaHint}>🎧 Сначала прослушайте аудио, затем ответьте на вопросы</Text>
+              <Feather name={readingExpanded ? "chevron-up" : "chevron-down"} size={16} color={SLATE} />
+            </TouchableOpacity>
+            {readingExpanded && (
+              <Text style={[s.bodyText, { marginTop: 12, lineHeight: 22 }]}>{textContent}</Text>
             )}
-            {Platform.OS === "web" ? (
-              /* @ts-ignore */
-              <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />
+            {!readingExpanded && (
+              <Text style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 6 }}>Нажмите, чтобы раскрыть текст</Text>
+            )}
+          </View>
+        )}
+
+        {/* ── Assignment image ── */}
+        {imageUrl && (
+          <TouchableOpacity
+            activeOpacity={0.92}
+            onPress={() => setImgExpanded(e => !e)}
+            style={[s.card, { padding: 0, overflow: "hidden", marginBottom: 12 }]}
+          >
+            <Image
+              source={{ uri: imageUrl }}
+              style={{ width: "100%", height: imgExpanded ? 240 : 160, borderRadius: 14 }}
+              resizeMode="cover"
+            />
+            <View style={{ position: "absolute", bottom: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.88)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+              <Feather name="maximize-2" size={11} color={SLATE} />
+              <Text style={{ fontSize: 11, color: SLATE, fontWeight: "600" }}>Увеличить</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* ── Current question card ── */}
+        {currentQ && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            <Text style={s.questionText}>{currentQ.text}</Text>
+          </View>
+        )}
+
+        {/* ── Answer options ── */}
+        {currentQ && (() => {
+          const hasOptions = Array.isArray(currentQ.options) && currentQ.options.length > 0;
+          const selected = answers[currentQ.id];
+
+          if (hasOptions) {
+            return (
+              <View style={{ gap: 10, marginBottom: 12 }}>
+                {(currentQ.options as string[]).map((opt, oi) => {
+                  const isSelected = selected === opt;
+                  return (
+                    <TouchableOpacity
+                      key={oi}
+                      onPress={() => !inputsDisabled && setAnswers(prev => ({ ...prev, [currentQ.id]: opt }))}
+                      activeOpacity={inputsDisabled ? 1 : 0.7}
+                      style={[s.optionBtn, {
+                        borderColor: isSelected ? PRIMARY : BORDER,
+                        backgroundColor: isSelected ? "#ede9fe" : CARD_BG,
+                        shadowColor: isSelected ? PRIMARY : "#000",
+                        shadowOpacity: isSelected ? 0.12 : 0.04,
+                        shadowRadius: isSelected ? 8 : 4,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: isSelected ? 4 : 1,
+                      }]}
+                    >
+                      <View style={[s.optionRadio, {
+                        borderColor: isSelected ? PRIMARY : "#cbd5e1",
+                        backgroundColor: isSelected ? PRIMARY : "transparent",
+                      }]}>
+                        {isSelected && <Feather name="check" size={12} color="#fff" />}
+                      </View>
+                      <Text style={[s.optionText, { color: isSelected ? PRIMARY_DARK : TEXT_DARK, fontWeight: isSelected ? "600" : "400" }]}>{opt}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            );
+          }
+
+          // Text answer
+          return (
+            <TextInput
+              style={[s.textInput, { marginBottom: 12 }]}
+              value={answers[currentQ.id] || ""}
+              onChangeText={v => !inputsDisabled && setAnswers(prev => ({ ...prev, [currentQ.id]: v }))}
+              placeholder={inputsDisabled ? "Время вышло" : "Ваш ответ..."}
+              placeholderTextColor={TEXT_MUTED}
+              editable={!inputsDisabled}
+              multiline
+              numberOfLines={3}
+              {...(Platform.OS === "web" ? { outlineWidth: 0 } as any : {})}
+            />
+          );
+        })()}
+
+        {/* ── Free-form answer ── */}
+        {isFreeForm && !isTeacherRole && (
+          <View style={{ marginBottom: 12 }}>
+            <TextInput
+              style={[s.textInput, { minHeight: 120, textAlignVertical: "top", marginBottom: 10 }]}
+              value={freeFormText}
+              onChangeText={setFreeFormText}
+              placeholder="Напишите ответ..."
+              placeholderTextColor={TEXT_MUTED}
+              multiline
+              editable={!inputsDisabled}
+              {...(Platform.OS === "web" ? { outlineWidth: 0 } as any : {})}
+            />
+            {freeFormAttachment ? (
+              <View style={{ marginBottom: 10 }}>
+                <TouchableOpacity onPress={() => setZoomImg(freeFormAttachment)} activeOpacity={0.9} style={{ borderRadius: 12, overflow: "hidden" }}>
+                  <Image source={{ uri: freeFormAttachment }} style={{ width: "100%", height: 180, borderRadius: 12 }} resizeMode="cover" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setFreeFormAttachment(null)} style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+                  <Feather name="x-circle" size={14} color={DANGER} />
+                  <Text style={{ fontSize: 13, color: DANGER, fontWeight: "600" }}>Убрать фото</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-              <TouchableOpacity style={[styles.mediaBtn, { backgroundColor: "#06b6d4" }]} onPress={openMedia}>
-                <Feather name="headphones" size={18} color="#fff" />
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
+              <TouchableOpacity
+                style={[s.chipBtn, { alignSelf: "flex-start", paddingVertical: 10, paddingHorizontal: 14 }]}
+                onPress={handleAttachPhoto}
+                disabled={freeFormUploading || inputsDisabled}
+              >
+                {freeFormUploading
+                  ? <ActivityIndicator color={SLATE} size="small" />
+                  : <><Feather name="camera" size={14} color={SLATE} /><Text style={s.chipBtnText}>Прикрепить фото</Text></>
+                }
               </TouchableOpacity>
             )}
           </View>
         )}
 
-        {/* Questions */}
-        {(assignment.questions || []).length > 0 && (
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.sectionTitle}>Вопросы</Text>
-            {(assignment.questions || []).map((q: Question, i: number) => {
-              const questionResult = result?.results?.find((r: any) => r.questionId === q.id);
-              const hasOptions = Array.isArray(q.options) && q.options.length > 0;
-              const selected = answers[q.id];
-              const isLocked = inputsDisabled;
-
-              return (
-                <View key={q.id} style={[styles.questionCard, isLocked && !submitted && { opacity: 0.6 }]}>
-                  <Text style={styles.questionText}>{i + 1}. {q.text}</Text>
-
-                  {isTeacherRole && q.correctAnswer ? (
-                    <View style={[styles.answerInput, styles.answerCorrect]}>
-                      <Text style={{ color: colors.success, fontWeight: "600" }}>✓ {q.correctAnswer}</Text>
-                    </View>
-                  ) : hasOptions ? (
-                    <View style={{ gap: 8 }}>
-                      {(q.options as string[]).map((opt, oi) => {
-                        const isSelected = selected === opt;
-                        const isCorrectOpt = submitted && opt === questionResult?.correctAnswer;
-                        const isWrongOpt = submitted && isSelected && !questionResult?.isCorrect;
-                        return (
-                          <TouchableOpacity
-                            key={oi}
-                            onPress={() => !isLocked && setAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                            activeOpacity={isLocked ? 1 : 0.7}
-                            style={{
-                              flexDirection: "row", alignItems: "center", gap: 10,
-                              padding: 12, borderRadius: 12, borderWidth: 1.5,
-                              borderColor: isCorrectOpt ? colors.success
-                                : isWrongOpt ? colors.destructive
-                                : isSelected ? colors.primary
-                                : colors.border,
-                              backgroundColor: isCorrectOpt ? "#f0fdf4"
-                                : isWrongOpt ? "#fef2f2"
-                                : isSelected ? colors.primary + "12"
-                                : colors.background,
-                            }}
-                          >
-                            <View style={{
-                              width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-                              borderColor: isCorrectOpt ? colors.success
-                                : isWrongOpt ? colors.destructive
-                                : isSelected ? colors.primary
-                                : colors.border,
-                              backgroundColor: (isSelected || isCorrectOpt) ? (isCorrectOpt ? colors.success : colors.primary) : "transparent",
-                              justifyContent: "center", alignItems: "center",
-                            }}>
-                              {(isSelected || isCorrectOpt) && <Feather name="check" size={13} color="#fff" />}
-                            </View>
-                            <Text style={{
-                              fontSize: 14, flex: 1, fontWeight: isSelected ? "600" : "400",
-                              color: isCorrectOpt ? colors.success
-                                : isWrongOpt ? colors.destructive
-                                : colors.foreground,
-                            }}>{opt}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                      {submitted && questionResult && !questionResult.isCorrect && (
-                        <Text style={styles.wrongLabel}>✗ Правильно: {questionResult.correctAnswer}</Text>
-                      )}
-                      {submitted && questionResult?.isCorrect && (
-                        <Text style={styles.correctLabel}>✓ Верно!</Text>
-                      )}
-                    </View>
-                  ) : (
-                    <>
-                      <TextInput
-                        style={[
-                          styles.answerInput,
-                          submitted && questionResult?.isCorrect && styles.answerCorrect,
-                          submitted && questionResult && !questionResult.isCorrect && styles.answerWrong,
-                        ]}
-                        value={answers[q.id] || ""}
-                        onChangeText={v => !isLocked && setAnswers(prev => ({ ...prev, [q.id]: v }))}
-                        placeholder={isLocked && !submitted ? "Время вышло" : "Ваш ответ..."}
-                        placeholderTextColor={colors.mutedForeground}
-                        editable={!isLocked}
-                      />
-                      {submitted && questionResult && (
-                        questionResult.isCorrect
-                          ? <Text style={styles.correctLabel}>✓ Верно!</Text>
-                          : <Text style={styles.wrongLabel}>✗ Правильно: {questionResult.correctAnswer}</Text>
-                      )}
-                    </>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Free-form answer: text + optional photo, teacher grades manually */}
-        {assignment.type === "free_form" && !isTeacherRole && (
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.sectionTitle}>Ваш ответ</Text>
-            {submitted ? (
-              <View style={styles.content}>
-                {!!(result?.textAnswer || freeFormText) && (
-                  <Text style={styles.contentText}>{result?.textAnswer ?? freeFormText}</Text>
-                )}
-                {!!(result?.attachmentUrl || freeFormAttachment) && (
-                  <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => setZoomImg((result?.attachmentUrl ?? freeFormAttachment)!)}
-                    style={{ marginTop: 10, borderRadius: 12, overflow: "hidden" }}
-                  >
-                    <Image
-                      source={{ uri: result?.attachmentUrl ?? freeFormAttachment! }}
-                      style={{ width: "100%", height: 200 }}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <>
-                <TextInput
-                  style={[styles.answerInput, { minHeight: 100, textAlignVertical: "top" }]}
-                  value={freeFormText}
-                  onChangeText={setFreeFormText}
-                  placeholder="Напишите ответ..."
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                  editable={!inputsDisabled}
-                />
-                {freeFormAttachment ? (
-                  <View style={{ marginTop: 10 }}>
-                    <Image source={{ uri: freeFormAttachment }} style={{ width: "100%", height: 200, borderRadius: 12 }} resizeMode="cover" />
-                    <TouchableOpacity
-                      onPress={() => setFreeFormAttachment(null)}
-                      style={{ marginTop: 8, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
-                    >
-                      <Feather name="x-circle" size={14} color={colors.destructive} />
-                      <Text style={{ fontSize: 13, color: colors.destructive, fontWeight: "600" }}>Убрать фото</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.mediaBtn, { backgroundColor: colors.muted, marginTop: 10 }]}
-                    onPress={handleAttachPhoto}
-                    disabled={freeFormUploading || inputsDisabled}
-                  >
-                    {freeFormUploading
-                      ? <ActivityIndicator color={colors.foreground} size="small" />
-                      : <>
-                          <Feather name="camera" size={16} color={colors.foreground} />
-                          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Прикрепить фото</Text>
-                        </>
-                    }
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-          </View>
-        )}
-
-        {submitted && assignment.type === "free_form" && (
-          <View style={{ backgroundColor: "#fdf4ff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#ec489940", flexDirection: "row", gap: 10 }}>
-            <Feather name="clock" size={18} color="#ec4899" style={{ marginTop: 1 }} />
-            <Text style={{ fontSize: 13, color: "#9d174d", flex: 1, lineHeight: 19 }}>
-              Ответ отправлен на проверку учителю. Баллы начислятся после оценки.
-            </Text>
-          </View>
-        )}
-
-        {/* Submit button — shown for all assignment types, not just those with questions */}
-        {!isTeacherRole && !submitted && !timerExpired && (
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitPressed} disabled={submitting}>
+        {/* ── Next / Submit button ── */}
+        {!inputsDisabled && (
+          <TouchableOpacity
+            style={[s.nextBtn, { opacity: (!isFreeForm && !currentAnswered) ? 0.45 : 1 }]}
+            onPress={goNext}
+            disabled={submitting || (!isFreeForm && !currentAnswered)}
+          >
             {submitting
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.submitText}>
-                  {assignment.type === "free_form" ? "Отправить ответ"
-                    : (assignment.questions || []).length === 0 ? "Отметить как выполненное" : "Отправить ответы"}
+              : <Text style={s.nextBtnText}>
+                  {isFreeForm
+                    ? "Отправить ответ"
+                    : isLastStep
+                    ? "Завершить и отправить"
+                    : "Следующий вопрос →"}
                 </Text>
             }
           </TouchableOpacity>
         )}
+
+        {/* "Skip to end" when on last question and some unanswered */}
+        {!isFreeForm && !isLastStep && currentAnswered && (
+          <TouchableOpacity
+            style={{ alignSelf: "center", marginTop: 8, paddingVertical: 6, paddingHorizontal: 12 }}
+            onPress={() => { setCurrentQuestionIndex(questions.length - 1); }}
+          >
+            <Text style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: "500" }}>Перейти к последнему</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      {/* ── Progress bar ── */}
+      <View style={[s.progressBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 70 : 16) }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={{ fontSize: 16 }}>📚</Text>
+            <Text style={s.progressLabel} numberOfLines={1}>{assignment.title}</Text>
+          </View>
+          <Text style={s.progressPct}>{Math.round(progressPct)}%</Text>
+        </View>
+        <View style={s.progressTrack}>
+          <View style={[s.progressFill, { width: `${progressPct}%` }]} />
+        </View>
+      </View>
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  header: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 20, paddingBottom: 12,
+  },
+  topBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingBottom: 4,
+  },
+  headerTitle: { fontSize: 17, fontWeight: "800", color: TEXT_DARK, flex: 1 },
+  stepCounter: { fontSize: 14, fontWeight: "600", color: TEXT_MID },
+  iconBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.07)",
+    justifyContent: "center", alignItems: "center",
+  },
+  typeLabel: {
+    fontSize: 11, fontWeight: "700", color: PRIMARY, letterSpacing: 1.5,
+    textTransform: "uppercase", paddingHorizontal: 16, marginBottom: 10, marginTop: 2,
+  },
+  timerBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  timerText: { fontSize: 13, fontWeight: "800", fontVariant: ["tabular-nums"] as any },
+  card: {
+    backgroundColor: CARD_BG, borderRadius: 16, padding: 14, marginBottom: 0,
+    shadowColor: PRIMARY, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 2,
+  },
+  assignTitle: { fontSize: 18, fontWeight: "800", color: TEXT_DARK, marginBottom: 6 },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: TEXT_DARK, marginBottom: 4 },
+  bodyText: { fontSize: 14, color: TEXT_MID, lineHeight: 21 },
+  badge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+  },
+  badgeText: { fontSize: 12, fontWeight: "600" },
+  mediaBtn: {
+    borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+  },
+  chipBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "#f1f5f9", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+  },
+  chipBtnText: { fontSize: 13, color: SLATE, fontWeight: "600" },
+  questionText: { fontSize: 15, fontWeight: "700", color: TEXT_DARK, lineHeight: 22 },
+  optionBtn: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    padding: 14, borderRadius: 14, borderWidth: 2,
+    backgroundColor: CARD_BG,
+  },
+  optionRadio: {
+    width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+    justifyContent: "center", alignItems: "center",
+  },
+  optionText: { fontSize: 14, flex: 1, lineHeight: 20 },
+  textInput: {
+    borderWidth: 1.5, borderColor: BORDER, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 14, color: TEXT_DARK,
+    backgroundColor: CARD_BG,
+  },
+  nextBtn: {
+    backgroundColor: PRIMARY, borderRadius: 14,
+    paddingVertical: 16, alignItems: "center",
+    shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  nextBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  progressBar: {
+    paddingHorizontal: 16, paddingTop: 12,
+    backgroundColor: CARD_BG,
+    borderTopWidth: 1, borderTopColor: BORDER,
+  },
+  progressLabel: { fontSize: 12, fontWeight: "600", color: TEXT_MID, maxWidth: 200 },
+  progressPct: { fontSize: 12, fontWeight: "700", color: TEXT_MUTED },
+  progressTrack: { height: 10, borderRadius: 5, backgroundColor: "#e2e8f0" },
+  progressFill: {
+    height: "100%", borderRadius: 5,
+    backgroundColor: ORANGE,
+  },
+});
