@@ -1,30 +1,36 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
 
 export function isEmailConfigured() {
-  return !!RESEND_API_KEY;
+  return !!(SMTP_USER && SMTP_PASS);
 }
 
 if (!isEmailConfigured()) {
   console.warn(
     "\n⚠️  Email не настроен! Письма не будут отправляться.\n" +
-    "   Добавьте секрет: RESEND_API_KEY (ключ с resend.com)\n"
+    "   Добавьте секреты: SMTP_USER (ваш Gmail), SMTP_PASS (пароль приложения Google)\n"
   );
 }
 
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+});
 
-const FROM = process.env.RESEND_FROM ?? "onboarding@resend.dev";
+const FROM = `"English Learning" <${SMTP_USER}>`;
 const APP_URL = process.env.APP_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}`;
 
 export async function sendVerificationCode(to: string, code: string) {
-  if (!resend) {
+  if (!isEmailConfigured()) {
     console.error(`[EMAIL] Не настроен. Код ${code} для ${to} НЕ отправлен.`);
     return;
   }
   try {
-    await resend.emails.send({
+    await transporter.sendMail({
       from: FROM,
       to,
       subject: `${code} — ваш код подтверждения`,
@@ -49,13 +55,13 @@ export async function sendVerificationCode(to: string, code: string) {
 }
 
 export async function sendPasswordResetEmail(to: string, token: string) {
-  if (!resend) {
+  if (!isEmailConfigured()) {
     console.error(`[EMAIL] Не настроен. Письмо сброса для ${to} НЕ отправлено.`);
     return;
   }
   const link = `${APP_URL}/reset-password?token=${token}`;
   try {
-    await resend.emails.send({
+    await transporter.sendMail({
       from: FROM,
       to,
       subject: "Сброс пароля — English Learning",
