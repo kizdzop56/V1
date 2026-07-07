@@ -244,6 +244,7 @@ function FriendsModal({
   }, []);
 
   const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const searchIdRef = useRef(0);
 
   useEffect(() => {
     if (visible) {
@@ -288,18 +289,21 @@ function FriendsModal({
     setFound(null);
     setAddError("");
     if (val.length < 2) return;
+    const reqId = ++searchIdRef.current;
     setSearching(true);
     try {
       const data = await apiFetch(`/api/connections/by-username/${encodeURIComponent(val)}`);
+      if (searchIdRef.current !== reqId) return;
       if (data.role !== "student") {
         setAddError("Этот пользователь не является учеником");
       } else {
         setFound(data);
       }
-    } catch {
-      setAddError("Пользователь с таким псевдонимом не найден");
+    } catch (e: any) {
+      if (searchIdRef.current !== reqId) return;
+      setAddError(e?.message || "Пользователь с таким псевдонимом не найден");
     } finally {
-      setSearching(false);
+      if (searchIdRef.current === reqId) setSearching(false);
     }
   };
 

@@ -3,13 +3,14 @@ import { db } from "@workspace/db";
 import {
   usersTable, teacherStudentsTable, parentChildrenTable, friendshipsTable, submissionsTable, assignedTasksTable,
 } from "@workspace/db";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, or, inArray, sql } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
 
 const router = Router();
 
 // ── Find user by invite code ─────────────────────────────────────────
 router.get("/connections/by-code/:code", requireAuth, async (req, res) => {
+  const caller = getUser(req);
   const code = (req.params["code"] as string).toUpperCase();
   const [user] = await db.select({
     id: usersTable.id,
@@ -27,11 +28,16 @@ router.get("/connections/by-code/:code", requireAuth, async (req, res) => {
     res.status(404).json({ error: "Пользователь с таким кодом не найден" });
     return;
   }
+  if (user.id === caller.userId) {
+    res.status(400).json({ error: "Нельзя добавить самого себя" });
+    return;
+  }
   res.json(user);
 });
 
 // ── Find user by username (pseudonym) ───────────────────────────────
 router.get("/connections/by-username/:username", requireAuth, async (req, res) => {
+  const caller = getUser(req);
   const username = (req.params["username"] as string).toLowerCase().trim();
   const [user] = await db.select({
     id: usersTable.id,
@@ -43,10 +49,14 @@ router.get("/connections/by-username/:username", requireAuth, async (req, res) =
     avatarColor: usersTable.avatarColor,
     avatarUrl: usersTable.avatarUrl,
     inviteCode: usersTable.inviteCode,
-  }).from(usersTable).where(eq(usersTable.username, username));
+  }).from(usersTable).where(sql`lower(${usersTable.username}) = ${username}`);
 
   if (!user) {
     res.status(404).json({ error: "Пользователь с таким псевдонимом не найден" });
+    return;
+  }
+  if (user.id === caller.userId) {
+    res.status(400).json({ error: "Нельзя добавить самого себя" });
     return;
   }
   res.json(user);
