@@ -1,36 +1,30 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export function isEmailConfigured() {
-  return !!(SMTP_USER && SMTP_PASS);
+  return !!RESEND_API_KEY;
 }
 
 if (!isEmailConfigured()) {
   console.warn(
     "\n⚠️  Email не настроен! Письма не будут отправляться.\n" +
-    "   Добавьте секреты: SMTP_USER (ваш Gmail), SMTP_PASS (пароль приложения Google)\n"
+    "   Добавьте секрет: RESEND_API_KEY (ключ с resend.com)\n"
   );
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-});
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
-const FROM = `"English Learning" <${SMTP_USER}>`;
+const FROM = "English Learning <onboarding@resend.dev>";
 const APP_URL = process.env.APP_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}`;
 
 export async function sendVerificationCode(to: string, code: string) {
-  if (!isEmailConfigured()) {
+  if (!resend) {
     console.error(`[EMAIL] Не настроен. Код ${code} для ${to} НЕ отправлен.`);
     return;
   }
   try {
-    await transporter.sendMail({
+    const result = await resend.emails.send({
       from: FROM,
       to,
       subject: `${code} — ваш код подтверждения`,
@@ -48,20 +42,24 @@ export async function sendVerificationCode(to: string, code: string) {
         </div>
       `,
     });
-    console.log(`[EMAIL] Код отправлен на ${to}`);
+    if (result.error) {
+      console.error(`[EMAIL] Resend ошибка для ${to}:`, result.error);
+    } else {
+      console.log(`[EMAIL] Код отправлен на ${to}, id=${result.data?.id}`);
+    }
   } catch (err) {
     console.error(`[EMAIL] Ошибка отправки на ${to}:`, err);
   }
 }
 
 export async function sendPasswordResetEmail(to: string, token: string) {
-  if (!isEmailConfigured()) {
+  if (!resend) {
     console.error(`[EMAIL] Не настроен. Письмо сброса для ${to} НЕ отправлено.`);
     return;
   }
   const link = `${APP_URL}/reset-password?token=${token}`;
   try {
-    await transporter.sendMail({
+    const result = await resend.emails.send({
       from: FROM,
       to,
       subject: "Сброс пароля — English Learning",
@@ -76,7 +74,11 @@ export async function sendPasswordResetEmail(to: string, token: string) {
         </div>
       `,
     });
-    console.log(`[EMAIL] Сброс пароля отправлен на ${to}`);
+    if (result.error) {
+      console.error(`[EMAIL] Resend ошибка сброса для ${to}:`, result.error);
+    } else {
+      console.log(`[EMAIL] Сброс пароля отправлен на ${to}, id=${result.data?.id}`);
+    }
   } catch (err) {
     console.error(`[EMAIL] Ошибка сброса на ${to}:`, err);
   }
