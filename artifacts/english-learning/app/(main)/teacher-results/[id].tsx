@@ -82,6 +82,7 @@ export default function TeacherResultsScreen() {
   const [gradeTotal, setGradeTotal] = useState<Record<number, string>>({});
   const [gradeFeedback, setGradeFeedback] = useState<Record<number, string>>({});
   const [gradingId, setGradingId] = useState<number | null>(null);
+  const [gradeError, setGradeError] = useState<Record<number, string>>({});
 
   const assignmentTitle = results[0]?.assignmentTitle ?? "Задание";
 
@@ -113,9 +114,10 @@ export default function TeacherResultsScreen() {
     const correctNum = parseInt(correctRaw, 10);
     const totalNum = parseInt(totalRaw, 10);
     if (isNaN(correctNum) || isNaN(totalNum) || totalNum < 1 || correctNum < 0 || correctNum > totalNum) {
-      Alert.alert("Ошибка", "Укажите корректное количество правильных ответов и вопросов");
+      setGradeError(prev => ({ ...prev, [sub.id]: "Укажите корректное количество правильных ответов и вопросов" }));
       return;
     }
+    setGradeError(prev => ({ ...prev, [sub.id]: "" }));
     setGradingId(sub.id);
     try {
       const updated = await apiFetch(`/api/submissions/${sub.id}/grade`, {
@@ -127,7 +129,7 @@ export default function TeacherResultsScreen() {
         : r
       ));
     } catch (e: any) {
-      Alert.alert("Ошибка", e.message);
+      setGradeError(prev => ({ ...prev, [sub.id]: e.message ?? "Не удалось выставить оценку" }));
     } finally {
       setGradingId(null);
     }
@@ -425,7 +427,7 @@ export default function TeacherResultsScreen() {
                                 placeholder="0"
                                 placeholderTextColor={colors.mutedForeground}
                                 value={gradeCorrect[sub.id] ?? ""}
-                                onChangeText={(v) => setGradeCorrect(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") }))}
+                                onChangeText={(v) => { setGradeCorrect(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") })); setGradeError(prev => ({ ...prev, [sub.id]: "" })); }}
                               />
                             </View>
                             <Text style={{ fontSize: 22, color: colors.mutedForeground, fontWeight: "300", marginTop: 16 }}>/</Text>
@@ -442,7 +444,7 @@ export default function TeacherResultsScreen() {
                                 placeholder="10"
                                 placeholderTextColor={colors.mutedForeground}
                                 value={gradeTotal[sub.id] ?? ""}
-                                onChangeText={(v) => setGradeTotal(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") }))}
+                                onChangeText={(v) => { setGradeTotal(prev => ({ ...prev, [sub.id]: v.replace(/[^0-9]/g, "") })); setGradeError(prev => ({ ...prev, [sub.id]: "" })); }}
                               />
                             </View>
                             {/* Live score preview */}
@@ -473,6 +475,11 @@ export default function TeacherResultsScreen() {
                             onChangeText={(v) => setGradeFeedback(prev => ({ ...prev, [sub.id]: v }))}
                           />
                         </View>
+                        {!!gradeError[sub.id] && (
+                          <View style={{ backgroundColor: "#fef2f2", borderRadius: 8, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "#fca5a5" }}>
+                            <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>{gradeError[sub.id]}</Text>
+                          </View>
+                        )}
                         <TouchableOpacity
                           style={{
                             marginTop: 6, backgroundColor: colors.primary, borderRadius: 10,

@@ -2,10 +2,10 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   submissionsTable, submissionAnswersTable,
-  questionsTable, assignmentsTable, usersTable
+  questionsTable, assignmentsTable, usersTable, assignedTasksTable
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, getUser } from "../lib/auth";
+import { requireAuth, getUser, isTeacher } from "../lib/auth";
 import { pointsPerCorrect, hasChoiceOptions, isTimeLimited } from "../lib/points";
 
 const router = Router();
@@ -146,7 +146,16 @@ router.patch("/submissions/:id/grade", requireAuth, async (req, res) => {
   if (!assignment) { res.status(404).json({ error: "Assignment not found" }); return; }
 
   const isOwnerTeacher = assignment.createdBy === caller.userId;
-  if (caller.role !== "admin" && !(isOwnerTeacher && caller.role === "teacher")) {
+  // Also allow the teacher who specifically assigned this task to grade it
+  const [assignedTask] = await db.select({ id: assignedTasksTable.id })
+    .from(assignedTasksTable)
+    .where(and(
+      eq(assignedTasksTable.assignmentId, submission.assignmentId),
+      eq(assignedTasksTable.studentId, submission.studentId),
+      eq(assignedTasksTable.teacherId, caller.userId),
+    ));
+  const isAssigningTeacher = !!assignedTask;
+  if (caller.role !== "admin" && !((isOwnerTeacher || isAssigningTeacher) && isTeacher(caller.role))) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
