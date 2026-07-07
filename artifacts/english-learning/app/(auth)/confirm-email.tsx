@@ -184,7 +184,7 @@ export default function ConfirmEmailScreen() {
             <View key={i} style={[s.digitBox, d ? s.digitBoxFilled : null]}>
               <TextInput
                 ref={r => { inputs.current[i] = r; }}
-                style={s.digitText}
+                style={[s.digitText, Platform.OS === "web" && { outlineStyle: "none" } as any]}
                 value={d}
                 onChangeText={t => handleChange(t, i)}
                 onKeyPress={e => handleKeyPress(e, i)}
