@@ -139,11 +139,6 @@ export default function CreateAssignmentScreen() {
   const handleSubmit = async () => {
     set("formError", "");
     if (!title.trim()) { set("formError", "Введите название задания"); return; }
-    const ageMinNum = parseInt(ageMin, 10);
-    const ageMaxNum = parseInt(ageMax, 10);
-    if (isNaN(ageMinNum) || ageMinNum < 1) { set("formError", "Возраст «от» некорректен"); return; }
-    if (isNaN(ageMaxNum) || ageMaxNum < 1) { set("formError", "Возраст «до» некорректен"); return; }
-    if (ageMinNum > ageMaxNum) { set("formError", "Возраст «от» не может быть больше «до»"); return; }
     if (timerEnabled) {
       const mins = parseInt(timerMinutes, 10);
       if (isNaN(mins) || mins < 1 || mins > 360) { set("formError", "Таймер: введите 1–360 минут"); return; }
@@ -231,8 +226,6 @@ export default function CreateAssignmentScreen() {
           title: title.trim(),
           description: description.trim(),
           type,
-          ageMin: ageMinNum,
-          ageMax: ageMaxNum,
           content: finalContent,
           mediaUrl: finalMediaUrl ?? suppAudio ?? suppVideo ?? undefined,
           imageUrl: imageUrl.trim() || undefined,
@@ -514,32 +507,6 @@ export default function CreateAssignmentScreen() {
           <Text style={s.label}>Описание</Text>
           <TextInput style={[s.input, s.textArea]} value={description} onChangeText={v => set("description", v)}
             placeholder="Краткое описание задания для ученика" placeholderTextColor={colors.mutedForeground} multiline />
-          <View style={s.row}>
-            <View style={s.half}>
-              <Text style={s.label}>Возраст от</Text>
-              <TextInput style={s.input} value={ageMin} onChangeText={v => set("ageMin", v)} keyboardType="numeric" placeholder="5" placeholderTextColor={colors.mutedForeground} />
-            </View>
-            <View style={s.half}>
-              <Text style={s.label}>Возраст до</Text>
-              <TextInput style={s.input} value={ageMax} onChangeText={v => set("ageMax", v)} keyboardType="numeric" placeholder="18" placeholderTextColor={colors.mutedForeground} />
-            </View>
-          </View>
-          <View style={{
-            flexDirection: "row", alignItems: "flex-start", gap: 10,
-            backgroundColor: "#f59e0b15", borderRadius: 12, padding: 12,
-            borderWidth: 1, borderColor: "#f59e0b40",
-          }}>
-            <Feather name="star" size={16} color="#f59e0b" style={{ marginTop: 1 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>
-                Баллы начисляются автоматически
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 17 }}>
-                Приложение само рассчитает баллы по типу задания, количеству вопросов
-                и правильных ответов, наличию вариантов ответа и таймера.
-              </Text>
-            </View>
-          </View>
         </View>
 
         {/* Таймер */}

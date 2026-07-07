@@ -14,6 +14,14 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   const style = document.createElement("style");
   style.textContent = "input, textarea { outline: none !important; }";
   document.head.appendChild(style);
+
+  // Ensure Feather icon font is available via CSS (fallback for mobile browsers)
+  try {
+    const featherUrl = require("../assets/fonts/Feather.ttf");
+    const iconStyle = document.createElement("style");
+    iconStyle.textContent = `@font-face { font-family: 'Feather'; src: url('${featherUrl}') format('truetype'); font-display: block; }`;
+    document.head.appendChild(iconStyle);
+  } catch (_) {}
 }
 
 SplashScreen.preventAutoHideAsync();
