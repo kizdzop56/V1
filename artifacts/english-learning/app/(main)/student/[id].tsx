@@ -26,13 +26,13 @@ async function apiFetch(path: string) {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b",
+  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
 };
 const TYPE_LABELS: Record<string, string> = {
-  text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео",
+  text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",
 };
 const TYPE_ICONS: Record<string, any> = {
-  text_test: "edit-3", audio: "headphones", reading: "book", video: "video",
+  text_test: "edit-3", audio: "headphones", reading: "book", video: "video", free_form: "file-text",
 };
 
 type CategoryStat = { type: string; avgScore: number | null; count: number };
