@@ -509,7 +509,9 @@ export default function AssignmentDetailScreen() {
             </View>
             <View style={[styles.badge, { backgroundColor: "#fef3c7" }]}>
               <Feather name="star" size={12} color="#92400e" />
-              <Text style={[styles.badgeText, { color: "#92400e" }]}>{assignment.points} очков</Text>
+              <Text style={[styles.badgeText, { color: "#92400e" }]}>
+                {assignment.points > 0 ? `${assignment.points} очков` : "Баллы по проверке"}
+              </Text>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.muted }]}>
               <Feather name="users" size={12} color={colors.mutedForeground} />

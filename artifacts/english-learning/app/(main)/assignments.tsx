@@ -469,7 +469,7 @@ export default function AssignmentsScreen() {
           </View>
           <View style={styles.pointsBadge}>
             <Feather name="star" size={12} color="#92400e" />
-            <Text style={styles.pointsText}>{item.points} очков</Text>
+            <Text style={styles.pointsText}>{item.points > 0 ? `${item.points} очков` : "по проверке"}</Text>
           </View>
         </View>
       </TouchableOpacity>

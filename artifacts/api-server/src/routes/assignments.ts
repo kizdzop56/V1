@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { assignmentsTable, questionsTable, assignedTasksTable, submissionsTable, submissionAnswersTable, usersTable, teacherStudentsTable } from "@workspace/db";
 import { eq, and, gte, lte, inArray, or, desc, isNull, gt } from "drizzle-orm";
 import { requireAuth, getUser, requireRole, isTeacher } from "../lib/auth";
+import { computeMaxPoints, isTimeLimited } from "../lib/points";
 
 const router = Router();
 
@@ -228,10 +229,17 @@ router.post("/assignments", requireAuth, async (req, res) => {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
-  const { title, description, type, ageMin, ageMax, points, mediaUrl, content, questions, isDraft, timeLimitMinutes, imageUrl } = req.body;
+  const { title, description, type, ageMin, ageMax, mediaUrl, content, questions, isDraft, timeLimitMinutes, imageUrl } = req.body;
 
   if (!title?.trim()) { res.status(400).json({ error: "Введите название задания" }); return; }
   if (!type) { res.status(400).json({ error: "Выберите тип задания" }); return; }
+
+  // Points are computed automatically, never chosen by the teacher.
+  // free_form has no predefined questions — its total is decided at grading time (points = 0 here).
+  const timeLimit = timeLimitMinutes ? Number(timeLimitMinutes) : null;
+  const computedPoints = type === "free_form"
+    ? 0
+    : computeMaxPoints(type, questions ?? [], isTimeLimited(timeLimit));
 
   const [assignment] = await db.insert(assignmentsTable).values({
     title: title.trim(),
@@ -241,11 +249,11 @@ router.post("/assignments", requireAuth, async (req, res) => {
     createdBy: caller.userId,
     ageMin: ageMin || 5,
     ageMax: ageMax || 18,
-    points: points || 10,
+    points: computedPoints,
     mediaUrl: mediaUrl?.trim() || null,
     content: content?.trim() || null,
     isDraft: isDraft !== false,
-    timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
+    timeLimitMinutes: timeLimit,
     imageUrl: imageUrl?.trim() || null,
   }).returning();
 
@@ -411,7 +419,7 @@ router.patch("/assignments/:id", requireAuth, async (req, res) => {
   }
 
   const id = Number(req.params["id"]);
-  const { title, description, ageMin, ageMax, points, mediaUrl, content, type, questions } = req.body;
+  const { title, description, ageMin, ageMax, mediaUrl, content, type, questions } = req.body;
 
   const [updated] = await db.update(assignmentsTable)
     .set({
@@ -419,7 +427,6 @@ router.patch("/assignments/:id", requireAuth, async (req, res) => {
       ...(description !== undefined && { description }),
       ...(ageMin !== undefined && { ageMin }),
       ...(ageMax !== undefined && { ageMax }),
-      ...(points !== undefined && { points }),
       ...(mediaUrl !== undefined && { mediaUrl }),
       ...(content !== undefined && { content }),
       ...(type !== undefined && { type }),
@@ -430,7 +437,8 @@ router.patch("/assignments/:id", requireAuth, async (req, res) => {
 
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
 
-  if (questions !== undefined) {
+  const questionsChanged = questions !== undefined;
+  if (questionsChanged) {
     await db.delete(questionsTable).where(eq(questionsTable.assignmentId, id));
     if (questions.length > 0) {
       await db.insert(questionsTable).values(
@@ -443,6 +451,26 @@ router.patch("/assignments/:id", requireAuth, async (req, res) => {
         }))
       );
     }
+  }
+
+  // Recompute auto points whenever questions or type change, so stored points
+  // always reflect the assignment's current factors. When only the type changed,
+  // fall back to the questions already stored for this assignment.
+  if (questionsChanged || type !== undefined) {
+    const pointQuestions = questionsChanged
+      ? questions
+      : await db.select({ options: questionsTable.options })
+          .from(questionsTable)
+          .where(eq(questionsTable.assignmentId, id));
+    const computedPoints = updated.type === "free_form"
+      ? 0
+      : computeMaxPoints(updated.type, pointQuestions, isTimeLimited(updated.timeLimitMinutes));
+    const [repointed] = await db.update(assignmentsTable)
+      .set({ points: computedPoints })
+      .where(eq(assignmentsTable.id, id))
+      .returning();
+    res.json(repointed);
+    return;
   }
 
   res.json(updated);

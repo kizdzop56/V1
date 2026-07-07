@@ -6,6 +6,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, getUser } from "../lib/auth";
+import { pointsPerCorrect, hasChoiceOptions, isTimeLimited } from "../lib/points";
 
 const router = Router();
 
@@ -72,7 +73,17 @@ router.post("/assignments/:id/submit", requireAuth, async (req, res) => {
 
   const totalQuestions = questions.length;
   const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
-  const pointsEarned = Math.round(assignment.points * (correctCount / Math.max(totalQuestions, 1)));
+
+  // Auto-calculated points: sum the value of each correct answer, where each
+  // question's value depends on type difficulty, answer format and time limit.
+  const hasTimeLimit = isTimeLimited(assignment.timeLimitMinutes);
+  let pointsRaw = 0;
+  for (const r of results) {
+    if (!r.isCorrect) continue;
+    const q = questions.find(qq => qq.id === r.questionId);
+    pointsRaw += pointsPerCorrect(assignment.type, q ? hasChoiceOptions(q) : false, hasTimeLimit);
+  }
+  const pointsEarned = Math.round(pointsRaw);
 
   const [submission] = await db.insert(submissionsTable).values({
     studentId: user.userId,
@@ -142,7 +153,10 @@ router.patch("/submissions/:id/grade", requireAuth, async (req, res) => {
   const total = Math.max(1, Math.round(Number(totalQuestions) || 1));
   const correct = Math.max(0, Math.min(total, Math.round(Number(correctCount) || 0)));
   const score = Math.round((correct / total) * 100);
-  const points = Math.round((correct / total) * assignment.points);
+  // Free-form answers are always open-ended (student writes them). Points scale
+  // with the number of correct answers, type difficulty and time limit.
+  const perCorrect = pointsPerCorrect(assignment.type, false, isTimeLimited(assignment.timeLimitMinutes));
+  const points = Math.round(perCorrect * correct);
 
   const [updated] = await db.update(submissionsTable)
     .set({

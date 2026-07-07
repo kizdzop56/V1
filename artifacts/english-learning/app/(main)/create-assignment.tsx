@@ -54,7 +54,7 @@ const DEFAULT_QUESTION = (): QuestionDraft => ({
 const FRESH = () => ({
   type: "text_test" as AssignmentType,
   title: "", description: "",
-  ageMin: "5", ageMax: "18", points: "10",
+  ageMin: "5", ageMax: "18",
   content: "",
   mediaUrl: "", mediaInputMode: "url" as "url" | "file", uploadedFileName: "",
   imageUrl: "", imageInputMode: "url" as "url" | "file", uploadedImageName: "",
@@ -86,7 +86,7 @@ export default function CreateAssignmentScreen() {
     setSt(FRESH()); setUploading(null); setSaving(false);
   }, []));
 
-  const { type, title, description, ageMin, ageMax, points, content,
+  const { type, title, description, ageMin, ageMax, content,
     mediaUrl, mediaInputMode, uploadedFileName,
     imageUrl, imageInputMode, uploadedImageName,
     audioUrl, audioInputMode, uploadedAudioName,
@@ -233,7 +233,6 @@ export default function CreateAssignmentScreen() {
           type,
           ageMin: ageMinNum,
           ageMax: ageMaxNum,
-          points: parseInt(points) || 10,
           content: finalContent,
           mediaUrl: finalMediaUrl ?? suppAudio ?? suppVideo ?? undefined,
           imageUrl: imageUrl.trim() || undefined,
@@ -525,9 +524,22 @@ export default function CreateAssignmentScreen() {
               <TextInput style={s.input} value={ageMax} onChangeText={v => set("ageMax", v)} keyboardType="numeric" placeholder="18" placeholderTextColor={colors.mutedForeground} />
             </View>
           </View>
-          <Text style={s.label}>Баллы за выполнение</Text>
-          <TextInput style={s.input} value={points} onChangeText={v => set("points", v)}
-            keyboardType="numeric" placeholder="10" placeholderTextColor={colors.mutedForeground} />
+          <View style={{
+            flexDirection: "row", alignItems: "flex-start", gap: 10,
+            backgroundColor: "#f59e0b15", borderRadius: 12, padding: 12,
+            borderWidth: 1, borderColor: "#f59e0b40",
+          }}>
+            <Feather name="star" size={16} color="#f59e0b" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>
+                Баллы начисляются автоматически
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 17 }}>
+                Приложение само рассчитает баллы по типу задания, количеству вопросов
+                и правильных ответов, наличию вариантов ответа и таймера.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Таймер */}

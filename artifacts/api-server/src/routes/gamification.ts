@@ -108,7 +108,7 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
     todayStart.setHours(0, 0, 0, 0);
     const todaySubs = await db.select({ count: sql<number>`count(*)::int` })
       .from(submissionsTable)
-      .where(and(eq(submissionsTable.studentId, userId), gte(submissionsTable.createdAt, todayStart)));
+      .where(and(eq(submissionsTable.studentId, userId), gte(submissionsTable.submittedAt, todayStart)));
     todayCompletions = todaySubs[0]?.count ?? 0;
 
     const todayVoice = await db.select({ count: sql<number>`count(*)::int` })
