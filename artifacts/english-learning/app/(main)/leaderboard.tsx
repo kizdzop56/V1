@@ -93,8 +93,9 @@ function PodiumCard({
   isMe: boolean;
   onPress: () => void;
 }) {
-  const avatarSize = isCenter ? 72 : 60;
+  const avatarSize = isCenter ? 88 : 72;
   const medColor = MEDAL_COLORS[rank - 1];
+  const medalEmoji = MEDAL_EMOJIS[rank - 1];
 
   if (!entry) {
     return (
@@ -105,9 +106,9 @@ function PodiumCard({
           borderColor: "rgba(255,255,255,0.2)", borderStyle: "dashed",
           justifyContent: "center", alignItems: "center",
         }}>
-          <Text style={{ fontSize: 22, opacity: 0.4 }}>?</Text>
+          <Text style={{ fontSize: 26, opacity: 0.4 }}>?</Text>
         </View>
-        <Text style={{ marginTop: 6, fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+        <Text style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
           {rank} место
         </Text>
       </View>
@@ -120,36 +121,38 @@ function PodiumCard({
       onPress={isMe ? undefined : onPress}
       style={{ alignItems: "center", flex: 1 }}
     >
-      {/* Medal badge */}
+      {/* Avatar + medal */}
       <View style={{
-        position: "relative",
-        marginBottom: isCenter ? 0 : 16,
-        marginTop: isCenter ? 0 : 16,
+        alignItems: "center",
+        marginBottom: isCenter ? 0 : 18,
+        marginTop: isCenter ? 0 : 18,
       }}>
         <View style={{
+          borderRadius: avatarSize / 2,
           shadowColor: medColor, shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
+          shadowOpacity: 0.55, shadowRadius: 12, elevation: 8,
         }}>
           <Avatar entry={entry} size={avatarSize} borderColor={isMe ? "#fff" : medColor} />
         </View>
-        {/* Medal circle */}
+        {/* Medal */}
         <View style={{
-          position: "absolute", bottom: -8, alignSelf: "center",
-          width: 22, height: 22, borderRadius: 11,
-          backgroundColor: medColor,
+          marginTop: -15,
+          width: 30, height: 30, borderRadius: 15,
+          backgroundColor: "#fff",
           justifyContent: "center", alignItems: "center",
-          borderWidth: 2, borderColor: "#4c1d95",
+          shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
         }}>
-          <Text style={{ fontSize: 10, fontWeight: "900", color: "#fff" }}>{rank}</Text>
+          <Text style={{ fontSize: 18, lineHeight: 22 }}>{medalEmoji}</Text>
         </View>
       </View>
 
       <Text
         numberOfLines={1}
         style={{
-          marginTop: 14, fontSize: isCenter ? 14 : 12,
+          marginTop: 12, fontSize: isCenter ? 15 : 13,
           fontWeight: "800", color: "#fff",
-          maxWidth: 90, textAlign: "center",
+          maxWidth: 100, textAlign: "center",
         }}
       >
         {entry.username}{isMe ? " (Я)" : ""}
@@ -264,9 +267,9 @@ export default function LeaderboardScreen() {
     <>
       {/* ── Hero gradient section ── */}
       <LinearGradient
-        colors={["#3b0764", "#6d28d9", "#7c3aed"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={["#2e1065", "#5b21b6", "#7c3aed"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={{ paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: 0 }}
       >
         {/* Title */}
@@ -400,12 +403,12 @@ export default function LeaderboardScreen() {
           </View>
         )}
 
-        {/* Wavy bottom edge */}
-        <View style={{ height: 24, backgroundColor: "transparent", overflow: "hidden" }}>
+        {/* Curved bottom edge */}
+        <View style={{ height: 44, backgroundColor: "transparent", overflow: "hidden" }}>
           <View style={{
-            position: "absolute", bottom: -1, left: -10, right: -10, height: 36,
+            position: "absolute", bottom: 0, left: -80, right: -80, height: 120,
             backgroundColor: colors.background,
-            borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            borderTopLeftRadius: 400, borderTopRightRadius: 400,
           }} />
         </View>
       </LinearGradient>

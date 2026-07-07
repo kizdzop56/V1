@@ -1,8 +1,14 @@
 import http from "http";
+import net from "net";
 
 const EXPO_PORT = 22710;
 const API_PORT = 8080;
 const PROXY_PORT = 5000;
+
+function isApiPath(url) {
+  const pathname = new URL(url || "/", "http://localhost").pathname;
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
 
 function proxyRequest(req, res, targetPort) {
   const options = {
@@ -27,12 +33,24 @@ function proxyRequest(req, res, targetPort) {
 }
 
 const server = http.createServer((req, res) => {
-  const url = req.url || "/";
-  if (url.startsWith("/api/") || url === "/api") {
-    proxyRequest(req, res, API_PORT);
-  } else {
-    proxyRequest(req, res, EXPO_PORT);
-  }
+  proxyRequest(req, res, isApiPath(req.url) ? API_PORT : EXPO_PORT);
+});
+
+// Tunnel WebSocket upgrades (e.g. Expo HMR) to the appropriate target.
+server.on("upgrade", (req, socket, head) => {
+  const targetPort = isApiPath(req.url) ? API_PORT : EXPO_PORT;
+  const upstream = net.connect(targetPort, "localhost", () => {
+    const headers = { ...req.headers, host: `localhost:${targetPort}` };
+    const headerLines = Object.entries(headers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("\r\n");
+    upstream.write(`${req.method} ${req.url} HTTP/1.1\r\n${headerLines}\r\n\r\n`);
+    if (head && head.length) upstream.write(head);
+    socket.pipe(upstream);
+    upstream.pipe(socket);
+  });
+  upstream.on("error", () => socket.destroy());
+  socket.on("error", () => upstream.destroy());
 });
 
 server.listen(PROXY_PORT, "0.0.0.0", () => {
