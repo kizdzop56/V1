@@ -10,14 +10,15 @@ export function isEmailConfigured() {
 if (!isEmailConfigured()) {
   console.warn(
     "\n⚠️  Email не настроен! Письма не будут отправляться.\n" +
-    "   Добавьте секреты: SMTP_USER (ваш gmail), SMTP_PASS (пароль приложения)\n"
+    "   Добавьте секреты: SMTP_USER (ваш Outlook/Hotmail адрес), SMTP_PASS (пароль)\n"
   );
 }
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-mail.outlook.com",
   port: 587,
   secure: false,
+  tls: { ciphers: "SSLv3" },
   auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
 });
 
