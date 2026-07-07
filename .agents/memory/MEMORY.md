@@ -1,3 +1,4 @@
 - [Transparent animated mascot in Expo](transparent-animation-expo.md) — use animated WebP via expo-image, not video; flood-fill solid bg out per-frame; verify alpha (filenames lie).
 - [Mascot image processing](mascot-image-processing.md) — adaptive-peel halo to dark outline; encode full-canvas webp (ffmpeg -c:v libwebp -vsync 0); patch ANMF for no-blend + long rest duration; ping-pong for seamless wave loop.
 - [Avatar photo (avatarUrl) rendering coverage](avatar-photo-rendering.md) — new user fields need auditing across every partial db select AND every hand-rolled avatar render; use shared AnimatedAvatar component instead.
+- [Averaging submissions.score](submissions-avg-scoring.md) — filter status="graded" before any avg/sum; pending submissions have score 0 and tank rankings otherwise.

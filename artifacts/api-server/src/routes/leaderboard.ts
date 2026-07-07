@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import {
-  usersTable, submissionsTable, assignmentsTable, friendshipsTable,
+  usersTable, submissionsTable, friendshipsTable,
 } from "@workspace/db";
 import { eq, desc, count, avg, and, or } from "drizzle-orm";
 import { requireAuth, getUser } from "../lib/auth";
@@ -58,7 +58,6 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
     avatarUrl: usersTable.avatarUrl,
     totalPoints: usersTable.totalPoints,
     totalTimeMinutes: usersTable.totalTimeMinutes,
-    loginStreak: usersTable.loginStreak,
     age: usersTable.age,
     dateOfBirth: usersTable.dateOfBirth,
   }).from(usersTable).where(eq(usersTable.role, "student"));
@@ -95,31 +94,18 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
 
   const studentIds = students.map(s => s.id);
 
-  const [testScoresRaw, audioScoresRaw] = studentIds.length === 0
-    ? [[], []]
-    : await Promise.all([
-        db.select({
-          studentId: submissionsTable.studentId,
-          avgScore: avg(submissionsTable.score),
-        }).from(submissionsTable)
-          .innerJoin(assignmentsTable, eq(submissionsTable.assignmentId, assignmentsTable.id))
-          .where(eq(assignmentsTable.type, "text_test"))
-          .groupBy(submissionsTable.studentId),
+  // Average completion percentage across ALL graded assignments
+  const assignmentScoresRaw = studentIds.length === 0
+    ? []
+    : await db.select({
+        studentId: submissionsTable.studentId,
+        avgScore: avg(submissionsTable.score),
+      }).from(submissionsTable)
+        .where(eq(submissionsTable.status, "graded"))
+        .groupBy(submissionsTable.studentId);
 
-        db.select({
-          studentId: submissionsTable.studentId,
-          avgScore: avg(submissionsTable.score),
-        }).from(submissionsTable)
-          .innerJoin(assignmentsTable, eq(submissionsTable.assignmentId, assignmentsTable.id))
-          .where(eq(assignmentsTable.type, "audio"))
-          .groupBy(submissionsTable.studentId),
-      ]);
-
-  const testMap: Record<number, number> = {};
-  for (const t of testScoresRaw) testMap[t.studentId] = Math.round(Number(t.avgScore) || 0);
-
-  const audioMap: Record<number, number> = {};
-  for (const a of audioScoresRaw) audioMap[a.studentId] = Math.round(Number(a.avgScore) || 0);
+  const assignmentMap: Record<number, number> = {};
+  for (const a of assignmentScoresRaw) assignmentMap[a.studentId] = Math.round(Number(a.avgScore) || 0);
 
   type Entry = {
     userId: number; name: string; surname: string | null; username: string;
@@ -143,11 +129,9 @@ router.get("/leaderboard/categories", requireAuth, async (req, res) => {
       }));
 
   res.json({
-    points:  rank(students, s => s.totalPoints),
-    time:    rank(students, s => s.totalTimeMinutes ?? 0),
-    tests:   rank(students, s => testMap[s.id] ?? 0),
-    audio:   rank(students, s => audioMap[s.id] ?? 0),
-    streak:  rank(students, s => s.loginStreak ?? 0),
+    points:      rank(students, s => s.totalPoints),
+    time:        rank(students, s => s.totalTimeMinutes ?? 0),
+    assignments: rank(students, s => assignmentMap[s.id] ?? 0),
   });
 });
 

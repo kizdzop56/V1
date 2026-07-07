@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, FlatList, ActivityIndicator, Platform,
-  TouchableOpacity, ScrollView, Image,
+  TouchableOpacity, Image, useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -15,17 +16,8 @@ const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
   : "";
 
-type CategoryKey = "points" | "time" | "tests" | "audio" | "streak";
-type Scope = "all" | "friends" | "age";
-
-type AgeGroup = { label: string; ageMin: number | null; ageMax: number | null };
-
-const AGE_GROUPS: AgeGroup[] = [
-  { label: "До 12 лет", ageMin: null, ageMax: 12 },
-  { label: "13–15 лет", ageMin: 13,   ageMax: 15 },
-  { label: "16–18 лет", ageMin: 16,   ageMax: 18 },
-  { label: "18+ лет",   ageMin: 19,   ageMax: null },
-];
+type CategoryKey = "points" | "time" | "assignments";
+type Scope = "all" | "friends";
 
 type CategoryEntry = {
   userId: number;
@@ -49,21 +41,18 @@ const CATEGORIES: {
   formatValue: (v: number) => string;
   subtitle: string;
 }[] = [
-  { key: "points", label: "Очки",       icon: "star",        color: "#f59e0b", formatValue: (v) => `${v} ⭐`,                                          subtitle: "Рейтинг по очкам опыта" },
-  { key: "time",   label: "Время",      icon: "clock",       color: "#6366f1", formatValue: (v) => v >= 60 ? `${Math.floor(v/60)} ч ${v%60} м` : `${v} м`, subtitle: "Кто больше занимался" },
-  { key: "tests",  label: "Тесты",      icon: "check-circle",color: "#10b981", formatValue: (v) => v > 0 ? `${v}%` : "—",                              subtitle: "Средний балл по тестам" },
-  { key: "audio",  label: "Аудирование",icon: "headphones",  color: "#8b5cf6", formatValue: (v) => v > 0 ? `${v}%` : "—",                              subtitle: "Балл по аудио-заданиям" },
-  { key: "streak", label: "Серия",      icon: "zap",         color: "#ef4444", formatValue: (v) => v === 1 ? "1 день" : v <= 4 ? `${v} дня` : `${v} дней`, subtitle: "Серия ежедневных входов" },
+  { key: "points",      label: "Очки",    icon: "star",         color: "#f59e0b", formatValue: (v) => `${v} ⭐`,                                            subtitle: "Рейтинг по очкам опыта" },
+  { key: "time",        label: "Время",   icon: "clock",        color: "#6366f1", formatValue: (v) => v >= 60 ? `${Math.floor(v/60)} ч ${v%60} м` : `${v} м`, subtitle: "Кто больше занимался" },
+  { key: "assignments", label: "Задания", icon: "check-circle", color: "#10b981", formatValue: (v) => v > 0 ? `${v}%` : "—",                                subtitle: "Средний процент по всем заданиям" },
 ];
 
 const SCOPE_OPTIONS: { key: Scope; label: string }[] = [
   { key: "all",     label: "Все ученики" },
   { key: "friends", label: "Друзья" },
-  { key: "age",     label: "По возрасту" },
 ];
 
-const MEDAL_EMOJIS = ["🥇", "🥈", "🥉"];
-const MEDAL_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
+// Place colors: gold, silver, bronze
+const PLACE_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
 
 // ── Avatar component ──────────────────────────────────────────────────
 function Avatar({ entry, size, borderColor }: { entry: CategoryEntry; size: number; borderColor: string }) {
@@ -94,8 +83,7 @@ function PodiumCard({
   onPress: () => void;
 }) {
   const avatarSize = isCenter ? 88 : 72;
-  const medColor = MEDAL_COLORS[rank - 1];
-  const medalEmoji = MEDAL_EMOJIS[rank - 1];
+  const placeColor = PLACE_COLORS[rank - 1];
 
   if (!entry) {
     return (
@@ -121,7 +109,7 @@ function PodiumCard({
       onPress={isMe ? undefined : onPress}
       style={{ alignItems: "center", flex: 1 }}
     >
-      {/* Avatar + medal */}
+      {/* Avatar + place badge */}
       <View style={{
         alignItems: "center",
         marginBottom: isCenter ? 0 : 18,
@@ -129,21 +117,22 @@ function PodiumCard({
       }}>
         <View style={{
           borderRadius: avatarSize / 2,
-          shadowColor: medColor, shadowOffset: { width: 0, height: 4 },
+          shadowColor: placeColor, shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.55, shadowRadius: 12, elevation: 8,
         }}>
-          <Avatar entry={entry} size={avatarSize} borderColor={isMe ? "#fff" : medColor} />
+          <Avatar entry={entry} size={avatarSize} borderColor={isMe ? "#fff" : placeColor} />
         </View>
-        {/* Medal */}
+        {/* Place number badge */}
         <View style={{
           marginTop: -15,
           width: 30, height: 30, borderRadius: 15,
-          backgroundColor: "#fff",
+          backgroundColor: placeColor,
+          borderWidth: 2, borderColor: "#fff",
           justifyContent: "center", alignItems: "center",
           shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
         }}>
-          <Text style={{ fontSize: 18, lineHeight: 22 }}>{medalEmoji}</Text>
+          <Text style={{ fontSize: 14, fontWeight: "900", color: "#fff" }}>{rank}</Text>
         </View>
       </View>
 
@@ -169,38 +158,31 @@ export default function LeaderboardScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const [scope, setScope] = useState<Scope>("all");
-  const [activeAgeGroup, setActiveAgeGroup] = useState<AgeGroup>(AGE_GROUPS[0]);
   const [activeKey, setActiveKey] = useState<CategoryKey>("points");
   const [data, setData] = useState<CategoriesData | null>(null);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const buildUrl = useCallback((s: Scope, ag: AgeGroup) => {
-    const params = new URLSearchParams({ scope: s });
-    if (s === "age") {
-      if (ag.ageMin !== null) params.set("ageMin", String(ag.ageMin));
-      if (ag.ageMax !== null) params.set("ageMax", String(ag.ageMax));
-    }
-    return `${BASE_URL}/api/leaderboard/categories?${params.toString()}`;
-  }, []);
-
-  const load = useCallback(async (s: Scope, ag: AgeGroup) => {
+  const load = useCallback(async (s: Scope) => {
     setLoading(true);
     try {
       const token = await authStorage.getItem("auth_token");
-      const res = await fetch(buildUrl(s, ag), { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${BASE_URL}/api/leaderboard/categories?scope=${s}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) setData(await res.json());
     } catch { /* silent */ } finally { setLoading(false); }
-  }, [buildUrl]);
+  }, []);
 
   useEffect(() => {
-    load(scope, activeAgeGroup);
+    load(scope);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => load(scope, activeAgeGroup), 60_000);
+    intervalRef.current = setInterval(() => load(scope), 60_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [scope, activeAgeGroup, load]);
+  }, [scope, load]);
 
   const activeCat = CATEGORIES.find(c => c.key === activeKey)!;
   const entries = data?.[activeKey] ?? [];
@@ -277,91 +259,60 @@ export default function LeaderboardScreen() {
           <Text style={{ fontSize: 26, fontWeight: "900", color: "#fff" }}>Рейтинг</Text>
         </View>
 
-        {/* Scope tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: "row", marginBottom: 14 }}
-        >
+        {/* Scope segmented control (full width) */}
+        <View style={{
+          marginHorizontal: 20, marginBottom: 12,
+          flexDirection: "row", backgroundColor: "rgba(255,255,255,0.12)",
+          borderRadius: 24, padding: 4,
+        }}>
           {SCOPE_OPTIONS.map(opt => {
             const active = opt.key === scope;
             return (
               <TouchableOpacity
                 key={opt.key}
                 onPress={() => setScope(opt.key)}
-                activeOpacity={0.78}
+                activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 18, paddingVertical: 8, borderRadius: 22,
-                  backgroundColor: active ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-                  borderWidth: 1.5,
-                  borderColor: active ? "#fff" : "rgba(255,255,255,0.2)",
+                  flex: 1, paddingVertical: 10, borderRadius: 20,
+                  backgroundColor: active ? "#fff" : "transparent",
+                  alignItems: "center",
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : "rgba(255,255,255,0.6)" }}>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: active ? "#6d28d9" : "rgba(255,255,255,0.75)" }}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
-        {/* Age group pills */}
-        {scope === "age" && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: "row", marginBottom: 14 }}
-          >
-            {AGE_GROUPS.map(ag => {
-              const active = ag.label === activeAgeGroup.label;
-              return (
-                <TouchableOpacity
-                  key={ag.label}
-                  onPress={() => setActiveAgeGroup(ag)}
-                  activeOpacity={0.78}
-                  style={{
-                    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 22,
-                    backgroundColor: active ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-                    borderWidth: 1.5, borderColor: active ? "#fff" : "rgba(255,255,255,0.2)",
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : "rgba(255,255,255,0.6)" }}>
-                    {ag.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
-
-        {/* Category tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8, flexDirection: "row", marginBottom: 20 }}
-        >
+        {/* Category segmented control (full width) */}
+        <View style={{
+          marginHorizontal: 20, marginBottom: 20,
+          flexDirection: "row", backgroundColor: "rgba(255,255,255,0.12)",
+          borderRadius: 24, padding: 4,
+        }}>
           {CATEGORIES.map(cat => {
             const active = cat.key === activeKey;
             return (
               <TouchableOpacity
                 key={cat.key}
-                activeOpacity={0.75}
+                activeOpacity={0.8}
                 onPress={() => setActiveKey(cat.key)}
                 style={{
-                  flexDirection: "row", alignItems: "center", gap: 6,
-                  paddingHorizontal: 14, paddingVertical: 7, borderRadius: 22,
-                  backgroundColor: active ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-                  borderWidth: 1.5, borderColor: active ? "#fff" : "rgba(255,255,255,0.2)",
+                  flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5,
+                  paddingVertical: 10, borderRadius: 20,
+                  backgroundColor: active ? "#fff" : "transparent",
                 }}
               >
-                <Feather name={cat.icon} size={13} color={active ? "#fff" : "rgba(255,255,255,0.55)"} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                <Feather name={cat.icon} size={14} color={active ? "#6d28d9" : "rgba(255,255,255,0.7)"} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#6d28d9" : "rgba(255,255,255,0.7)" }}>
                   {cat.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
         {/* Podium — 2nd | 1st | 3rd */}
         {loading ? (
@@ -371,9 +322,8 @@ export default function LeaderboardScreen() {
         ) : (
           <View style={{
             flexDirection: "row", alignItems: "flex-end",
-            paddingHorizontal: 10, paddingBottom: 28, minHeight: 160,
+            paddingHorizontal: 10, paddingBottom: 24, minHeight: 160,
           }}>
-            {/* 2nd */}
             <PodiumCard
               entry={top3[1]}
               rank={2}
@@ -382,7 +332,6 @@ export default function LeaderboardScreen() {
               isMe={top3[1]?.userId === user?.id}
               onPress={() => top3[1] && router.push(`/(main)/friend/${top3[1].userId}` as any)}
             />
-            {/* 1st */}
             <PodiumCard
               entry={top3[0]}
               rank={1}
@@ -391,7 +340,6 @@ export default function LeaderboardScreen() {
               isMe={top3[0]?.userId === user?.id}
               onPress={() => top3[0] && router.push(`/(main)/friend/${top3[0].userId}` as any)}
             />
-            {/* 3rd */}
             <PodiumCard
               entry={top3[2]}
               rank={3}
@@ -403,13 +351,14 @@ export default function LeaderboardScreen() {
           </View>
         )}
 
-        {/* Curved bottom edge */}
-        <View style={{ height: 44, backgroundColor: "transparent", overflow: "hidden" }}>
-          <View style={{
-            position: "absolute", bottom: 0, left: -80, right: -80, height: 120,
-            backgroundColor: colors.background,
-            borderTopLeftRadius: 400, borderTopRightRadius: 400,
-          }} />
+        {/* Wave transition into the list background */}
+        <View style={{ marginBottom: -1 }}>
+          <Svg width={width} height={48} viewBox={`0 0 ${width} 48`} preserveAspectRatio="none">
+            <Path
+              d={`M0,20 C ${width * 0.3},48 ${width * 0.62},-2 ${width},26 L ${width},48 L 0,48 Z`}
+              fill={colors.background}
+            />
+          </Svg>
         </View>
       </LinearGradient>
 
@@ -453,9 +402,7 @@ export default function LeaderboardScreen() {
         <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
           <Feather name="award" size={48} color={colors.mutedForeground} />
           <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>
-            {scope === "friends" ? "Нет друзей в рейтинге" :
-             scope === "age"     ? `Нет учеников — «${activeAgeGroup.label}»` :
-             "Пока никого нет"}
+            {scope === "friends" ? "Нет друзей в рейтинге" : "Пока никого нет"}
           </Text>
           {scope === "friends" && (
             <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
