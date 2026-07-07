@@ -90,7 +90,7 @@ router.post("/auth/login", async (req, res) => {
 
 // ── REGISTER ───────────────────────────────────────────────────────────
 router.post("/auth/register", async (req, res) => {
-  const { username, password, name, surname, role, parentId, teacherCode, email } = req.body;
+  const { username, password, name, surname, role, parentId, teacherCode, email, dateOfBirth, age } = req.body;
 
   if (!username || !password || !name || !role) {
     res.status(400).json({ error: "Missing required fields" });
@@ -165,6 +165,8 @@ router.post("/auth/register", async (req, res) => {
     parentId: role === "student" && parentId ? parentId : null,
     totalPoints: 0,
     inviteCode,
+    dateOfBirth: dateOfBirth ? String(dateOfBirth) : null,
+    age: age ? Number(age) : null,
   }).returning();
 
   // Send email verification code

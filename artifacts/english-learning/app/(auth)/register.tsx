@@ -11,7 +11,17 @@ import { Feather } from "@expo/vector-icons";
 import authStorage from "@/utils/authStorage";
 
 type Role = "student" | "parent" | "teacher";
-type Step = "role" | "details";
+type Step = "role" | "details" | "age";
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+const AGE_YEARS: Array<{ year: number; age: number }> = Array.from(
+  { length: 14 },
+  (_, i) => {
+    const year = CURRENT_YEAR - 7 - i;
+    return { year, age: CURRENT_YEAR - year };
+  }
+);
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -29,6 +39,7 @@ export default function RegisterScreen() {
   const [showPass, setShowPass] = useState(false);
   const [teacherCode, setTeacherCode] = useState("");
   const [showTeacherCode, setShowTeacherCode] = useState(false);
+  const [birthYear, setBirthYear] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -90,16 +101,22 @@ export default function RegisterScreen() {
       if (teacherCode.trim() !== "422668") { setError("Неверный код учителя"); return; }
     }
     setError("");
-    handleSubmit();
+    if (role === "student") {
+      setStep("age");
+    } else {
+      handleSubmit();
+    }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (selectedBirthYear?: number) => {
     setLoading(true);
     setError("");
 
     const baseUrl = process.env["EXPO_PUBLIC_DOMAIN"]
       ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
       : "";
+
+    const yearToUse = selectedBirthYear ?? birthYear;
 
     try {
       const body: Record<string, unknown> = {
@@ -110,6 +127,8 @@ export default function RegisterScreen() {
         email: email.trim(),
         role,
         teacherCode: role === "teacher" ? teacherCode.trim() : undefined,
+        dateOfBirth: yearToUse ? `${yearToUse}-01-01` : undefined,
+        age: yearToUse ? CURRENT_YEAR - yearToUse : undefined,
       };
 
       const response = await fetch(`${baseUrl}/api/auth/register`, {
@@ -120,12 +139,14 @@ export default function RegisterScreen() {
       const data = await response.json();
       if (!response.ok) {
         setError(data.error || "Ошибка при регистрации");
+        if (role === "student") setStep("details");
         return;
       }
       await login(data.token, data.user);
       router.replace("/(auth)/confirm-email");
     } catch {
       setError("Ошибка соединения. Попробуйте снова.");
+      if (role === "student") setStep("details");
     } finally {
       setLoading(false);
     }
@@ -181,6 +202,21 @@ export default function RegisterScreen() {
     teacherCodeHint: {
       fontSize: 12, color: colors.mutedForeground, marginTop: -8, marginBottom: 14, lineHeight: 17,
     },
+
+    ageGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28 },
+    ageCard: {
+      width: "30%",
+      borderWidth: 2, borderColor: colors.border, borderRadius: 16,
+      paddingVertical: 16, alignItems: "center",
+      backgroundColor: colors.card,
+    },
+    ageCardSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + "10",
+    },
+    ageCardYear: { fontSize: 13, color: colors.mutedForeground, marginBottom: 2 },
+    ageCardAge: { fontSize: 22, fontWeight: "900", color: colors.foreground },
+    ageCardAgeSuffix: { fontSize: 11, color: colors.mutedForeground, marginTop: 1 },
   });
 
   return (
@@ -189,7 +225,14 @@ export default function RegisterScreen() {
         <View style={s.content}>
 
           {step !== "role" && (
-            <TouchableOpacity style={s.backRow} onPress={() => { setError(""); setStep("role"); }}>
+            <TouchableOpacity
+              style={s.backRow}
+              onPress={() => {
+                setError("");
+                if (step === "age") setStep("details");
+                else setStep("role");
+              }}
+            >
               <Feather name="arrow-left" size={18} color={colors.primary} />
               <Text style={s.backText}>Назад</Text>
             </TouchableOpacity>
@@ -355,8 +398,69 @@ export default function RegisterScreen() {
               >
                 {loading
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={[s.primaryBtnText, { color: isFormValid ? "#fff" : colors.mutedForeground }]}>Создать аккаунт</Text>
+                  : <Text style={[s.primaryBtnText, { color: isFormValid ? "#fff" : colors.mutedForeground }]}>
+                      {role === "student" ? "Далее" : "Создать аккаунт"}
+                    </Text>
                 }
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* ── ШАГ 3 (только ученик): Выбор возраста ── */}
+          {step === "age" && role === "student" && (
+            <>
+              <Text style={s.pageTitle}>Сколько вам лет?</Text>
+              <Text style={s.pageSub}>
+                Выберите ваш год рождения — это поможет подобрать подходящие задания
+              </Text>
+
+              <View style={s.ageGrid}>
+                {AGE_YEARS.map(({ year, age }) => {
+                  const selected = birthYear === year;
+                  return (
+                    <TouchableOpacity
+                      key={year}
+                      style={[s.ageCard, selected && s.ageCardSelected]}
+                      onPress={() => setBirthYear(year)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[s.ageCardYear, selected && { color: colors.primary }]}>{year}</Text>
+                      <Text style={[s.ageCardAge, selected && { color: colors.primary }]}>{age}</Text>
+                      <Text style={[s.ageCardAgeSuffix, selected && { color: colors.primary }]}>лет</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {error ? <Text style={s.error}>{error}</Text> : null}
+
+              <TouchableOpacity
+                style={[s.primaryBtn, {
+                  backgroundColor: birthYear && !loading ? colors.primary : colors.border,
+                }]}
+                onPress={() => {
+                  if (!birthYear) { setError("Выберите год рождения"); return; }
+                  handleSubmit(birthYear);
+                }}
+                disabled={!birthYear || loading}
+                activeOpacity={birthYear ? 0.75 : 1}
+              >
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={[s.primaryBtnText, { color: birthYear ? "#fff" : colors.mutedForeground }]}>
+                      Создать аккаунт
+                    </Text>
+                }
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ alignItems: "center", marginTop: 16 }}
+                onPress={() => {
+                  setBirthYear(null);
+                  handleSubmit(undefined);
+                }}
+              >
+                <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Пропустить</Text>
               </TouchableOpacity>
             </>
           )}

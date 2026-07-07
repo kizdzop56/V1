@@ -27,18 +27,40 @@ export default function ConfirmEmailScreen() {
 
   const inputs = useRef<Array<TextInput | null>>(Array(CODE_LEN).fill(null));
 
+  // Auto-send code on mount so the user reliably gets one email
+  useEffect(() => {
+    if (!token) return;
+    const baseUrl = process.env["EXPO_PUBLIC_DOMAIN"]
+      ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}` : "";
+    fetch(`${baseUrl}/api/auth/resend-code`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(() => { setResent(true); setCooldown(60); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  const applyCode = (code: string) => {
+    const clean = code.replace(/\D/g, "").slice(0, CODE_LEN);
+    if (!clean) return;
+    const arr = Array(CODE_LEN).fill("").map((_, i) => clean[i] ?? "");
+    setDigits(arr);
+    setError("");
+    const lastFilled = Math.min(clean.length, CODE_LEN) - 1;
+    inputs.current[lastFilled]?.focus();
+  };
+
   const handleChange = (text: string, idx: number) => {
-    // Handle paste of full code
-    if (text.length === CODE_LEN && /^\d+$/.test(text)) {
-      const arr = text.split("");
-      setDigits(arr);
-      inputs.current[CODE_LEN - 1]?.focus();
+    // Full-code paste via onChangeText (native / some web cases)
+    if (text.length >= CODE_LEN && /^\d+$/.test(text.replace(/\D/g, ""))) {
+      applyCode(text);
       return;
     }
 
@@ -48,7 +70,6 @@ export default function ConfirmEmailScreen() {
     } else if (text.length === 1) {
       char = text;
     } else {
-      // Box already had a digit — find the newly typed one
       const existing = digits[idx];
       const stripped = existing ? text.replace(existing, "") : text;
       const clean = stripped.replace(/\D/g, "");
@@ -96,7 +117,6 @@ export default function ConfirmEmailScreen() {
         inputs.current[0]?.focus();
         return;
       }
-      // Update stored user with emailVerified: true
       if (user) {
         const updated = { ...user, emailVerified: true };
         await authStorage.setItem("auth_user", JSON.stringify(updated));
@@ -199,7 +219,6 @@ export default function ConfirmEmailScreen() {
               activeOpacity={1}
               style={[s.digitBox, d ? s.digitBoxFilled : null]}
               onPress={() => {
-                // On tap, go to the first empty box (or this box if all filled)
                 const firstEmpty = digits.findIndex(v => !v);
                 const target = firstEmpty === -1 ? i : Math.min(i, firstEmpty);
                 inputs.current[target]?.focus();
@@ -207,14 +226,29 @@ export default function ConfirmEmailScreen() {
             >
               <TextInput
                 ref={r => { inputs.current[i] = r; }}
-                style={[s.digitText, Platform.OS === "web" && { outlineStyle: "none" } as any]}
+                style={[
+                  s.digitText,
+                  Platform.OS === "web" && { outlineStyle: "none" } as any,
+                ]}
                 value={d}
                 onChangeText={t => handleChange(t, i)}
                 onKeyPress={e => handleKeyPress(e, i)}
                 keyboardType="number-pad"
-                maxLength={CODE_LEN}
+                maxLength={Platform.OS === "web" ? 1 : CODE_LEN}
                 selectTextOnFocus
-                caretHidden
+                caretHidden={Platform.OS !== "web"}
+                {...(Platform.OS === "web"
+                  ? {
+                      onPaste: (e: any) => {
+                        const pasted: string = e.clipboardData?.getData("text") ?? "";
+                        const clean = pasted.replace(/\D/g, "").slice(0, CODE_LEN);
+                        if (clean.length > 0) {
+                          e.preventDefault();
+                          applyCode(clean);
+                        }
+                      },
+                    }
+                  : {})}
               />
             </TouchableOpacity>
           ))}
@@ -246,7 +280,7 @@ export default function ConfirmEmailScreen() {
         {resent && (
           <View style={s.resentBadge}>
             <Feather name="check" size={14} color="#15803d" />
-            <Text style={s.resentText}>Новый код отправлен</Text>
+            <Text style={s.resentText}>Код отправлен на почту</Text>
           </View>
         )}
       </View>
