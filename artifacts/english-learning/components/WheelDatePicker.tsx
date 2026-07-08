@@ -1,0 +1,175 @@
+import React, { useEffect, useMemo, useRef } from "react";
+import { View, Text, ScrollView, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { useColors } from "@/hooks/useColors";
+
+const ITEM_HEIGHT = 44;
+const VISIBLE_ITEMS = 5;
+const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const PADDING = (ITEM_HEIGHT * (VISIBLE_ITEMS - 1)) / 2;
+
+const MONTHS = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
+export type DateOfBirth = { day: number; month: number; year: number };
+
+function daysInMonth(month: number, year: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+function Wheel({
+  data,
+  selectedIndex,
+  onSelect,
+  renderLabel,
+  width,
+}: {
+  data: number[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  renderLabel: (value: number) => string;
+  width: number;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const isProgrammatic = useRef(false);
+
+  useEffect(() => {
+    isProgrammatic.current = true;
+    scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+    const t = setTimeout(() => { isProgrammatic.current = false; }, 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.length]);
+
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isProgrammatic.current) return;
+    const y = e.nativeEvent.contentOffset.y;
+    const index = Math.max(0, Math.min(data.length - 1, Math.round(y / ITEM_HEIGHT)));
+    if (index !== selectedIndex) onSelect(index);
+  };
+
+  useEffect(() => {
+    isProgrammatic.current = true;
+    scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: true });
+    const t = setTimeout(() => { isProgrammatic.current = false; }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIndex]);
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      style={{ width, height: WHEEL_HEIGHT }}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={ITEM_HEIGHT}
+      decelerationRate="fast"
+      contentContainerStyle={{ paddingVertical: PADDING }}
+      onMomentumScrollEnd={handleMomentumEnd}
+      onScrollEndDrag={handleMomentumEnd}
+      scrollEventThrottle={16}
+    >
+      {data.map((value, index) => {
+        const selected = index === selectedIndex;
+        return (
+          <View key={value} style={{ height: ITEM_HEIGHT, justifyContent: "center", alignItems: "center" }}>
+            <Text
+              style={{
+                fontSize: selected ? 19 : 16,
+                fontWeight: selected ? "800" : "500",
+                color: selected ? "#7c3aed" : "#9ca3af",
+              }}
+            >
+              {renderLabel(value)}
+            </Text>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+export default function WheelDatePicker({
+  value,
+  onChange,
+  minYear,
+  maxYear,
+}: {
+  value: DateOfBirth;
+  onChange: (value: DateOfBirth) => void;
+  minYear: number;
+  maxYear: number;
+}) {
+  const colors = useColors();
+
+  const years = useMemo(
+    () => Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i),
+    [minYear, maxYear]
+  );
+  const months = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
+  const maxDay = daysInMonth(value.month, value.year);
+  const days = useMemo(
+    () => Array.from({ length: maxDay }, (_, i) => i + 1),
+    [maxDay]
+  );
+
+  const dayIndex = Math.min(value.day, maxDay) - 1;
+  const monthIndex = value.month - 1;
+  const yearIndex = value.year - minYear;
+
+  return (
+    <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
+      <View pointerEvents="none" style={[styles.highlight, { borderColor: colors.primary + "40" }]} />
+      <Wheel
+        data={days}
+        selectedIndex={dayIndex}
+        onSelect={(i) => onChange({ ...value, day: days[i] })}
+        renderLabel={(v) => String(v)}
+        width={64}
+      />
+      <Wheel
+        data={months}
+        selectedIndex={monthIndex}
+        onSelect={(i) => {
+          const newMonth = months[i];
+          const clampedDay = Math.min(value.day, daysInMonth(newMonth, value.year));
+          onChange({ ...value, month: newMonth, day: clampedDay });
+        }}
+        renderLabel={(v) => MONTHS[v - 1]}
+        width={128}
+      />
+      <Wheel
+        data={years}
+        selectedIndex={yearIndex}
+        onSelect={(i) => {
+          const newYear = years[i];
+          const clampedDay = Math.min(value.day, daysInMonth(value.month, newYear));
+          onChange({ ...value, year: newYear, day: clampedDay });
+        }}
+        renderLabel={(v) => String(v)}
+        width={80}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  highlight: {
+    position: "absolute",
+    top: PADDING,
+    left: 8,
+    right: 8,
+    height: ITEM_HEIGHT,
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderRadius: 10,
+  },
+});
