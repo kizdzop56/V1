@@ -127,7 +127,7 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleSubmit = async (selectedBirthDate?: DateOfBirth | null) => {
+  const handleSubmit = async (selectedBirthDate?: DateOfBirth) => {
     setLoading(true);
     setError("");
 
@@ -135,10 +135,7 @@ export default function RegisterScreen() {
       ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
       : "";
 
-    const dobToUse =
-      selectedBirthDate === null
-        ? undefined
-        : selectedBirthDate ?? (role === "student" ? birthDate : undefined);
+    const dobToUse = selectedBirthDate ?? (role === "student" ? birthDate : undefined);
 
     try {
       const body: Record<string, unknown> = {
@@ -444,13 +441,6 @@ export default function RegisterScreen() {
                   ? <ActivityIndicator color="#fff" />
                   : <Text style={s.primaryBtnText}>Создать аккаунт</Text>
                 }
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{ alignItems: "center", marginTop: 16 }}
-                onPress={() => handleSubmit(null)}
-              >
-                <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Пропустить</Text>
               </TouchableOpacity>
             </>
           )}

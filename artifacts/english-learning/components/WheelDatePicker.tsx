@@ -6,6 +6,7 @@ const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;
 const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PADDING = (ITEM_HEIGHT * (VISIBLE_ITEMS - 1)) / 2;
+const SETTLE_DELAY = 120;
 
 const MONTHS = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -33,6 +34,8 @@ function Wheel({
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const isProgrammatic = useRef(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastOffsetY = useRef(selectedIndex * ITEM_HEIGHT);
 
   useEffect(() => {
     isProgrammatic.current = true;
@@ -42,20 +45,41 @@ function Wheel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.length]);
 
-  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isProgrammatic.current) return;
-    const y = e.nativeEvent.contentOffset.y;
-    const index = Math.max(0, Math.min(data.length - 1, Math.round(y / ITEM_HEIGHT)));
-    if (index !== selectedIndex) onSelect(index);
-  };
-
   useEffect(() => {
     isProgrammatic.current = true;
     scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: true });
+    lastOffsetY.current = selectedIndex * ITEM_HEIGHT;
     const t = setTimeout(() => { isProgrammatic.current = false; }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    };
+  }, []);
+
+  const commitFromOffset = (y: number) => {
+    const index = Math.max(0, Math.min(data.length - 1, Math.round(y / ITEM_HEIGHT)));
+    if (index !== selectedIndex) onSelect(index);
+  };
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isProgrammatic.current) return;
+    const y = e.nativeEvent.contentOffset.y;
+    lastOffsetY.current = y;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      commitFromOffset(lastOffsetY.current);
+    }, SETTLE_DELAY);
+  };
+
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isProgrammatic.current) return;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    commitFromOffset(e.nativeEvent.contentOffset.y);
+  };
 
   return (
     <ScrollView
@@ -65,6 +89,7 @@ function Wheel({
       snapToInterval={ITEM_HEIGHT}
       decelerationRate="fast"
       contentContainerStyle={{ paddingVertical: PADDING }}
+      onScroll={handleScroll}
       onMomentumScrollEnd={handleMomentumEnd}
       onScrollEndDrag={handleMomentumEnd}
       scrollEventThrottle={16}
@@ -74,10 +99,13 @@ function Wheel({
         return (
           <View key={value} style={{ height: ITEM_HEIGHT, justifyContent: "center", alignItems: "center" }}>
             <Text
+              // @ts-expect-error -- web-only attribute to opt out of Safari's data detectors
+              translate="no"
               style={{
                 fontSize: selected ? 19 : 16,
                 fontWeight: selected ? "800" : "500",
                 color: selected ? "#7c3aed" : "#9ca3af",
+                textDecorationLine: "none",
               }}
             >
               {renderLabel(value)}

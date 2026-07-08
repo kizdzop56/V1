@@ -15,6 +15,18 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   style.textContent = "input, textarea { outline: none !important; }";
   document.head.appendChild(style);
 
+  // Disable iOS Safari's automatic data detectors (phone numbers, addresses,
+  // dates, emails) that turn plain UI text/numbers into tap-to-open links
+  // (e.g. Apple/Google Maps, Calendar). The +html.tsx meta tag only applies
+  // to static exports, not the Expo dev server, so it must also be injected
+  // here at runtime to take effect during development.
+  if (!document.querySelector('meta[name="format-detection"]')) {
+    const meta = document.createElement("meta");
+    meta.name = "format-detection";
+    meta.content = "telephone=no, address=no, email=no, date=no, url=no";
+    document.head.appendChild(meta);
+  }
+
   // Ensure Feather icon font is available via CSS (fallback for mobile browsers)
   try {
     const featherUrl = require("../assets/fonts/Feather.ttf");
