@@ -211,11 +211,12 @@ type TeacherItem = {
 };
 
 function FriendsModal({
-  visible, onClose, onOpenFriend,
+  visible, onClose, onOpenFriend, inviteCode,
 }: {
   visible: boolean;
   onClose: () => void;
   onOpenFriend: (id: number) => void;
+  inviteCode?: string | null;
 }) {
   const colors = useColors();
   const [tab, setTab] = useState<"list" | "add">("list");
@@ -229,6 +230,7 @@ function FriendsModal({
   const [searching, setSearching] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [addError, setAddError] = useState("");
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const loadFriends = useCallback(async () => {
     setLoadingList(true);
@@ -347,6 +349,48 @@ function FriendsModal({
             <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground }}>Друзья</Text>
             <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.mutedForeground} /></TouchableOpacity>
           </View>
+
+          {/* ── Мой код ── */}
+          {!!inviteCode && (
+            <View style={{
+              marginBottom: 16,
+              backgroundColor: colors.primary + "10", borderRadius: 16, padding: 16,
+              borderWidth: 1.5, borderColor: colors.primary + "30",
+              flexDirection: "row", alignItems: "center", gap: 14,
+            }}>
+              <View style={{
+                width: 44, height: 44, borderRadius: 12,
+                backgroundColor: colors.primary + "20",
+                justifyContent: "center", alignItems: "center",
+              }}>
+                <Feather name="key" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Мой код
+                </Text>
+                <Text style={{ fontSize: 22, fontWeight: "900", color: colors.primary, letterSpacing: 4 }}>
+                  {inviteCode}
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
+                  Поделись с учителем, родителем или другом
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  Clipboard.setString(inviteCode ?? "");
+                  setCodeCopied(true);
+                  setTimeout(() => setCodeCopied(false), 2000);
+                }}
+                style={{
+                  backgroundColor: codeCopied ? "#6366f1" : colors.primary,
+                  borderRadius: 10, padding: 10,
+                }}
+              >
+                <Feather name={codeCopied ? "check" : "copy"} size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Tab switcher */}
           <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
@@ -666,7 +710,6 @@ export default function ProfileScreen() {
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
-  const [codeCopied, setCodeCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [teacherRequests, setTeacherRequests] = useState<Array<{
@@ -1121,6 +1164,7 @@ export default function ProfileScreen() {
           visible={friendsOpen}
           onClose={() => setFriendsOpen(false)}
           onOpenFriend={(id) => router.push(`/(main)/friend/${id}` as any)}
+          inviteCode={user.inviteCode}
         />
       )}
 
@@ -1260,50 +1304,6 @@ export default function ProfileScreen() {
             })()}
           </View>
         </View>
-
-        {/* ── Уникальный код приглашения ── */}
-        {user.inviteCode && (
-          <View style={{
-            marginHorizontal: 20, marginBottom: 14,
-            backgroundColor: colors.primary + "10", borderRadius: 16, padding: 16,
-            borderWidth: 1.5, borderColor: colors.primary + "30",
-            flexDirection: "row", alignItems: "center", gap: 14,
-          }}>
-            <View style={{
-              width: 44, height: 44, borderRadius: 12,
-              backgroundColor: colors.primary + "20",
-              justifyContent: "center", alignItems: "center",
-            }}>
-              <Feather name="key" size={20} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Мой код
-              </Text>
-              <Text style={{ fontSize: 22, fontWeight: "900", color: colors.primary, letterSpacing: 4 }}>
-                {user.inviteCode}
-              </Text>
-              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
-                {isStudent
-                  ? "Поделись с учителем, родителем или другом"
-                  : "Поделись с учениками или детьми"}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                Clipboard.setString(user.inviteCode ?? "");
-                setCodeCopied(true);
-                setTimeout(() => setCodeCopied(false), 2000);
-              }}
-              style={{
-                backgroundColor: codeCopied ? "#6366f1" : colors.primary,
-                borderRadius: 10, padding: 10,
-              }}
-            >
-              <Feather name={codeCopied ? "check" : "copy"} size={18} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* ── Входящие заявки от учителей (только ученик) ── */}
         {isStudent && teacherRequests.length > 0 && (
@@ -1516,21 +1516,6 @@ export default function ProfileScreen() {
               <Text style={s.rowText}>{user.role === "parent" ? "Мои дети" : "Все ученики"}</Text>
               <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
             </TouchableOpacity>
-          )}
-
-          {isStudent && (
-            <>
-              <TouchableOpacity style={s.row} onPress={() => router.push("/(main)/history" as any)}>
-                <Feather name="clock" size={20} color={colors.primary} />
-                <Text style={s.rowText}>История заданий</Text>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </TouchableOpacity>
-              <TouchableOpacity style={s.row} onPress={() => router.push("/(main)/leaderboard" as any)}>
-                <Feather name="award" size={20} color={colors.primary} />
-                <Text style={s.rowText}>Рейтинг</Text>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </>
           )}
         </View>
 
