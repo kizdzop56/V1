@@ -336,14 +336,6 @@ function MainLayoutInner() {
         <Tabs.Screen name="history" options={{ href: null }} />
 
         <Tabs.Screen
-          name="voice-chat"
-          options={isStudent
-            ? { title: "AI Чат", tabBarIcon: ({ color }) => <Feather name="message-circle" size={22} color={color} /> }
-            : { href: null }
-          }
-        />
-
-        <Tabs.Screen
           name="leaderboard"
           options={isStudent
             ? { title: "Рейтинг", tabBarIcon: ({ color }) => <Feather name="award" size={22} color={color} /> }

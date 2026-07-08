@@ -8,7 +8,6 @@ const { width: W, height: H } = Dimensions.get("window");
 
 export type TabGuideTab =
   | "assignments"
-  | "voice-chat"
   | "leaderboard"
   | "calendar"
   | "profile"
@@ -29,13 +28,6 @@ export const TAB_GUIDE_CONTENT: Record<TabGuideTab, TabGuideInfo> = {
     title: "Задания",
     description:
       "Здесь собраны все задания от твоего учителя: тесты, аудирование, чтение и видео. Выполняй их и зарабатывай XP очки — чем больше заданий, тем выше уровень!",
-  },
-  "voice-chat": {
-    tab: "voice-chat",
-    emoji: "🎤",
-    title: "AI-тьютор",
-    description:
-      "Общайся по-английски с искусственным интеллектом! Он поправит ошибки, объяснит грамматику и поможет улучшить произношение. Это как живая беседа с носителем языка!",
   },
   leaderboard: {
     tab: "leaderboard",
