@@ -14,7 +14,7 @@ type Props = {
   onClose: () => void;
 };
 
-function toEmbeddableUrl(url: string): { isYoutube: boolean; embedUrl: string } {
+export function toEmbeddableUrl(url: string): { isYoutube: boolean; embedUrl: string } {
   const isYoutube = url.includes("youtube.com") || url.includes("youtu.be");
   const embedUrl = isYoutube
     ? url.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
@@ -127,7 +127,7 @@ export function MediaViewerModal({ url, kind, title, onClose }: Props) {
   );
 }
 
-function NativeVideoPlayer({ uri }: { uri: string }) {
+export function NativeVideoPlayer({ uri }: { uri: string }) {
   const [Comp, setComp] = React.useState<any>(null);
   React.useEffect(() => {
     let mounted = true;
@@ -146,7 +146,7 @@ function NativeVideoPlayer({ uri }: { uri: string }) {
   );
 }
 
-function NativeAudioPlayer({ uri }: { uri: string }) {
+export function NativeAudioPlayer({ uri }: { uri: string }) {
   const [playing, setPlaying] = React.useState(false);
   const soundRef = React.useRef<any>(null);
 

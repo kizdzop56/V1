@@ -7,6 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
 import { MediaViewerModal, type MediaKind } from "@/components/MediaViewerModal";
+import { InlineMediaPlayer } from "@/components/InlineMediaPlayer";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -326,10 +327,6 @@ export default function AssignmentDetailScreen() {
   const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (assignment.type !== "video" && !showVideoBlock && isAudioUrl(mediaUrl)));
   const showOtherBlock = !!mediaUrl && !showVideoBlock && !showAudioBlock;
 
-  const youtubeEmbed = mediaUrl
-    ? mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
-    : null;
-
   const openMedia = () => {
     if (!mediaUrl) return;
     const kind: MediaKind = showVideoBlock ? "video" : showAudioBlock ? "audio" : "other";
@@ -430,19 +427,10 @@ export default function AssignmentDetailScreen() {
               )}
             </View>
           )}
-          {showVideoBlock && (
+          {showVideoBlock && mediaUrl && (
             <View style={s.card}>
               <Text style={s.sectionTitle}>Видео</Text>
-              {Platform.OS === "web" && youtubeEmbed?.includes("embed") && (
-                <View style={{ borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
-                  {/* @ts-ignore */}
-                  <iframe src={youtubeEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
-                </View>
-              )}
-              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#ec4899" }]} onPress={openMedia}>
-                <Feather name="play-circle" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть видео</Text>
-              </TouchableOpacity>
+              <InlineMediaPlayer url={mediaUrl} kind="video" height={200} />
             </View>
           )}
           {showOtherBlock && (
@@ -745,18 +733,9 @@ export default function AssignmentDetailScreen() {
         )}
 
         {/* ── Video card ── */}
-        {showVideoBlock && (
+        {showVideoBlock && mediaUrl && (
           <View style={[s.card, { marginBottom: 12 }]}>
-            {Platform.OS === "web" && youtubeEmbed?.includes("embed") ? (
-              <View style={{ borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
-                {/* @ts-ignore */}
-                <iframe src={youtubeEmbed} style={{ width: "100%", height: 180, border: "none" }} allowFullScreen />
-              </View>
-            ) : null}
-            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#ec4899" }]} onPress={openMedia}>
-              <Feather name="play-circle" size={16} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть видео</Text>
-            </TouchableOpacity>
+            <InlineMediaPlayer url={mediaUrl} kind="video" height={200} />
           </View>
         )}
 

@@ -10,6 +10,7 @@ import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
 import { MediaViewerModal, type MediaKind } from "@/components/MediaViewerModal";
+import { InlineMediaPlayer } from "@/components/InlineMediaPlayer";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -181,7 +182,6 @@ export default function SubmissionReviewScreen() {
           const isAudio = aType === "audio" || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/audio");
           const isVideo = aType === "video" || mUrl.includes("youtube") || mUrl.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/video");
           const openInModal = (kind: MediaKind) => setMediaModal({ url: mUrl, kind });
-          const ytEmbed = mUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
 
           if (isVideo) {
             return (
@@ -190,19 +190,7 @@ export default function SubmissionReviewScreen() {
                   <Feather name="video" size={16} color="#ec4899" />
                   <Text style={{ fontSize: 14, fontWeight: "700", color: "#9d174d" }}>Видео к заданию</Text>
                 </View>
-                {Platform.OS === "web" && ytEmbed.includes("embed") ? (
-                  <View style={{ borderRadius: 10, overflow: "hidden" }}>
-                    {/* @ts-ignore */}
-                    <iframe src={ytEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
-                  </View>
-                ) : null}
-                <TouchableOpacity
-                  onPress={() => openInModal("video")}
-                  style={{ backgroundColor: "#ec4899", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
-                >
-                  <Feather name="play-circle" size={16} color="#fff" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
-                </TouchableOpacity>
+                <InlineMediaPlayer url={mUrl} kind="video" height={200} />
               </View>
             );
           }
