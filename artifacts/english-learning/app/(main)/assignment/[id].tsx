@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Platform, Alert, TextInput, Linking, Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -77,6 +78,20 @@ const PRIMARY = "#7c3aed";
 const PRIMARY_LIGHT = "#f5f3ff";
 const PRIMARY_DARK = "#6d28d9";
 const ORANGE = "#f97316";
+const AUDIO_BG = "#e9e3fb";
+const QUESTION_BG = "#efe9fe";
+const WAVE_START = "#6d28d9";
+const WAVE_END = "#c4b5fd";
+const lerpColor = (c1: string, c2: string, t: number) => {
+  const clamp = Math.max(0, Math.min(1, t));
+  const p = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const [r1, g1, b1] = p(c1);
+  const [r2, g2, b2] = p(c2);
+  const r = Math.round(r1 + (r2 - r1) * clamp);
+  const g = Math.round(g1 + (g2 - g1) * clamp);
+  const b = Math.round(b1 + (b2 - b1) * clamp);
+  return `rgb(${r}, ${g}, ${b})`;
+};
 const SUCCESS = "#22c55e";
 const DANGER = "#ef4444";
 const TEXT_DARK = "#1e1b4b";
@@ -398,7 +413,7 @@ export default function AssignmentDetailScreen() {
           {/* Media */}
           {textContent && <View style={s.card}><Text style={s.sectionTitle}>Текст для чтения</Text><Text style={s.bodyText}>{textContent}</Text></View>}
           {showAudioBlock && (
-            <View style={s.card}>
+            <View style={[s.card, { backgroundColor: AUDIO_BG }]}>
               <Text style={s.sectionTitle}>Аудио</Text>
               {Platform.OS === "web" ? (/* @ts-ignore */ <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />) : (
                 <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#06b6d4" }]} onPress={openMedia}>
@@ -632,7 +647,7 @@ export default function AssignmentDetailScreen() {
 
         {/* ── Audio player card ── */}
         {showAudioBlock && (
-          <View style={[s.card, { marginBottom: 12 }]}>
+          <View style={[s.card, { marginBottom: 12, backgroundColor: AUDIO_BG }]}>
             {/* Hidden web audio element — no controls */}
             {Platform.OS === "web" && mediaUrl && (
               // @ts-ignore
@@ -647,13 +662,20 @@ export default function AssignmentDetailScreen() {
             )}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <TouchableOpacity
-                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: ORANGE, justifyContent: "center", alignItems: "center" }}
+                style={{ borderRadius: 24, overflow: "hidden" }}
                 onPress={Platform.OS === "web" ? toggleAudio : openMedia}
               >
-                <Feather name={audioPlaying ? "pause" : "play"} size={20} color="#fff" />
+                <LinearGradient
+                  colors={[PRIMARY, "#a78bfa"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Feather name={audioPlaying ? "pause" : "play"} size={20} color="#fff" />
+                </LinearGradient>
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                {/* Waveform bars — orange for played portion, grey for rest — stretched to fill available width */}
+                {/* Waveform bars — purple gradient for played portion, grey for rest — stretched to fill available width */}
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 32, width: "100%" }}>
                   {Array.from({ length: 30 }).map((_, i) => {
                     const fraction = audioDuration ? audioCurrentTime / audioDuration : 0;
@@ -664,7 +686,7 @@ export default function AssignmentDetailScreen() {
                         style={{
                           width: 3, borderRadius: 2,
                           height: 6 + Math.abs(Math.sin(i * 0.7 + 1) * 14),
-                          backgroundColor: played ? ORANGE : BORDER,
+                          backgroundColor: played ? lerpColor(WAVE_START, WAVE_END, i / 30) : BORDER,
                         }}
                       />
                     );
@@ -685,11 +707,11 @@ export default function AssignmentDetailScreen() {
               </TouchableOpacity>
               {Platform.OS === "web" && (
                 <TouchableOpacity
-                  style={[s.chipBtn, audioSpeed === 0.5 && { backgroundColor: ORANGE + "20", borderWidth: 1.5, borderColor: ORANGE }]}
+                  style={[s.chipBtn, audioSpeed === 0.5 && { backgroundColor: PRIMARY + "20", borderWidth: 1.5, borderColor: PRIMARY }]}
                   onPress={toggleAudioSpeed}
                 >
-                  <Feather name="zap" size={12} color={audioSpeed === 0.5 ? ORANGE : SLATE} />
-                  <Text style={[s.chipBtnText, audioSpeed === 0.5 && { color: ORANGE }]}>{audioSpeed === 1 ? "1x" : "0.5x"}</Text>
+                  <Feather name="zap" size={12} color={audioSpeed === 0.5 ? PRIMARY : SLATE} />
+                  <Text style={[s.chipBtnText, audioSpeed === 0.5 && { color: PRIMARY }]}>{audioSpeed === 1 ? "1x" : "0.5x"}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -754,7 +776,7 @@ export default function AssignmentDetailScreen() {
 
         {/* ── Current question card ── */}
         {currentQ && (
-          <View style={[s.card, { marginBottom: 12 }]}>
+          <View style={[s.card, { marginBottom: 12, backgroundColor: QUESTION_BG, borderLeftWidth: 4, borderLeftColor: PRIMARY }]}>
             <Text style={s.questionText}>{currentQ.text}</Text>
           </View>
         )}
