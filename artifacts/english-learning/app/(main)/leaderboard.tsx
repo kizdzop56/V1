@@ -4,7 +4,7 @@ import {
   TouchableOpacity, Image, useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -58,6 +58,31 @@ const PLACE_METALS = [
   { gradient: ["#f0c497", "#c9803f", "#9a5a24", "#5e3612"] as const, solid: "#c17a3e" }, // bronze
 ];
 const PLACE_COLORS = PLACE_METALS.map(m => m.solid);
+
+// ── Custom crown icon (flat, gold gradient) ───────────────────────────
+function Crown({ size = 34 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size * (18 / 24)} viewBox="0 0 24 18">
+      <Defs>
+        <SvgLinearGradient id="crownGrad" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#ffe9a8" />
+          <Stop offset="0.5" stopColor="#f7c948" />
+          <Stop offset="1" stopColor="#d99a1c" />
+        </SvgLinearGradient>
+      </Defs>
+      <Path
+        d="M2 16 L1 6 L6.5 10.2 L12 2 L17.5 10.2 L23 6 L22 16 Z"
+        fill="url(#crownGrad)"
+        stroke="#a9720a"
+        strokeWidth={0.6}
+        strokeLinejoin="round"
+      />
+      <Circle cx="1" cy="5" r="2" fill="url(#crownGrad)" stroke="#a9720a" strokeWidth={0.6} />
+      <Circle cx="12" cy="1.6" r="2.1" fill="url(#crownGrad)" stroke="#a9720a" strokeWidth={0.6} />
+      <Circle cx="23" cy="5" r="2" fill="url(#crownGrad)" stroke="#a9720a" strokeWidth={0.6} />
+    </Svg>
+  );
+}
 
 // ── Avatar component ──────────────────────────────────────────────────
 function Avatar({ entry, size }: { entry: CategoryEntry; size: number }) {
@@ -121,25 +146,28 @@ function PodiumCard({
         marginTop: isCenter ? 0 : 18,
       }}>
         <View style={{
-          borderRadius: avatarSize / 2,
-          shadowColor: placeColor, shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.55, shadowRadius: 12, elevation: 8,
+          borderRadius: (avatarSize + 6) / 2 + 4,
+          shadowColor: placeColor, shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.9, shadowRadius: 18, elevation: 14,
+          ...(Platform.OS === "web"
+            ? { boxShadow: `0 0 22px 4px ${placeColor}b0, 0 0 6px 1px ${placeColor}` } as any
+            : {}),
         }}>
           <LinearGradient
             colors={placeMetal.gradient}
             start={{ x: 0.15, y: 0 }}
             end={{ x: 0.9, y: 1 }}
-            style={{ width: avatarSize + 6, height: avatarSize + 6, borderRadius: (avatarSize + 6) / 2, padding: 3, justifyContent: "center", alignItems: "center" }}
+            style={{ width: avatarSize + 6, height: avatarSize + 6, borderRadius: (avatarSize + 6) / 2, padding: 4, justifyContent: "center", alignItems: "center" }}
           >
             <Avatar entry={entry} size={avatarSize} />
           </LinearGradient>
         </View>
         {rank === 1 && (
           <View style={{
-            position: "absolute", top: -28, left: 0, right: 0,
+            position: "absolute", top: -26, left: 0, right: 0,
             alignItems: "center", zIndex: 5,
           }}>
-            <Text style={{ fontSize: 30 }}>👑</Text>
+            <Crown size={36} />
           </View>
         )}
         {/* Place number badge */}
