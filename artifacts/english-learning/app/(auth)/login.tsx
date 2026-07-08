@@ -178,9 +178,9 @@ const styles = StyleSheet.create({
   },
 
   logoBox: {
-    width: 104,
-    height: 104,
-    borderRadius: 28,
+    width: 168,
+    height: 168,
+    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 22,
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.7,
     shadowRadius: 24,
     elevation: 12,
-    overflow: "visible",
   } as any,
   logoImg: {
     width: 148,
