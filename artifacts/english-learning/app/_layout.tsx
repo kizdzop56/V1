@@ -33,7 +33,7 @@ export const queryClient = new QueryClient({
 });
 
 const domain = process.env["EXPO_PUBLIC_DOMAIN"];
-setBaseUrl(domain ? `https://${domain}/api` : "/api");
+setBaseUrl(domain ? `https://${domain}` : null);
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
