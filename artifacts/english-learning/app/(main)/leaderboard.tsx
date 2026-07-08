@@ -136,8 +136,8 @@ function PodiumCard({
         </View>
         {rank === 1 && (
           <View style={{
-            position: "absolute", top: -30, alignSelf: "center",
-            zIndex: 5, transform: [{ rotate: "-8deg" }],
+            position: "absolute", top: -28, left: 0, right: 0,
+            alignItems: "center", zIndex: 5,
           }}>
             <Text style={{ fontSize: 30 }}>👑</Text>
           </View>

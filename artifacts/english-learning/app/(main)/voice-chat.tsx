@@ -136,16 +136,24 @@ export default function VoiceChatScreen() {
           <Text style={styles.subtitle}>Practice English with your AI tutor</Text>
         </View>
         <View style={styles.startScreen}>
-          <TouchableOpacity style={styles.startBtn} onPress={() => createSession(undefined)} disabled={creatingSession}>
-            {creatingSession
-              ? <ActivityIndicator color="#fff" size="large" />
-              : <Feather name="message-circle" size={52} color="#fff" />
-            }
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Start Conversation"
+            onPress={() => createSession(undefined)}
+            disabled={creatingSession}
+            activeOpacity={0.8}
+          >
+            <View style={styles.startBtn}>
+              {creatingSession
+                ? <ActivityIndicator color="#fff" size="large" />
+                : <Feather name="message-circle" size={52} color="#fff" />
+              }
+            </View>
+            <Text style={styles.startTitle}>Start Conversation</Text>
+            <Text style={styles.startSub}>
+              Chat with your AI English tutor.{"\n"}Earn 5 points per message exchange!
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.startTitle}>Start Conversation</Text>
-          <Text style={styles.startSub}>
-            Chat with your AI English tutor.{"\n"}Earn 5 points per message exchange!
-          </Text>
         </View>
       </View>
     );
