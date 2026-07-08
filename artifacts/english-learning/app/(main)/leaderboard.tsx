@@ -60,12 +60,11 @@ const PLACE_METALS = [
 const PLACE_COLORS = PLACE_METALS.map(m => m.solid);
 
 // ── Avatar component ──────────────────────────────────────────────────
-function Avatar({ entry, size, borderColor }: { entry: CategoryEntry; size: number; borderColor: string }) {
+function Avatar({ entry, size }: { entry: CategoryEntry; size: number }) {
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
       backgroundColor: entry.avatarColor ?? "#6366f1",
-      borderWidth: 3, borderColor,
       overflow: "hidden", justifyContent: "center", alignItems: "center",
     }}>
       {entry.avatarUrl
@@ -126,19 +125,23 @@ function PodiumCard({
           shadowColor: placeColor, shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.55, shadowRadius: 12, elevation: 8,
         }}>
-          {isMe ? (
-            <Avatar entry={entry} size={avatarSize} borderColor="#fff" />
-          ) : (
-            <LinearGradient
-              colors={placeMetal.gradient}
-              start={{ x: 0.15, y: 0 }}
-              end={{ x: 0.9, y: 1 }}
-              style={{ width: avatarSize + 6, height: avatarSize + 6, borderRadius: (avatarSize + 6) / 2, padding: 3, justifyContent: "center", alignItems: "center" }}
-            >
-              <Avatar entry={entry} size={avatarSize} borderColor="#fff" />
-            </LinearGradient>
-          )}
+          <LinearGradient
+            colors={placeMetal.gradient}
+            start={{ x: 0.15, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ width: avatarSize + 6, height: avatarSize + 6, borderRadius: (avatarSize + 6) / 2, padding: 3, justifyContent: "center", alignItems: "center" }}
+          >
+            <Avatar entry={entry} size={avatarSize} />
+          </LinearGradient>
         </View>
+        {rank === 1 && (
+          <View style={{
+            position: "absolute", top: -30, alignSelf: "center",
+            zIndex: 5, transform: [{ rotate: "-8deg" }],
+          }}>
+            <Text style={{ fontSize: 30 }}>👑</Text>
+          </View>
+        )}
         {/* Place number badge */}
         <LinearGradient
           colors={placeMetal.gradient}
@@ -160,14 +163,14 @@ function PodiumCard({
       <Text
         numberOfLines={1}
         style={{
-          marginTop: 12, fontSize: isCenter ? 15 : 13,
+          marginTop: 12, fontSize: isCenter ? 19 : 17,
           fontWeight: "800", color: "#fff",
-          maxWidth: 100, textAlign: "center",
+          maxWidth: 110, textAlign: "center",
         }}
       >
         {entry.username}{isMe ? " (Я)" : ""}
       </Text>
-      <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: "600" }}>
+      <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: "600" }}>
         {activeCat.formatValue(entry.value)}
       </Text>
     </TouchableOpacity>
