@@ -223,11 +223,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 20,
+    overflow: "hidden",
   },
   form: {
     paddingHorizontal: 28,
