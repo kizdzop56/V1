@@ -7,6 +7,7 @@ import {
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import PrismaticBurst from "@/components/PrismaticBurst";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -62,25 +63,31 @@ export default function LoginScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* ── Верхняя тёмно-фиолетовая брендинговая зона ── */}
-      <LinearGradient
-        colors={["#4c1d95", "#6d28d9", "#7c3aed"]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={[styles.brand, { paddingTop: insets.top + 40 }]}
-      >
-        {/* Декоративные блики */}
-        <View style={styles.blob1} />
-        <View style={styles.blob2} />
-
-        <Image
-          source={require("@/assets/images/icon.png")}
-          style={styles.logo}
+      {/* ── Верхняя брендинговая зона с анимацией Prismatic Burst ── */}
+      <View style={[styles.brand, { paddingTop: insets.top + 40 }]}>
+        <PrismaticBurst
+          intensity={2}
+          speed={0.5}
+          animationType="rotate3d"
+          colors={["#6d28d9", "#d946ef", "#8b5cf6"]}
         />
+
+        <LinearGradient
+          colors={["#7c3aed", "#c026d3"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoBox}
+        >
+          <Image
+            source={require("@/assets/images/leopard_transparent.png")}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
+        </LinearGradient>
         <Text style={styles.appName}>ENGLISH</Text>
         <Text style={styles.appNameSub}>LEARNING</Text>
         <Text style={styles.tagline}>Платформа для изучения английского</Text>
-      </LinearGradient>
+      </View>
 
       {/* ── Нижняя белая форма ── */}
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
@@ -167,38 +174,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingBottom: 40,
     overflow: "hidden",
+    backgroundColor: "#0a0118",
   },
 
-  // Декоративные размытые блики как у Plata
-  blob1: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    top: 40,
-    right: -60,
-  },
-  blob2: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    bottom: 20,
-    left: -50,
-  },
-
-  logo: {
-    width: 100,
-    height: 100,
+  logoBox: {
+    width: 104,
+    height: 104,
     borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 22,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.45)",
+    shadowColor: "#c026d3",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 24,
+    elevation: 12,
   } as any,
+  logoImg: {
+    width: 82,
+    height: 82,
+  },
 
   appName: {
     fontSize: 38,
