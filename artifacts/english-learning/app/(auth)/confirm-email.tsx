@@ -16,7 +16,7 @@ export default function ConfirmEmailScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, token, login } = useAuth();
+  const { user, token, login, logout } = useAuth();
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LEN).fill(""));
   const [loading, setLoading] = useState(false);
@@ -130,6 +130,11 @@ export default function ConfirmEmailScreen() {
     }
   };
 
+  const handleGoHome = async () => {
+    await logout();
+    router.replace("/(auth)/login");
+  };
+
   const handleResend = async () => {
     if (cooldown > 0 || !token) return;
     setResending(true);
@@ -197,6 +202,8 @@ export default function ConfirmEmailScreen() {
       paddingVertical: 6, marginTop: 12,
     },
     resentText: { fontSize: 13, color: "#4338ca", fontWeight: "600" },
+    homeLink: { marginTop: 24, flexDirection: "row", alignItems: "center", gap: 6 },
+    homeLinkText: { fontSize: 14, fontWeight: "700", color: colors.mutedForeground },
   });
 
   return (
@@ -283,6 +290,11 @@ export default function ConfirmEmailScreen() {
             <Text style={s.resentText}>Код отправлен на почту</Text>
           </View>
         )}
+
+        <TouchableOpacity style={s.homeLink} onPress={handleGoHome}>
+          <Feather name="arrow-left" size={14} color={colors.mutedForeground} />
+          <Text style={s.homeLinkText}>На главную</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
