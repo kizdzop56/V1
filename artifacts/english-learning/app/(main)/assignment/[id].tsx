@@ -98,6 +98,7 @@ export default function AssignmentDetailScreen() {
   const [zoomImg, setZoomImg] = useState<string | null>(null);
   const [showUnansweredModal, setShowUnansweredModal] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -126,6 +127,7 @@ export default function AssignmentDetailScreen() {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioSpeed, setAudioSpeed] = useState(1);
 
   const isTeacherRole = user?.role === "teacher" || user?.role === "admin";
   const isStudent = user?.role === "student";
@@ -319,6 +321,7 @@ export default function AssignmentDetailScreen() {
   const toggleAudio = () => {
     const el = audioRef.current;
     if (!el) return;
+    el.playbackRate = audioSpeed;
     if (audioPlaying) {
       el.pause();
       setAudioPlaying(false);
@@ -332,8 +335,16 @@ export default function AssignmentDetailScreen() {
     const el = audioRef.current;
     if (!el) return;
     el.currentTime = 0;
+    el.playbackRate = audioSpeed;
     el.play().catch(() => {});
     setAudioPlaying(true);
+  };
+
+  const toggleAudioSpeed = () => {
+    const next = audioSpeed === 1 ? 0.5 : 1;
+    setAudioSpeed(next);
+    const el = audioRef.current;
+    if (el) el.playbackRate = next;
   };
 
   const formatAudioTime = (sec: number) => {
@@ -566,12 +577,27 @@ export default function AssignmentDetailScreen() {
         onConfirm={() => { setShowUnansweredModal(false); handleSubmit(); }}
         onCancel={() => setShowUnansweredModal(false)}
       />
+      <ConfirmModal
+        visible={showExitModal}
+        title="Выйти из теста?"
+        message="Если вы выйдете сейчас, тест будет завершён и отправлен на проверку с текущими ответами. Продолжить его позже будет нельзя."
+        confirmText="Завершить и выйти"
+        cancelText="Остаться в тесте"
+        onConfirm={() => { setShowExitModal(false); handleSubmit(); }}
+        onCancel={() => setShowExitModal(false)}
+      />
+
+      {/* ── Floating exit button — sits higher, above the step-counter row ── */}
+      <TouchableOpacity
+        style={[s.floatingCloseBtn, { top: insets.top + (Platform.OS === "web" ? 20 : 8) }]}
+        onPress={() => setShowExitModal(true)}
+      >
+        <Feather name="x" size={18} color={SLATE} />
+      </TouchableOpacity>
 
       {/* ── Top bar ── */}
       <View style={[s.topBar, { paddingTop: topPad }]}>
-        <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
-          <Feather name="x" size={18} color={SLATE} />
-        </TouchableOpacity>
+        <View style={{ width: 36 }} />
 
         <Text style={s.stepCounter}>
           {isFreeForm ? assignment.title : `${currentQuestionIndex + 1} / ${questions.length}`}
@@ -629,8 +655,8 @@ export default function AssignmentDetailScreen() {
                 <Feather name={audioPlaying ? "pause" : "play"} size={20} color="#fff" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                {/* Waveform bars — orange for played portion, grey for rest */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 2, height: 32 }}>
+                {/* Waveform bars — orange for played portion, grey for rest — stretched to fill available width */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 32, width: "100%" }}>
                   {Array.from({ length: 30 }).map((_, i) => {
                     const fraction = audioDuration ? audioCurrentTime / audioDuration : 0;
                     const played = i / 30 < fraction;
@@ -659,6 +685,15 @@ export default function AssignmentDetailScreen() {
                 <Feather name="refresh-cw" size={12} color={SLATE} />
                 <Text style={s.chipBtnText}>Слушать снова</Text>
               </TouchableOpacity>
+              {Platform.OS === "web" && (
+                <TouchableOpacity
+                  style={[s.chipBtn, audioSpeed === 0.5 && { backgroundColor: ORANGE + "20", borderWidth: 1.5, borderColor: ORANGE }]}
+                  onPress={toggleAudioSpeed}
+                >
+                  <Feather name="zap" size={12} color={audioSpeed === 0.5 ? ORANGE : SLATE} />
+                  <Text style={[s.chipBtnText, audioSpeed === 0.5 && { color: ORANGE }]}>{audioSpeed === 1 ? "1x" : "0.5x"}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -884,6 +919,14 @@ const s = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: "rgba(0,0,0,0.07)",
     justifyContent: "center", alignItems: "center",
+  },
+  floatingCloseBtn: {
+    position: "absolute", left: 16, zIndex: 20,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "#fff",
+    justifyContent: "center", alignItems: "center",
+    shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   typeLabel: {
     fontSize: 11, fontWeight: "700", color: PRIMARY, letterSpacing: 1.5,
