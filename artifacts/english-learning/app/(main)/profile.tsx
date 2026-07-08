@@ -721,7 +721,7 @@ export default function ProfileScreen() {
   // ── Gamification ──────────────────────────────────────────────────
   const {
     stats: gamStats, dailyLoginResult, toastAchievement,
-    loadStats, claimDailyLogin, unlockAchievements, hideToast,
+    loadStats, claimDailyLogin, unlockAchievements, hideToast, updateDailyGoal,
   } = useGamification();
 
   const [mascotVisible, setMascotVisible] = useState(false);
@@ -1441,6 +1441,7 @@ export default function ProfileScreen() {
                   goalMinutes={gamStats.dailyGoalMinutes}
                   todayCompletions={gamStats.todayCompletions ?? 0}
                   todayVoiceSessions={gamStats.todayVoiceSessions ?? 0}
+                  onGoalChange={updateDailyGoal}
                 />
               </View>
             )}

@@ -80,22 +80,33 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
   const dbAchievements = await db.select().from(userAchievementsTable)
     .where(eq(userAchievementsTable.userId, userId));
 
-  // Daily goal progress (today's time)
+  // Daily goal progress (today's time) — include elapsed time from the
+  // currently open session so the goal bar and timer stay in sync with
+  // the live client-side timer (open sessions have no durationMinutes yet).
   let todayMinutes = 0;
+  let totalTimeMinutes = userData.totalTimeMinutes ?? 0;
   try {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const todaySessions = await db.select({
-      total: sql<number>`COALESCE(SUM(${timeSessionsTable.durationMinutes}), 0)::int`,
-    })
-      .from(timeSessionsTable)
-      .where(and(
-        eq(timeSessionsTable.studentId, userId),
-        gte(timeSessionsTable.startedAt, todayStart)
-      ));
-    todayMinutes = todaySessions[0]?.total ?? 0;
+
+    const allSessions = await db.select().from(timeSessionsTable)
+      .where(eq(timeSessionsTable.studentId, userId));
+
+    const openSession = allSessions.find(s => s.endedAt === null);
+    const openMinutes = openSession
+      ? Math.floor((Date.now() - openSession.startedAt.getTime()) / 60000)
+      : 0;
+
+    const closedSessions = allSessions.filter(s => s.endedAt !== null);
+    todayMinutes = closedSessions
+      .filter(s => s.startedAt >= todayStart)
+      .reduce((sum, s) => sum + (s.durationMinutes || 0), 0)
+      + (openSession && openSession.startedAt >= todayStart ? openMinutes : 0);
+
+    totalTimeMinutes = (userData.totalTimeMinutes ?? 0) + openMinutes;
   } catch {
     todayMinutes = 0;
+    totalTimeMinutes = userData.totalTimeMinutes ?? 0;
   }
 
   const xpLevel = computeLevel(userData.totalPoints);
@@ -131,7 +142,7 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
     completedAssignments,
     earlyBirdSessions,
     unlockedAchievementIds: dbAchievements.map(a => a.achievementId),
-    totalTimeMinutes: userData.totalTimeMinutes,
+    totalTimeMinutes,
     mascotName: (userData.mascotName && userData.mascotName !== "Оливер") ? userData.mascotName : "Снежа",
   });
 });
