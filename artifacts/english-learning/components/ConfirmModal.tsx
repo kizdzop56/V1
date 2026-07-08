@@ -69,9 +69,9 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: "800", textAlign: "center", marginBottom: 8 },
   message: { fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 24 },
-  btnRow: { flexDirection: "row", gap: 10, width: "100%" },
-  btn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
+  btnRow: { flexDirection: "row", alignItems: "stretch", gap: 10, width: "100%" },
+  btn: { flex: 1, paddingVertical: 14, paddingHorizontal: 6, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   cancelBtn: { borderWidth: 1.5 },
   confirmBtn: {},
-  btnText: { fontSize: 15, fontWeight: "700" },
+  btnText: { fontSize: 15, fontWeight: "700", textAlign: "center" },
 });

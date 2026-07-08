@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, Platform, AppState } from "react-native";
+import { View, Text, TouchableOpacity, Platform, AppState, ActivityIndicator } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect, useRef, useCallback, useState } from "react";
@@ -272,7 +272,7 @@ function CustomTabBar({ state, descriptors, navigation, onFirstVisit }: CustomTa
 }
 
 function MainLayoutInner() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const colors = useColors();
 
   // State for the tab guide
@@ -292,6 +292,17 @@ function MainLayoutInner() {
     // Navigate after the modal begins to close
     if (nav) setTimeout(nav, 150);
   }, [guideState.navigateFn]);
+
+  // Wait for AuthProvider to finish restoring the session from storage before
+  // deciding to redirect — otherwise a page refresh momentarily has `user === null`
+  // (before the stored token is validated) and kicks the user back to login.
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   if (!user) return <Redirect href="/(auth)/login" />;
 

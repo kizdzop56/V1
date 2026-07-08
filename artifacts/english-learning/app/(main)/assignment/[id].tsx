@@ -581,8 +581,8 @@ export default function AssignmentDetailScreen() {
         visible={showExitModal}
         title="Выйти из теста?"
         message="Если вы выйдете сейчас, тест будет завершён и отправлен на проверку с текущими ответами. Продолжить его позже будет нельзя."
-        confirmText="Завершить и выйти"
-        cancelText="Остаться в тесте"
+        confirmText="Завершить"
+        cancelText="Остаться"
         onConfirm={() => { setShowExitModal(false); handleSubmit(); }}
         onCancel={() => setShowExitModal(false)}
       />
