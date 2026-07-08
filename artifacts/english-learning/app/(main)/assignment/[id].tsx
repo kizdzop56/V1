@@ -389,11 +389,13 @@ export default function AssignmentDetailScreen() {
           </TouchableOpacity>
           <Text style={s.headerTitle} numberOfLines={1}>{assignment.title}</Text>
         </View>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 120, gap: 12 }}>
           {/* Info */}
           <View style={s.card}>
             <Text style={s.assignTitle}>{assignment.title}</Text>
-            <Text style={[s.bodyText, { marginBottom: 10 }]}>{assignment.description}</Text>
+            {!!assignment.description?.trim() && (
+              <Text style={[s.bodyText, { marginBottom: 10 }]}>{assignment.description}</Text>
+            )}
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
               <View style={[s.badge, { backgroundColor: "#ede9fe" }]}>
                 <Text style={[s.badgeText, { color: PRIMARY }]}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
@@ -642,6 +644,14 @@ export default function AssignmentDetailScreen() {
             <Text style={{ fontSize: 14, fontWeight: "700", color: DANGER, flex: 1 }}>
               {submitting ? "Ответы отправляются…" : "Время вышло!"}
             </Text>
+          </View>
+        )}
+
+        {/* ── Description card (only if the teacher added one) ── */}
+        {!!assignment.description?.trim() && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            <Text style={[s.sectionTitle, { marginBottom: 6 }]}>Описание</Text>
+            <Text style={s.bodyText}>{assignment.description}</Text>
           </View>
         )}
 
