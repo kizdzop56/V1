@@ -220,67 +220,74 @@ export function DailyGoalBar({
 
   return (
     <>
-      <TouchableOpacity
-        onPress={goalType.isTimeType ? () => setShowPicker(true) : undefined}
-        activeOpacity={goalType.isTimeType ? 0.85 : 1}
-        style={[styles.container, { backgroundColor: colors.card, borderColor: done ? "#6366f1" + "60" : goalType.color + "30" }]}
-      >
-        {/* Day badge */}
-        <View style={[styles.dayBadge, { backgroundColor: bgColor }]}>
-          <Text style={[styles.dayBadgeText, { color: done ? "#6366f1" : goalType.color }]}>
-            {done ? "✓ Цель выполнена" : "Цель дня"}
-          </Text>
-        </View>
-
-        <View style={styles.header}>
-          <View style={[styles.iconBox, { backgroundColor: bgColor }]}>
-            <Text style={{ fontSize: 18 }}>{done ? "🎉" : goalType.emoji}</Text>
-          </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>{goalType.label}</Text>
-            <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-              {done
-                ? goalType.formatDone(progress, target)
-                : goalType.formatRemaining(remaining, target)}
-            </Text>
-          </View>
-          <View style={[styles.rewardBadge, { backgroundColor: bgColor }]}>
-            <Text style={[styles.rewardText, { color: done ? "#6366f1" : goalType.color }]}>
-              {goalType.reward}
-            </Text>
-          </View>
-        </View>
-
-        {/* Progress bar */}
-        <View style={[styles.trackBg, { backgroundColor: colors.muted }]}>
+      {done ? (
+        <View style={[styles.doneContainer, { backgroundColor: "#6366f1" }]}>
           <Animated.View
             style={[
-              styles.trackFill,
+              styles.doneShimmer,
               {
-                backgroundColor: barColor,
-                width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+                opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }),
               },
             ]}
           />
-          {done && (
+          <Text style={styles.doneEmoji}>🎉</Text>
+          <Text style={styles.doneTitle}>Цель на сегодня выполнена!</Text>
+          <Text style={styles.doneSub}>{goalType.formatDone(progress, target)}</Text>
+          <View style={styles.doneRewardBadge}>
+            <Text style={styles.doneRewardText}>{goalType.reward} получено</Text>
+          </View>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={goalType.isTimeType ? () => setShowPicker(true) : undefined}
+          activeOpacity={goalType.isTimeType ? 0.85 : 1}
+          style={[styles.container, { backgroundColor: colors.card, borderColor: goalType.color + "30" }]}
+        >
+          {/* Day badge */}
+          <View style={[styles.dayBadge, { backgroundColor: bgColor }]}>
+            <Text style={[styles.dayBadgeText, { color: goalType.color }]}>
+              Цель дня
+            </Text>
+          </View>
+
+          <View style={styles.header}>
+            <View style={[styles.iconBox, { backgroundColor: bgColor }]}>
+              <Text style={{ fontSize: 18 }}>{goalType.emoji}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={[styles.title, { color: colors.foreground }]}>{goalType.label}</Text>
+              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                {goalType.formatRemaining(remaining, target)}
+              </Text>
+            </View>
+            <View style={[styles.rewardBadge, { backgroundColor: bgColor }]}>
+              <Text style={[styles.rewardText, { color: goalType.color }]}>
+                {goalType.reward}
+              </Text>
+            </View>
+          </View>
+
+          {/* Progress bar */}
+          <View style={[styles.trackBg, { backgroundColor: colors.muted }]}>
             <Animated.View
               style={[
-                styles.shimmer,
+                styles.trackFill,
                 {
-                  opacity: shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }),
+                  backgroundColor: barColor,
+                  width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
                 },
               ]}
             />
-          )}
-        </View>
+          </View>
 
-        {/* Sub row */}
-        {goalType.isTimeType && (
-          <Text style={[styles.hint, { color: colors.mutedForeground, marginTop: 8 }]}>
-            💡 Нажми, чтобы изменить цель
-          </Text>
-        )}
-      </TouchableOpacity>
+          {/* Sub row */}
+          {goalType.isTimeType && (
+            <Text style={[styles.hint, { color: colors.mutedForeground, marginTop: 8 }]}>
+              💡 Нажми, чтобы изменить цель
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* Goal Picker Modal — only for time goals */}
       <Modal visible={showPicker} transparent animationType="slide" onRequestClose={() => setShowPicker(false)}>
@@ -349,11 +356,24 @@ const styles = StyleSheet.create({
   rewardText: { fontSize: 11, fontWeight: "700" },
   trackBg: { height: 10, borderRadius: 5, overflow: "hidden", position: "relative" },
   trackFill: { height: "100%", borderRadius: 5 },
-  shimmer: {
+  hint: { fontSize: 11 },
+  doneContainer: {
+    borderRadius: 16, padding: 22, marginBottom: 12,
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
+    minHeight: 150,
+  },
+  doneShimmer: {
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: "#fff",
   },
-  hint: { fontSize: 11 },
+  doneEmoji: { fontSize: 34, marginBottom: 6 },
+  doneTitle: { fontSize: 17, fontWeight: "800", color: "#fff", textAlign: "center" },
+  doneSub: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.85)", marginTop: 4, textAlign: "center" },
+  doneRewardBadge: {
+    marginTop: 12, paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  doneRewardText: { fontSize: 12, fontWeight: "800", color: "#fff" },
   overlay: { flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" },
   pickerSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 32 },
   pickerTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
