@@ -11,6 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import authStorage from "@/utils/authStorage";
+import DarkVeil from "@/components/DarkVeil";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -304,8 +305,15 @@ export default function LeaderboardScreen() {
         colors={["#2e1065", "#5b21b6", "#7c3aed"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
-        style={{ paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: 0 }}
+        style={{ paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: 0, overflow: "hidden" }}
       >
+        {/* Animated veil background (web) — static gradient stays underneath as fallback */}
+        <View
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}
+        >
+          <DarkVeil scanlineIntensity={0.03} speed={1} scanlineFrequency={1.7} warpAmount={1.1} />
+        </View>
+
         {/* Title */}
         <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
           <Text style={{ fontSize: 26, fontWeight: "900", color: "#fff" }}>Рейтинг</Text>

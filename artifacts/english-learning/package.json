@@ -58,6 +58,7 @@
   "dependencies": {
     "expo-av": "^16.0.8",
     "expo-image-manipulator": "^57.0.1",
-    "expo-screen-capture": "^56.0.4"
+    "expo-screen-capture": "^56.0.4",
+    "ogl": "^1.0.11"
   }
 }
