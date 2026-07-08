@@ -25,7 +25,14 @@ export function InlineMediaPlayer({ url, kind, height = 200, style }: Props) {
           )
         ) : Platform.OS === "web" ? (
           // @ts-ignore web-only video element
-          <video src={fullUrl} controls style={{ width: "100%", height: "100%" }} />
+          <video
+            src={fullUrl}
+            controls
+            playsInline
+            // @ts-ignore vendor-prefixed attr some mobile browsers still check
+            webkit-playsinline="true"
+            style={{ width: "100%", height: "100%" }}
+          />
         ) : (
           <NativeVideoPlayer uri={fullUrl} />
         )}

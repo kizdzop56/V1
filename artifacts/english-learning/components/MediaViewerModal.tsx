@@ -93,6 +93,9 @@ export function MediaViewerModal({ url, kind, title, onClose }: Props) {
                 src={fullUrl}
                 controls
                 autoPlay
+                playsInline
+                // @ts-ignore vendor-prefixed attr some mobile browsers still check
+                webkit-playsinline="true"
                 style={{ width: "100%", maxWidth: 720, maxHeight: "80vh", borderRadius: 14, backgroundColor: "#000" }}
               />
             ) : (

@@ -638,7 +638,7 @@ export default function AssignmentDetailScreen() {
       {/* ── Scrollable content ── */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 140 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Timer expired banner */}
