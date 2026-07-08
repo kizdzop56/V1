@@ -397,7 +397,20 @@ export default function TeacherResultsScreen() {
                     {isPendingReview && (
                       <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
                         {!!sub.textAnswer && (
-                          <Text style={{ fontSize: 13, color: colors.foreground, marginBottom: 8 }}>{sub.textAnswer}</Text>
+                          <View style={{ marginBottom: 10 }}>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                              Ответ ученика
+                            </Text>
+                            <View style={{
+                              backgroundColor: "#ede9fe",
+                              borderWidth: 1.5, borderColor: "#c4b5fd",
+                              borderRadius: 12, padding: 12,
+                            }}>
+                              <Text style={{ fontSize: 14, fontWeight: "600", color: "#4c1d95", lineHeight: 20 }}>
+                                {sub.textAnswer}
+                              </Text>
+                            </View>
+                          </View>
                         )}
                         {!!sub.attachmentUrl && (
                           <TouchableOpacity

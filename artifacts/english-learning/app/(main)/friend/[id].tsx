@@ -255,17 +255,17 @@ export default function FriendProfileScreen() {
 
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 5,
-            backgroundColor: profile.isOnline ? "#e0e7ff" : "rgba(220,210,255,0.4)",
+            backgroundColor: profile.isOnline ? "#dcfce7" : "rgba(220,210,255,0.4)",
             paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
             marginBottom: 0,
           }}>
             <View style={{
               width: 7, height: 7, borderRadius: 4,
-              backgroundColor: profile.isOnline ? "#4f46e5" : "#94a3b8",
+              backgroundColor: profile.isOnline ? "#22c55e" : "#94a3b8",
             }} />
             <Text style={{
               fontSize: 12, fontWeight: "700",
-              color: profile.isOnline ? "#4338ca" : "#64748b",
+              color: profile.isOnline ? "#15803d" : "#64748b",
             }}>
               {profile.isOnline ? "В сети" : "Не в сети"}
             </Text>

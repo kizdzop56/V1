@@ -67,7 +67,7 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
         <View style={{
           position: "absolute", bottom: 1, right: 1,
           width: 14, height: 14, borderRadius: 7,
-          backgroundColor: item.isOnline ? "#818cf8" : "#94a3b8",
+          backgroundColor: item.isOnline ? "#22c55e" : "#94a3b8",
           borderWidth: 2, borderColor: colors.card,
         }} />
       </View>

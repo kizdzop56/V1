@@ -16,3 +16,5 @@ The user wants the whole app restricted to a purple/violet/indigo/pink family, w
 **Why:** user explicitly asked to remove all colors that "stand out" from the purple theme, keeping only metal tones for medals — this is a strong standing visual constraint for the whole app going forward, not a one-off screen tweak.
 
 **How to apply:** when adding any new color to this app, pick from the mapped tones above (or an adjacent violet/indigo/rose/fuchsia hue) instead of green/orange/red/cyan/yellow. For leaderboard/medal ranks, always use a multi-stop gradient (light highlight → mid → dark shadow) to look like real metal, never a flat fill.
+
+**Second exception:** online/offline user-status dots and badges must stay true green (`#22c55e` dot, `#dcfce7` bg, `#15803d`/`#16a34a` text) for online and gray (`#94a3b8`) for offline — these were mistakenly swept into purple during the palette pass and had to be reverted. Status semantics (online=go/green) override the palette rule here.

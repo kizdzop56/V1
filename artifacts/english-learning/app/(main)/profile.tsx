@@ -413,13 +413,13 @@ function FriendsModal({
                         <View style={{
                           position: "absolute", bottom: 0, right: 0,
                           width: 13, height: 13, borderRadius: 7,
-                          backgroundColor: f.user.isOnline ? "#818cf8" : "#94a3b8",
+                          backgroundColor: f.user.isOnline ? "#22c55e" : "#94a3b8",
                           borderWidth: 2, borderColor: colors.card,
                         }} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
-                        <Text style={{ fontSize: 12, color: f.user.isOnline ? "#4f46e5" : colors.mutedForeground }}>
+                        <Text style={{ fontSize: 12, color: f.user.isOnline ? "#16a34a" : colors.mutedForeground }}>
                           {f.user.isOnline ? "В сети" : `⭐ ${f.user.totalPoints} очков`}
                         </Text>
                       </View>
@@ -476,13 +476,13 @@ function FriendsModal({
                             <View style={{
                               position: "absolute", bottom: 0, right: 0,
                               width: 13, height: 13, borderRadius: 7,
-                              backgroundColor: t.isOnline ? "#818cf8" : "#94a3b8",
+                              backgroundColor: t.isOnline ? "#22c55e" : "#94a3b8",
                               borderWidth: 2, borderColor: colors.card,
                             }} />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>
-                            <Text style={{ fontSize: 12, color: t.isOnline ? "#4f46e5" : colors.mutedForeground }}>
+                            <Text style={{ fontSize: 12, color: t.isOnline ? "#16a34a" : colors.mutedForeground }}>
                               {t.isOnline ? "В сети" : "🎓 Учитель"}
                             </Text>
                           </View>
@@ -1235,12 +1235,12 @@ export default function ProfileScreen() {
           {/* Online status badge */}
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 5,
-            backgroundColor: "#e0e7ff",
+            backgroundColor: "#dcfce7",
             paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20,
             marginBottom: 6,
           }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#4f46e5" }} />
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#4338ca" }}>В сети</Text>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#22c55e" }} />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#15803d" }}>В сети</Text>
           </View>
 
           <View style={s.badgeRow}>
