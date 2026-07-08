@@ -282,7 +282,7 @@ export default function CreateAssignmentScreen() {
       borderWidth: 1, borderColor: colors.border, marginBottom: 12,
     },
     timerInput: {
-      backgroundColor: colors.card, borderWidth: 1.5, borderColor: "#f59e0b",
+      backgroundColor: colors.card, borderWidth: 1.5, borderColor: "#ec4899",
       borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
       fontSize: 18, fontWeight: "800", color: colors.foreground,
       width: 80, textAlign: "center",
@@ -301,7 +301,7 @@ export default function CreateAssignmentScreen() {
     },
     uploadedRow: {
       flexDirection: "row", alignItems: "center", gap: 10,
-      backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#86efac",
+      backgroundColor: "#eef2ff", borderWidth: 1, borderColor: "#a5b4fc",
       borderRadius: 12, padding: 12, marginBottom: 8,
     },
     imagePreview: {
@@ -441,8 +441,8 @@ export default function CreateAssignmentScreen() {
           <Text style={s.headerTitle}>Создать задание</Text>
         </View>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 16 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#f0fdf4", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#86efac" }}>
-            <Feather name="check" size={36} color="#22c55e" />
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#eef2ff", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#a5b4fc" }}>
+            <Feather name="check" size={36} color="#818cf8" />
           </View>
           <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground }}>Задание создано!</Text>
           <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Возвращаемся к заданиям…</Text>
@@ -514,8 +514,8 @@ export default function CreateAssignmentScreen() {
           <Text style={s.sectionTitle}>Таймер</Text>
           <View style={s.timerRow}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#f59e0b20", justifyContent: "center", alignItems: "center" }}>
-                <Feather name="clock" size={18} color="#f59e0b" />
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#ec489920", justifyContent: "center", alignItems: "center" }}>
+                <Feather name="clock" size={18} color="#ec4899" />
               </View>
               <View>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>Ограничение по времени</Text>
@@ -525,13 +525,13 @@ export default function CreateAssignmentScreen() {
               </View>
             </View>
             <Switch value={timerEnabled} onValueChange={v => set("timerEnabled", v)}
-              trackColor={{ false: colors.border, true: "#f59e0b" }} thumbColor="#fff" />
+              trackColor={{ false: colors.border, true: "#ec4899" }} thumbColor="#fff" />
           </View>
           {timerEnabled && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10,
               backgroundColor: colors.card, borderRadius: 14, padding: 14,
-              borderWidth: 1, borderColor: "#f59e0b40", marginBottom: 12 }}>
-              <Feather name="clock" size={16} color="#f59e0b" />
+              borderWidth: 1, borderColor: "#ec489940", marginBottom: 12 }}>
+              <Feather name="clock" size={16} color="#ec4899" />
               <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: "600" }}>Время:</Text>
               <TextInput style={s.timerInput} value={timerMinutes}
                 onChangeText={v => set("timerMinutes", v.replace(/[^0-9]/g, ""))}
@@ -565,7 +565,7 @@ export default function CreateAssignmentScreen() {
           },
           uploadedAudioName, () => setSt(p => ({ ...p, audioUrl: "", uploadedAudioName: "" })),
           audioInputRef,
-          "#06b6d4", "headphones",
+          "#6366f1", "headphones",
           "Аудио",
           "https://example.com/audio.mp3",
           "audio/*",
@@ -581,7 +581,7 @@ export default function CreateAssignmentScreen() {
           },
           uploadedVideoName, () => setSt(p => ({ ...p, videoUrl: "", uploadedVideoName: "" })),
           videoInputRef,
-          "#f59e0b", "video",
+          "#ec4899", "video",
           type === "video" ? "Видео" : "Видео (необязательно)",
           "https://youtube.com/watch?v=... или https://example.com/video.mp4",
           "video/*",
@@ -630,7 +630,7 @@ export default function CreateAssignmentScreen() {
               },
               uploadedAudioName, () => setSt(p => ({ ...p, audioUrl: "", uploadedAudioName: "" })),
               audioInputRef,
-              "#06b6d4", "headphones",
+              "#6366f1", "headphones",
               "Аудио к заданию (необязательно)",
               "https://example.com/audio.mp3",
               "audio/*",
@@ -644,7 +644,7 @@ export default function CreateAssignmentScreen() {
               },
               uploadedVideoName, () => setSt(p => ({ ...p, videoUrl: "", uploadedVideoName: "" })),
               videoInputRef,
-              "#f59e0b", "video",
+              "#ec4899", "video",
               "Видео к заданию (необязательно)",
               "https://youtube.com/watch?v=... или https://example.com/video.mp4",
               "video/*",
@@ -732,7 +732,7 @@ export default function CreateAssignmentScreen() {
         )}
 
         {!!formError && (
-          <View style={{ backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#fca5a5" }}>
+          <View style={{ backgroundColor: "#fff1f2", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#fda4af" }}>
             <Text style={{ color: colors.destructive, fontSize: 14, fontWeight: "600" }}>{formError}</Text>
           </View>
         )}

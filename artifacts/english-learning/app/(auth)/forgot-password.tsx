@@ -70,11 +70,11 @@ export default function ForgotPasswordScreen() {
     btnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
     error: { fontSize: 14, color: colors.destructive, textAlign: "center", marginBottom: 14 },
     successBox: {
-      backgroundColor: "#f0fdf4", borderRadius: 16, padding: 24,
-      borderWidth: 1.5, borderColor: "#86efac", alignItems: "center",
+      backgroundColor: "#eef2ff", borderRadius: 16, padding: 24,
+      borderWidth: 1.5, borderColor: "#a5b4fc", alignItems: "center",
     },
-    successTitle: { fontSize: 20, fontWeight: "800", color: "#15803d", marginTop: 12, marginBottom: 8 },
-    successText: { fontSize: 15, color: "#166534", textAlign: "center", lineHeight: 22 },
+    successTitle: { fontSize: 20, fontWeight: "800", color: "#4338ca", marginTop: 12, marginBottom: 8 },
+    successText: { fontSize: 15, color: "#312e81", textAlign: "center", lineHeight: 22 },
   });
 
   return (
@@ -121,7 +121,7 @@ export default function ForgotPasswordScreen() {
             </>
           ) : (
             <View style={s.successBox}>
-              <Feather name="check-circle" size={48} color="#16a34a" />
+              <Feather name="check-circle" size={48} color="#4f46e5" />
               <Text style={s.successTitle}>Письмо отправлено!</Text>
               <Text style={s.successText}>
                 Если этот email зарегистрирован, вы получите письмо со ссылкой для сброса пароля.{"\n\n"}

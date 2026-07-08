@@ -82,8 +82,8 @@ export default function VerifyEmailScreen() {
   if (status === "success") {
     return (
       <View style={s.container}>
-        <View style={[s.icon, { backgroundColor: "#f0fdf4" }]}>
-          <Feather name="check-circle" size={40} color="#16a34a" />
+        <View style={[s.icon, { backgroundColor: "#eef2ff" }]}>
+          <Feather name="check-circle" size={40} color="#4f46e5" />
         </View>
         <Text style={s.title}>Email подтверждён!</Text>
         <Text style={s.sub}>Вы успешно подтвердили ваш email. Перенаправляем в приложение...</Text>
@@ -94,8 +94,8 @@ export default function VerifyEmailScreen() {
 
   return (
     <View style={s.container}>
-      <View style={[s.icon, { backgroundColor: "#fef2f2" }]}>
-        <Feather name="x-circle" size={40} color="#dc2626" />
+      <View style={[s.icon, { backgroundColor: "#fff1f2" }]}>
+        <Feather name="x-circle" size={40} color="#be123c" />
       </View>
       <Text style={s.title}>Ссылка недействительна</Text>
       <Text style={s.sub}>{errorMsg || "Ссылка истекла или уже была использована."}</Text>

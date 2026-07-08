@@ -27,7 +27,7 @@ async function apiFetch(path: string) {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
+  text_test: "#8b5cf6", audio: "#6366f1", reading: "#6366f1", video: "#ec4899", free_form: "#ec4899",
 };
 const TYPE_LABELS: Record<string, string> = {
   text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",

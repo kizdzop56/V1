@@ -255,17 +255,17 @@ export default function FriendProfileScreen() {
 
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 5,
-            backgroundColor: profile.isOnline ? "#dcfce7" : "rgba(220,210,255,0.4)",
+            backgroundColor: profile.isOnline ? "#e0e7ff" : "rgba(220,210,255,0.4)",
             paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
             marginBottom: 0,
           }}>
             <View style={{
               width: 7, height: 7, borderRadius: 4,
-              backgroundColor: profile.isOnline ? "#16a34a" : "#94a3b8",
+              backgroundColor: profile.isOnline ? "#4f46e5" : "#94a3b8",
             }} />
             <Text style={{
               fontSize: 12, fontWeight: "700",
-              color: profile.isOnline ? "#15803d" : "#64748b",
+              color: profile.isOnline ? "#4338ca" : "#64748b",
             }}>
               {profile.isOnline ? "В сети" : "Не в сети"}
             </Text>
@@ -304,8 +304,8 @@ export default function FriendProfileScreen() {
         {/* ── Stats row ── */}
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
           {[
-            { icon: "star", color: "#f59e0b", value: profile.totalPoints, label: "Очки" },
-            { icon: "check-circle", color: "#10b981", value: profile.completedAssignments, label: "Заданий" },
+            { icon: "star", color: "#ec4899", value: profile.totalPoints, label: "Очки" },
+            { icon: "check-circle", color: "#6366f1", value: profile.completedAssignments, label: "Заданий" },
             { icon: "clock", color: colors.primary, value: formatTime(profile.totalTimeMinutes ?? 0), label: "Время" },
           ].map((stat) => (
             <View key={stat.label} style={{
@@ -351,19 +351,19 @@ function FriendRequestCard({
     return (
       <View style={{
         flexDirection: "row", alignItems: "center", gap: 12,
-        backgroundColor: "#dcfce7", borderRadius: 16, padding: 16,
-        borderWidth: 1.5, borderColor: "#86efac", marginBottom: 16,
+        backgroundColor: "#e0e7ff", borderRadius: 16, padding: 16,
+        borderWidth: 1.5, borderColor: "#a5b4fc", marginBottom: 16,
       }}>
         <View style={{
           width: 40, height: 40, borderRadius: 20,
-          backgroundColor: "#16a34a20",
+          backgroundColor: "#4f46e520",
           justifyContent: "center", alignItems: "center",
         }}>
-          <Feather name="user-check" size={20} color="#16a34a" />
+          <Feather name="user-check" size={20} color="#4f46e5" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, fontWeight: "800", color: "#15803d" }}>Вы друзья</Text>
-          <Text style={{ fontSize: 12, color: "#16a34a" }}>с {name}</Text>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: "#4338ca" }}>Вы друзья</Text>
+          <Text style={{ fontSize: 12, color: "#4f46e5" }}>с {name}</Text>
         </View>
       </View>
     );
@@ -373,19 +373,19 @@ function FriendRequestCard({
     return (
       <View style={{
         flexDirection: "row", alignItems: "center", gap: 12,
-        backgroundColor: "#fef9c3", borderRadius: 16, padding: 16,
-        borderWidth: 1.5, borderColor: "#fde047", marginBottom: 16,
+        backgroundColor: "#fce7f3", borderRadius: 16, padding: 16,
+        borderWidth: 1.5, borderColor: "#fbcfe8", marginBottom: 16,
       }}>
         <View style={{
           width: 40, height: 40, borderRadius: 20,
-          backgroundColor: "#ca8a0420",
+          backgroundColor: "#9d174d20",
           justifyContent: "center", alignItems: "center",
         }}>
-          <Feather name="clock" size={20} color="#ca8a04" />
+          <Feather name="clock" size={20} color="#9d174d" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, fontWeight: "800", color: "#a16207" }}>Запрос отправлен</Text>
-          <Text style={{ fontSize: 12, color: "#ca8a04" }}>Ожидаем ответа от {name}</Text>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: "#9d174d" }}>Запрос отправлен</Text>
+          <Text style={{ fontSize: 12, color: "#9d174d" }}>Ожидаем ответа от {name}</Text>
         </View>
       </View>
     );

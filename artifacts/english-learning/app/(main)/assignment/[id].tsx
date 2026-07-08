@@ -77,7 +77,7 @@ const CARD_BG = "#ffffff";
 const PRIMARY = "#7c3aed";
 const PRIMARY_LIGHT = "#f5f3ff";
 const PRIMARY_DARK = "#6d28d9";
-const ORANGE = "#f97316";
+const ORANGE = "#ec4899";
 const AUDIO_BG = "#e9e3fb";
 const QUESTION_BG = "#efe9fe";
 const WAVE_START = "#6d28d9";
@@ -92,8 +92,8 @@ const lerpColor = (c1: string, c2: string, t: number) => {
   const b = Math.round(b1 + (b2 - b1) * clamp);
   return `rgb(${r}, ${g}, ${b})`;
 };
-const SUCCESS = "#22c55e";
-const DANGER = "#ef4444";
+const SUCCESS = "#818cf8";
+const DANGER = "#e11d48";
 const TEXT_DARK = "#1e1b4b";
 const TEXT_MID = "#4b5563";
 const TEXT_MUTED = "#94a3b8";
@@ -398,9 +398,9 @@ export default function AssignmentDetailScreen() {
               <View style={[s.badge, { backgroundColor: "#ede9fe" }]}>
                 <Text style={[s.badgeText, { color: PRIMARY }]}>{TYPE_LABELS[assignment.type] ?? assignment.type}</Text>
               </View>
-              <View style={[s.badge, { backgroundColor: "#fef3c7" }]}>
-                <Feather name="star" size={11} color="#92400e" />
-                <Text style={[s.badgeText, { color: "#92400e" }]}>{assignment.points > 0 ? `${assignment.points} очков` : "Баллы по проверке"}</Text>
+              <View style={[s.badge, { backgroundColor: "#fce7f3" }]}>
+                <Feather name="star" size={11} color="#9d174d" />
+                <Text style={[s.badgeText, { color: "#9d174d" }]}>{assignment.points > 0 ? `${assignment.points} очков` : "Баллы по проверке"}</Text>
               </View>
             </View>
           </View>
@@ -416,7 +416,7 @@ export default function AssignmentDetailScreen() {
             <View style={[s.card, { backgroundColor: AUDIO_BG }]}>
               <Text style={s.sectionTitle}>Аудио</Text>
               {Platform.OS === "web" ? (/* @ts-ignore */ <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />) : (
-                <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#06b6d4" }]} onPress={openMedia}>
+                <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#6366f1" }]} onPress={openMedia}>
                   <Feather name="headphones" size={16} color="#fff" />
                   <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть аудио</Text>
                 </TouchableOpacity>
@@ -432,7 +432,7 @@ export default function AssignmentDetailScreen() {
                   <iframe src={youtubeEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
                 </View>
               )}
-              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
+              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#ec4899" }]} onPress={openMedia}>
                 <Feather name="play-circle" size={16} color="#fff" />
                 <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть видео</Text>
               </TouchableOpacity>
@@ -446,7 +446,7 @@ export default function AssignmentDetailScreen() {
                 <View key={q.id} style={[s.card, { marginBottom: 10 }]}>
                   <Text style={[s.bodyText, { fontWeight: "600", color: TEXT_DARK, marginBottom: 8 }]}>{i + 1}. {q.text}</Text>
                   {q.correctAnswer && (
-                    <View style={{ backgroundColor: "#f0fdf4", borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: SUCCESS }}>
+                    <View style={{ backgroundColor: "#eef2ff", borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: SUCCESS }}>
                       <Text style={{ color: SUCCESS, fontWeight: "600", fontSize: 14 }}>✓ {q.correctAnswer}</Text>
                     </View>
                   )}
@@ -485,7 +485,7 @@ export default function AssignmentDetailScreen() {
           <View style={[s.card, { alignItems: "center", paddingVertical: 30, marginBottom: 16 }]}>
             <View style={{
               width: 90, height: 90, borderRadius: 45, marginBottom: 16,
-              backgroundColor: passed ? "#f0fdf4" : "#fef2f2",
+              backgroundColor: passed ? "#eef2ff" : "#fff1f2",
               borderWidth: 3, borderColor: passed ? SUCCESS : DANGER,
               justifyContent: "center", alignItems: "center",
             }}>
@@ -502,9 +502,9 @@ export default function AssignmentDetailScreen() {
               </Text>
             )}
             {result.pointsEarned > 0 && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fef3c7", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}>
-                <Feather name="star" size={15} color="#92400e" />
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400e" }}>+{result.pointsEarned} очков!</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fce7f3", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}>
+                <Feather name="star" size={15} color="#9d174d" />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#9d174d" }}>+{result.pointsEarned} очков!</Text>
               </View>
             )}
             {isFreeForm && (
@@ -637,7 +637,7 @@ export default function AssignmentDetailScreen() {
       >
         {/* Timer expired banner */}
         {timerExpired && !submitted && (
-          <View style={{ backgroundColor: "#fef2f2", borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: "#fca5a5", marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ backgroundColor: "#fff1f2", borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: "#fda4af", marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Feather name="clock" size={18} color={DANGER} />
             <Text style={{ fontSize: 14, fontWeight: "700", color: DANGER, flex: 1 }}>
               {submitting ? "Ответы отправляются…" : "Время вышло!"}
@@ -727,7 +727,7 @@ export default function AssignmentDetailScreen() {
                 <iframe src={youtubeEmbed} style={{ width: "100%", height: 180, border: "none" }} allowFullScreen />
               </View>
             ) : null}
-            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#f59e0b" }]} onPress={openMedia}>
+            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#ec4899" }]} onPress={openMedia}>
               <Feather name="play-circle" size={16} color="#fff" />
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть видео</Text>
             </TouchableOpacity>
@@ -739,7 +739,7 @@ export default function AssignmentDetailScreen() {
           <View style={[s.card, { marginBottom: 12 }]}>
             <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }} onPress={() => setReadingExpanded(e => !e)}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#d1fae5", justifyContent: "center", alignItems: "center" }}>
+                <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#e0e7ff", justifyContent: "center", alignItems: "center" }}>
                   <Feather name="book-open" size={14} color={SUCCESS} />
                 </View>
                 <Text style={[s.sectionTitle, { marginBottom: 0 }]}>Текст для чтения</Text>

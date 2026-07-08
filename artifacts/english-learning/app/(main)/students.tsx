@@ -67,7 +67,7 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
         <View style={{
           position: "absolute", bottom: 1, right: 1,
           width: 14, height: 14, borderRadius: 7,
-          backgroundColor: item.isOnline ? "#22c55e" : "#94a3b8",
+          backgroundColor: item.isOnline ? "#818cf8" : "#94a3b8",
           borderWidth: 2, borderColor: colors.card,
         }} />
       </View>
@@ -80,7 +80,7 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
 
       <View style={{ alignItems: "flex-end", gap: 6 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-          <Feather name="star" size={12} color="#f59e0b" />
+          <Feather name="star" size={12} color="#ec4899" />
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>
             {item.totalPoints}
           </Text>
@@ -172,8 +172,8 @@ function AddByCodeModal({
     } finally { setConfirming(false); }
   };
 
-  const codeBorderColor = error && mode === "code" ? colors.destructive : found && mode === "code" ? "#10b981" : colors.border;
-  const usernameBorderColor = error && mode === "username" ? colors.destructive : found && mode === "username" ? "#10b981" : colors.border;
+  const codeBorderColor = error && mode === "code" ? colors.destructive : found && mode === "code" ? "#6366f1" : colors.border;
+  const usernameBorderColor = error && mode === "username" ? colors.destructive : found && mode === "username" ? "#6366f1" : colors.border;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { onClose(); reset(); }}>
@@ -290,8 +290,8 @@ function AddByCodeModal({
           {!!error && (
             <View style={{
               flexDirection: "row", alignItems: "center", gap: 8,
-              backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, marginBottom: 14,
-              borderWidth: 1, borderColor: "#fecaca",
+              backgroundColor: "#fff1f2", borderRadius: 12, padding: 12, marginBottom: 14,
+              borderWidth: 1, borderColor: "#fda4af",
             }}>
               <Feather name="alert-circle" size={16} color={colors.destructive} />
               <Text style={{ color: colors.destructive, fontSize: 13, flex: 1 }}>{error}</Text>
@@ -301,8 +301,8 @@ function AddByCodeModal({
           {/* Found user card */}
           {found && (
             <View style={{
-              backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14,
-              borderWidth: 1.5, borderColor: "#10b98140",
+              backgroundColor: "#eef2ff", borderRadius: 14, padding: 14,
+              borderWidth: 1.5, borderColor: "#6366f140",
               flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14,
             }}>
               <AnimatedAvatar
@@ -312,11 +312,11 @@ function AddByCodeModal({
                 avatarUrl={found.avatarUrl}
               />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#3730a3" }}>
                   {found.username}{found.name || found.surname ? ` (${[found.name, found.surname].filter(Boolean).join(" ")})` : ""}
                 </Text>
               </View>
-              <Feather name="check-circle" size={26} color="#10b981" />
+              <Feather name="check-circle" size={26} color="#6366f1" />
             </View>
           )}
 
@@ -324,7 +324,7 @@ function AddByCodeModal({
           {found && (
             <TouchableOpacity
               style={{
-                backgroundColor: "#10b981", borderRadius: 14,
+                backgroundColor: "#6366f1", borderRadius: 14,
                 paddingVertical: 15, alignItems: "center", marginBottom: 8,
                 flexDirection: "row", justifyContent: "center", gap: 8,
               }}
@@ -504,8 +504,8 @@ export default function StudentsScreen() {
                 return (
                   <View key={req.requestId} style={{
                     flexDirection: "row", alignItems: "center", gap: 12,
-                    backgroundColor: "#fef3c7", borderRadius: 14, padding: 14,
-                    borderWidth: 1, borderColor: "#fde68a", marginBottom: 8,
+                    backgroundColor: "#fce7f3", borderRadius: 14, padding: 14,
+                    borderWidth: 1, borderColor: "#fbcfe8", marginBottom: 8,
                   }}>
                     <AnimatedAvatar
                       size={46}
@@ -514,18 +514,18 @@ export default function StudentsScreen() {
                       avatarUrl={req.student.avatarUrl}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400e" }}>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: "#9d174d" }}>
                         {req.student.username}{req.student.name || req.student.surname ? ` (${[req.student.name, req.student.surname].filter(Boolean).join(" ")})` : ""}
                       </Text>
-                      <Text style={{ fontSize: 12, color: "#92400eaa" }}>
+                      <Text style={{ fontSize: 12, color: "#9d174daa" }}>
                         Ожидает ответа...
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => handleCancelRequest(req)}
-                      style={{ backgroundColor: "#fca5a5", borderRadius: 8, padding: 8 }}
+                      style={{ backgroundColor: "#fda4af", borderRadius: 8, padding: 8 }}
                     >
-                      <Feather name="x" size={16} color="#7f1d1d" />
+                      <Feather name="x" size={16} color="#881337" />
                     </TouchableOpacity>
                   </View>
                 );

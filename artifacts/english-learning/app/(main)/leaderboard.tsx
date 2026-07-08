@@ -41,9 +41,9 @@ const CATEGORIES: {
   formatValue: (v: number) => string;
   subtitle: string;
 }[] = [
-  { key: "points",      label: "Очки",    icon: "star",         color: "#f59e0b", formatValue: (v) => `${v} ⭐`,                                            subtitle: "Рейтинг по очкам опыта" },
+  { key: "points",      label: "Очки",    icon: "star",         color: "#a855f7", formatValue: (v) => `${v} ⭐`,                                            subtitle: "Рейтинг по очкам опыта" },
   { key: "time",        label: "Время",   icon: "clock",        color: "#6366f1", formatValue: (v) => v >= 60 ? `${Math.floor(v/60)} ч ${v%60} м` : `${v} м`, subtitle: "Кто больше занимался" },
-  { key: "assignments", label: "Задания", icon: "check-circle", color: "#10b981", formatValue: (v) => v > 0 ? `${v}%` : "—",                                subtitle: "Средний процент по всем заданиям" },
+  { key: "assignments", label: "Задания", icon: "check-circle", color: "#c026d3", formatValue: (v) => v > 0 ? `${v}%` : "—",                                subtitle: "Средний процент по всем заданиям" },
 ];
 
 const SCOPE_OPTIONS: { key: Scope; label: string }[] = [
@@ -51,8 +51,13 @@ const SCOPE_OPTIONS: { key: Scope; label: string }[] = [
   { key: "friends", label: "Друзья" },
 ];
 
-// Place colors: gold, silver, bronze
-const PLACE_COLORS = ["#f59e0b", "#94a3b8", "#b45309"];
+// Metallic place colors: gold, silver, bronze — rendered as real metal gradients
+const PLACE_METALS = [
+  { gradient: ["#fff6d0", "#f3cf6a", "#c9971f", "#8a6511"] as const, solid: "#d4af37" }, // gold
+  { gradient: ["#fbfbfc", "#d8dce1", "#a3aab3", "#6f7680"] as const, solid: "#b0b8bf" }, // silver
+  { gradient: ["#f0c497", "#c9803f", "#9a5a24", "#5e3612"] as const, solid: "#c17a3e" }, // bronze
+];
+const PLACE_COLORS = PLACE_METALS.map(m => m.solid);
 
 // ── Avatar component ──────────────────────────────────────────────────
 function Avatar({ entry, size, borderColor }: { entry: CategoryEntry; size: number; borderColor: string }) {
@@ -84,6 +89,7 @@ function PodiumCard({
 }) {
   const avatarSize = isCenter ? 88 : 72;
   const placeColor = PLACE_COLORS[rank - 1];
+  const placeMetal = PLACE_METALS[rank - 1];
 
   if (!entry) {
     return (
@@ -120,20 +126,35 @@ function PodiumCard({
           shadowColor: placeColor, shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.55, shadowRadius: 12, elevation: 8,
         }}>
-          <Avatar entry={entry} size={avatarSize} borderColor={isMe ? "#fff" : placeColor} />
+          {isMe ? (
+            <Avatar entry={entry} size={avatarSize} borderColor="#fff" />
+          ) : (
+            <LinearGradient
+              colors={placeMetal.gradient}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
+              style={{ width: avatarSize + 6, height: avatarSize + 6, borderRadius: (avatarSize + 6) / 2, padding: 3, justifyContent: "center", alignItems: "center" }}
+            >
+              <Avatar entry={entry} size={avatarSize} borderColor="#fff" />
+            </LinearGradient>
+          )}
         </View>
         {/* Place number badge */}
-        <View style={{
-          marginTop: -15,
-          width: 30, height: 30, borderRadius: 15,
-          backgroundColor: placeColor,
-          borderWidth: 2, borderColor: "#fff",
-          justifyContent: "center", alignItems: "center",
-          shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
-        }}>
-          <Text style={{ fontSize: 14, fontWeight: "900", color: "#fff" }}>{rank}</Text>
-        </View>
+        <LinearGradient
+          colors={placeMetal.gradient}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={{
+            marginTop: -15,
+            width: 30, height: 30, borderRadius: 15,
+            borderWidth: 2, borderColor: "#fff",
+            justifyContent: "center", alignItems: "center",
+            shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: "900", color: "#fff", textShadowColor: "rgba(0,0,0,0.35)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }}>{rank}</Text>
+        </LinearGradient>
       </View>
 
       <Text

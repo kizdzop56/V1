@@ -50,9 +50,9 @@ const AVATAR_EMOJIS = [
   "🌟","🚀","⚡","🎯","🎸","🎨","🏆","💎","🔥","🌈",
 ];
 const AVATAR_COLORS = [
-  "#6366f1","#8b5cf6","#ec4899","#ef4444",
-  "#f59e0b","#10b981","#06b6d4","#3b82f6",
-  "#84cc16","#f97316","#64748b","#1e293b",
+  "#6366f1","#8b5cf6","#ec4899","#e11d48",
+  "#ec4899","#6366f1","#6366f1","#6366f1",
+  "#818cf8","#ec4899","#64748b","#1e293b",
 ];
 
 function formatTime(minutes: number) {
@@ -375,7 +375,7 @@ function FriendsModal({
                 <>
                   {/* Incoming requests */}
                   {pending.filter((f) => f.direction === "received").map((f) => (
-                    <View key={f.friendshipId} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: "#fef3c7", borderRadius: 14, padding: 12 }}>
+                    <View key={f.friendshipId} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: "#fce7f3", borderRadius: 14, padding: 12 }}>
                       <AnimatedAvatar
                         size={42}
                         avatarColor={f.user.avatarColor ?? "#6366f1"}
@@ -383,13 +383,13 @@ function FriendsModal({
                         avatarUrl={(f.user as any).avatarUrl}
                       />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400e" }}>{f.user.name}</Text>
-                        <Text style={{ fontSize: 12, color: "#92400e99" }}>Хочет дружить</Text>
+                        <Text style={{ fontSize: 14, fontWeight: "700", color: "#9d174d" }}>{f.user.name}</Text>
+                        <Text style={{ fontSize: 12, color: "#9d174d99" }}>Хочет дружить</Text>
                       </View>
-                      <TouchableOpacity onPress={() => acceptRequest(f.friendshipId)} style={{ backgroundColor: "#10b981", borderRadius: 8, padding: 6 }}>
+                      <TouchableOpacity onPress={() => acceptRequest(f.friendshipId)} style={{ backgroundColor: "#6366f1", borderRadius: 8, padding: 6 }}>
                         <Feather name="check" size={16} color="#fff" />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => removeOrDecline(f.friendshipId)} style={{ backgroundColor: "#ef4444", borderRadius: 8, padding: 6 }}>
+                      <TouchableOpacity onPress={() => removeOrDecline(f.friendshipId)} style={{ backgroundColor: "#e11d48", borderRadius: 8, padding: 6 }}>
                         <Feather name="x" size={16} color="#fff" />
                       </TouchableOpacity>
                     </View>
@@ -413,13 +413,13 @@ function FriendsModal({
                         <View style={{
                           position: "absolute", bottom: 0, right: 0,
                           width: 13, height: 13, borderRadius: 7,
-                          backgroundColor: f.user.isOnline ? "#22c55e" : "#94a3b8",
+                          backgroundColor: f.user.isOnline ? "#818cf8" : "#94a3b8",
                           borderWidth: 2, borderColor: colors.card,
                         }} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
-                        <Text style={{ fontSize: 12, color: f.user.isOnline ? "#16a34a" : colors.mutedForeground }}>
+                        <Text style={{ fontSize: 12, color: f.user.isOnline ? "#4f46e5" : colors.mutedForeground }}>
                           {f.user.isOnline ? "В сети" : `⭐ ${f.user.totalPoints} очков`}
                         </Text>
                       </View>
@@ -476,13 +476,13 @@ function FriendsModal({
                             <View style={{
                               position: "absolute", bottom: 0, right: 0,
                               width: 13, height: 13, borderRadius: 7,
-                              backgroundColor: t.isOnline ? "#22c55e" : "#94a3b8",
+                              backgroundColor: t.isOnline ? "#818cf8" : "#94a3b8",
                               borderWidth: 2, borderColor: colors.card,
                             }} />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>
-                            <Text style={{ fontSize: 12, color: t.isOnline ? "#16a34a" : colors.mutedForeground }}>
+                            <Text style={{ fontSize: 12, color: t.isOnline ? "#4f46e5" : colors.mutedForeground }}>
                               {t.isOnline ? "В сети" : "🎓 Учитель"}
                             </Text>
                           </View>
@@ -533,7 +533,7 @@ function FriendsModal({
                       style={{
                         backgroundColor: colors.card, borderRadius: 14,
                         borderWidth: 2,
-                        borderColor: addError ? colors.destructive : found ? "#10b981" : colors.border,
+                        borderColor: addError ? colors.destructive : found ? "#6366f1" : colors.border,
                         paddingHorizontal: 16, paddingVertical: 16,
                         fontSize: 28, fontWeight: "900", letterSpacing: 8,
                         color: colors.foreground, textAlign: "center", textTransform: "uppercase",
@@ -566,7 +566,7 @@ function FriendsModal({
                       style={{
                         backgroundColor: colors.card, borderRadius: 14,
                         borderWidth: 2,
-                        borderColor: addError ? colors.destructive : found ? "#10b981" : colors.border,
+                        borderColor: addError ? colors.destructive : found ? "#6366f1" : colors.border,
                         paddingHorizontal: 16, paddingVertical: 14,
                         fontSize: 16, color: colors.foreground,
                       }}
@@ -590,8 +590,8 @@ function FriendsModal({
               {!!addError && (
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 8,
-                  backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, marginBottom: 12,
-                  borderWidth: 1, borderColor: "#fecaca",
+                  backgroundColor: "#fff1f2", borderRadius: 12, padding: 12, marginBottom: 12,
+                  borderWidth: 1, borderColor: "#fda4af",
                 }}>
                   <Feather name="alert-circle" size={16} color={colors.destructive} />
                   <Text style={{ color: colors.destructive, fontSize: 13, flex: 1 }}>{addError}</Text>
@@ -602,8 +602,8 @@ function FriendsModal({
               {found && (
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 12,
-                  backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14,
-                  marginBottom: 14, borderWidth: 1.5, borderColor: "#10b98140",
+                  backgroundColor: "#eef2ff", borderRadius: 14, padding: 14,
+                  marginBottom: 14, borderWidth: 1.5, borderColor: "#6366f140",
                 }}>
                   <AnimatedAvatar
                     size={48}
@@ -612,10 +612,10 @@ function FriendsModal({
                     avatarUrl={found.avatarUrl}
                   />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#065f46" }}>{found.name}</Text>
-                    <Text style={{ fontSize: 13, color: "#065f46bb" }}>@{found.username}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#3730a3" }}>{found.name}</Text>
+                    <Text style={{ fontSize: 13, color: "#3730a3bb" }}>@{found.username}</Text>
                   </View>
-                  <Feather name="check-circle" size={24} color="#10b981" />
+                  <Feather name="check-circle" size={24} color="#6366f1" />
                 </View>
               )}
 
@@ -623,7 +623,7 @@ function FriendsModal({
               {found && (
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#10b981", borderRadius: 14, paddingVertical: 15,
+                    backgroundColor: "#6366f1", borderRadius: 14, paddingVertical: 15,
                     alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8,
                   }}
                   onPress={sendRequest} disabled={confirming}
@@ -1100,9 +1100,9 @@ export default function ProfileScreen() {
 
     logoutBtn: {
       marginHorizontal: 20, marginBottom: 8,
-      backgroundColor: "#fef2f2", borderRadius: 14,
+      backgroundColor: "#fff1f2", borderRadius: 14,
       padding: 16, alignItems: "center",
-      borderWidth: 1, borderColor: "#fecaca",
+      borderWidth: 1, borderColor: "#fda4af",
     },
     logoutText: { fontSize: 15, fontWeight: "700", color: colors.destructive },
   });
@@ -1158,7 +1158,7 @@ export default function ProfileScreen() {
             {avatarUrl && (
               <TouchableOpacity
                 onPress={handleRemovePhoto}
-                style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderRadius: 14, backgroundColor: "#fef2f2", paddingHorizontal: 16, marginBottom: 10 }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderRadius: 14, backgroundColor: "#fff1f2", paddingHorizontal: 16, marginBottom: 10 }}
               >
                 <Feather name="trash-2" size={20} color={colors.destructive} />
                 <Text style={{ fontSize: 16, fontWeight: "700", color: colors.destructive }}>Удалить фото</Text>
@@ -1214,7 +1214,7 @@ export default function ProfileScreen() {
               ) : (
                 <>
                   <TouchableOpacity onPress={handleUsernameSave}>
-                    <Feather name="check" size={18} color="#10b981" />
+                    <Feather name="check" size={18} color="#6366f1" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setUsernameInput(username); setEditingUsername(false); }}>
                     <Feather name="x" size={18} color={colors.destructive} />
@@ -1235,12 +1235,12 @@ export default function ProfileScreen() {
           {/* Online status badge */}
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 5,
-            backgroundColor: "#dcfce7",
+            backgroundColor: "#e0e7ff",
             paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20,
             marginBottom: 6,
           }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#16a34a" }} />
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#15803d" }}>В сети</Text>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#4f46e5" }} />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#4338ca" }}>В сети</Text>
           </View>
 
           <View style={s.badgeRow}>
@@ -1252,9 +1252,9 @@ export default function ProfileScreen() {
             {(() => {
               const age = calcAge(user.dateOfBirth);
               return age !== null ? (
-                <View style={[s.badge, { backgroundColor: "#0ea5e918" }]}>
-                  <Feather name="calendar" size={12} color="#0ea5e9" />
-                  <Text style={[s.badgeText, { color: "#0ea5e9" }]}>{ageWord(age)}</Text>
+                <View style={[s.badge, { backgroundColor: "#6366f118" }]}>
+                  <Feather name="calendar" size={12} color="#6366f1" />
+                  <Text style={[s.badgeText, { color: "#6366f1" }]}>{ageWord(age)}</Text>
                 </View>
               ) : null;
             })()}
@@ -1296,7 +1296,7 @@ export default function ProfileScreen() {
                 setTimeout(() => setCodeCopied(false), 2000);
               }}
               style={{
-                backgroundColor: codeCopied ? "#10b981" : colors.primary,
+                backgroundColor: codeCopied ? "#6366f1" : colors.primary,
                 borderRadius: 10, padding: 10,
               }}
             >
@@ -1344,9 +1344,9 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => respondToTeacherRequest(req.requestId, true)}
-                    style={{ backgroundColor: "#10b981" + "20", borderRadius: 8, padding: 8 }}
+                    style={{ backgroundColor: "#6366f1" + "20", borderRadius: 8, padding: 8 }}
                   >
-                    <Feather name="check" size={16} color="#10b981" />
+                    <Feather name="check" size={16} color="#6366f1" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1400,12 +1400,12 @@ export default function ProfileScreen() {
               <Text style={s.sectionTitle}>Мои достижения</Text>
               <View style={s.statsRow}>
                 <View style={s.statCard}>
-                  <Feather name="star" size={22} color="#f59e0b" />
+                  <Feather name="star" size={22} color="#ec4899" />
                   <Text style={s.statValue}>{achievementStats.totalPoints}</Text>
                   <Text style={s.statLabel}>Очки</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Feather name="check-circle" size={22} color="#10b981" />
+                  <Feather name="check-circle" size={22} color="#6366f1" />
                   <Text style={s.statValue}>{achievementStats.completedAssignments}</Text>
                   <Text style={s.statLabel}>Заданий</Text>
                 </View>
@@ -1486,7 +1486,7 @@ export default function ProfileScreen() {
                 {pendingCount > 0 && (
                   <View style={{
                     minWidth: 22, height: 22, borderRadius: 11,
-                    backgroundColor: "#ef4444", justifyContent: "center", alignItems: "center",
+                    backgroundColor: "#e11d48", justifyContent: "center", alignItems: "center",
                     paddingHorizontal: 5,
                   }}>
                     <Text style={{ fontSize: 12, fontWeight: "800", color: "#fff" }}>{pendingCount}</Text>

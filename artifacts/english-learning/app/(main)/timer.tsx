@@ -83,8 +83,8 @@ export default function TimerScreen() {
 
   const STATS = [
     { icon: "clock" as const,      color: "#6366f1", label: "Всего в приложении", value: formatHM(totalMinutes).value + " " + formatHM(totalMinutes).unit },
-    { icon: "activity" as const,   color: "#10b981", label: "Текущая сессия",     value: formatSeconds(sessionSeconds) },
-    { icon: "star" as const,       color: "#f59e0b", label: "Очки опыта",         value: String((user as any)?.totalPoints ?? 0) },
+    { icon: "activity" as const,   color: "#6366f1", label: "Текущая сессия",     value: formatSeconds(sessionSeconds) },
+    { icon: "star" as const,       color: "#ec4899", label: "Очки опыта",         value: String((user as any)?.totalPoints ?? 0) },
     { icon: "check-circle" as const,color: "#8b5cf6", label: "Заданий выполнено", value: String((user as any)?.completedAssignments ?? 0) },
   ];
 
@@ -136,24 +136,24 @@ export default function TimerScreen() {
 
         {/* Live session card */}
         <View style={{
-          backgroundColor: "#10b981" + "12",
+          backgroundColor: "#6366f1" + "12",
           borderRadius: 18, padding: 20,
-          borderWidth: 1.5, borderColor: "#10b981" + "40",
+          borderWidth: 1.5, borderColor: "#6366f1" + "40",
           marginBottom: 16,
           flexDirection: "row", alignItems: "center", gap: 14,
         }}>
           <View style={{
             width: 50, height: 50, borderRadius: 25,
-            backgroundColor: "#10b981" + "20",
+            backgroundColor: "#6366f1" + "20",
             justifyContent: "center", alignItems: "center",
           }}>
-            <Feather name="activity" size={24} color="#10b981" />
+            <Feather name="activity" size={24} color="#6366f1" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#10b981" + "99", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#6366f1" + "99", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>
               Текущая сессия
             </Text>
-            <Text style={{ fontSize: 32, fontWeight: "900", color: "#10b981", letterSpacing: 1 }}>
+            <Text style={{ fontSize: 32, fontWeight: "900", color: "#6366f1", letterSpacing: 1 }}>
               {formatSeconds(sessionSeconds)}
             </Text>
             <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
@@ -166,9 +166,9 @@ export default function TimerScreen() {
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {[
             { icon: "clock" as const,      color: "#6366f1", label: "Всего",          value: totalValue, unit: totalUnit },
-            { icon: "zap" as const,        color: "#f59e0b", label: "Очки XP",        value: String((user as any)?.totalPoints ?? 0), unit: "очков" },
+            { icon: "zap" as const,        color: "#ec4899", label: "Очки XP",        value: String((user as any)?.totalPoints ?? 0), unit: "очков" },
             { icon: "check-circle" as const,color: "#8b5cf6", label: "Заданий",       value: String((user as any)?.completedAssignments ?? 0), unit: "выполнено" },
-            { icon: "award" as const,      color: "#ef4444", label: "Серия",          value: String((user as any)?.loginStreak ?? 0), unit: "дней" },
+            { icon: "award" as const,      color: "#e11d48", label: "Серия",          value: String((user as any)?.loginStreak ?? 0), unit: "дней" },
           ].map(stat => (
             <View
               key={stat.label}

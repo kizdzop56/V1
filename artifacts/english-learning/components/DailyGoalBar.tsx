@@ -72,8 +72,8 @@ const GOAL_TYPES: GoalType[] = [
     emoji: "📝",
     label: "Выполни задания",
     subLabel: "Выполни 2 задания сегодня",
-    color: "#10b981",
-    bgColor: "#d1fae5",
+    color: "#6366f1",
+    bgColor: "#e0e7ff",
     reward: "+30 XP",
     getTarget: () => 2,
     getProgress: ({ todayCompletions }) => todayCompletions,
@@ -100,8 +100,8 @@ const GOAL_TYPES: GoalType[] = [
     emoji: "🔥",
     label: "Активное обучение",
     subLabel: "Занимайся усиленно",
-    color: "#f59e0b",
-    bgColor: "#fef3c7",
+    color: "#ec4899",
+    bgColor: "#fce7f3",
     reward: "+20 XP",
     getTarget: (goalMinutes) => goalMinutes,
     getProgress: ({ todayMinutes }) => todayMinutes,
@@ -114,8 +114,8 @@ const GOAL_TYPES: GoalType[] = [
     emoji: "🏆",
     label: "Марафон заданий",
     subLabel: "Выполни 3 задания сегодня",
-    color: "#ef4444",
-    bgColor: "#fee2e2",
+    color: "#e11d48",
+    bgColor: "#ffe4e6",
     reward: "+40 XP",
     getTarget: () => 3,
     getProgress: ({ todayCompletions }) => todayCompletions,
@@ -128,8 +128,8 @@ const GOAL_TYPES: GoalType[] = [
     emoji: "⚡",
     label: "Спринт знаний",
     subLabel: "Интенсивная сессия",
-    color: "#06b6d4",
-    bgColor: "#cffafe",
+    color: "#6366f1",
+    bgColor: "#e0e7ff",
     reward: "+20 XP",
     getTarget: (goalMinutes) => goalMinutes,
     getProgress: ({ todayMinutes }) => todayMinutes,
@@ -201,8 +201,8 @@ export function DailyGoalBar({
     }
   }, [done, shimmerAnim]);
 
-  const barColor = done ? "#10b981" : goalType.color;
-  const bgColor = done ? "#d1fae5" : goalType.bgColor;
+  const barColor = done ? "#6366f1" : goalType.color;
+  const bgColor = done ? "#e0e7ff" : goalType.bgColor;
   const iconName = done ? "check-circle" : goalType.emoji === "⏱" ? "clock" : goalType.emoji === "📝" ? "book-open" : goalType.emoji === "🎤" ? "mic" : goalType.emoji === "🔥" ? "zap" : goalType.emoji === "🏆" ? "award" : goalType.emoji === "⚡" ? "zap" : "message-circle";
 
   const handleGoalChange = async (minutes: number) => {
@@ -223,11 +223,11 @@ export function DailyGoalBar({
       <TouchableOpacity
         onPress={goalType.isTimeType ? () => setShowPicker(true) : undefined}
         activeOpacity={goalType.isTimeType ? 0.85 : 1}
-        style={[styles.container, { backgroundColor: colors.card, borderColor: done ? "#10b981" + "60" : goalType.color + "30" }]}
+        style={[styles.container, { backgroundColor: colors.card, borderColor: done ? "#6366f1" + "60" : goalType.color + "30" }]}
       >
         {/* Day badge */}
         <View style={[styles.dayBadge, { backgroundColor: bgColor }]}>
-          <Text style={[styles.dayBadgeText, { color: done ? "#10b981" : goalType.color }]}>
+          <Text style={[styles.dayBadgeText, { color: done ? "#6366f1" : goalType.color }]}>
             {done ? "✓ Цель выполнена" : "Цель дня"}
           </Text>
         </View>
@@ -245,7 +245,7 @@ export function DailyGoalBar({
             </Text>
           </View>
           <View style={[styles.rewardBadge, { backgroundColor: bgColor }]}>
-            <Text style={[styles.rewardText, { color: done ? "#10b981" : goalType.color }]}>
+            <Text style={[styles.rewardText, { color: done ? "#6366f1" : goalType.color }]}>
               {goalType.reward}
             </Text>
           </View>

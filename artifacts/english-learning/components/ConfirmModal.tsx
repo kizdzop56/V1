@@ -24,11 +24,11 @@ export default function ConfirmModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={s.overlay}>
         <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[s.iconWrap, { backgroundColor: destructive ? "#fef2f2" : colors.primary + "15" }]}>
+          <View style={[s.iconWrap, { backgroundColor: destructive ? "#fff1f2" : colors.primary + "15" }]}>
             <Feather
               name={destructive ? "trash-2" : "help-circle"}
               size={26}
-              color={destructive ? "#dc2626" : colors.primary}
+              color={destructive ? "#be123c" : colors.primary}
             />
           </View>
           <Text style={[s.title, { color: colors.foreground }]}>{title}</Text>
@@ -41,7 +41,7 @@ export default function ConfirmModal({
               <Text style={[s.btnText, { color: colors.mutedForeground }]}>{cancelText}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[s.btn, s.confirmBtn, { backgroundColor: destructive ? "#dc2626" : colors.primary }]}
+              style={[s.btn, s.confirmBtn, { backgroundColor: destructive ? "#be123c" : colors.primary }]}
               onPress={onConfirm}
             >
               <Text style={[s.btnText, { color: "#fff" }]}>{confirmText}</Text>

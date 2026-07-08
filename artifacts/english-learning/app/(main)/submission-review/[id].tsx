@@ -28,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",
 };
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
+  text_test: "#8b5cf6", audio: "#6366f1", reading: "#6366f1", video: "#ec4899", free_form: "#ec4899",
 };
 
 type Answer = {
@@ -127,7 +127,7 @@ export default function SubmissionReviewScreen() {
     </View>
   );
 
-  const scoreColor = data.score >= 70 ? "#10b981" : data.score >= 40 ? "#f59e0b" : "#ef4444";
+  const scoreColor = data.score >= 70 ? "#6366f1" : data.score >= 40 ? "#ec4899" : "#e11d48";
   const color = TYPE_COLORS[data.assignment?.type ?? ""] ?? colors.primary;
   const wrong = data.answers.filter(a => !a.isCorrect);
   const correct = data.answers.filter(a => a.isCorrect);
@@ -182,10 +182,10 @@ export default function SubmissionReviewScreen() {
 
           if (isVideo) {
             return (
-              <View style={{ backgroundColor: "#fef3c7", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#f59e0b40", gap: 8 }}>
+              <View style={{ backgroundColor: "#fce7f3", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#ec489940", gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Feather name="video" size={16} color="#f59e0b" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400e" }}>Видео к заданию</Text>
+                  <Feather name="video" size={16} color="#ec4899" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#9d174d" }}>Видео к заданию</Text>
                 </View>
                 {Platform.OS === "web" && ytEmbed.includes("embed") ? (
                   <View style={{ borderRadius: 10, overflow: "hidden" }}>
@@ -195,7 +195,7 @@ export default function SubmissionReviewScreen() {
                 ) : null}
                 <TouchableOpacity
                   onPress={openUrl}
-                  style={{ backgroundColor: "#f59e0b", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                  style={{ backgroundColor: "#ec4899", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
                 >
                   <Feather name="play-circle" size={16} color="#fff" />
                   <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
@@ -206,10 +206,10 @@ export default function SubmissionReviewScreen() {
 
           if (isAudio) {
             return (
-              <View style={{ backgroundColor: "#ecfeff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#06b6d440", gap: 8 }}>
+              <View style={{ backgroundColor: "#e0e7ff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#6366f140", gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Feather name="headphones" size={16} color="#06b6d4" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#0e7490" }}>Аудио к заданию</Text>
+                  <Feather name="headphones" size={16} color="#6366f1" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#4338ca" }}>Аудио к заданию</Text>
                 </View>
                 {Platform.OS === "web" ? (
                   /* @ts-ignore */
@@ -217,7 +217,7 @@ export default function SubmissionReviewScreen() {
                 ) : (
                   <TouchableOpacity
                     onPress={openUrl}
-                    style={{ backgroundColor: "#06b6d4", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                    style={{ backgroundColor: "#6366f1", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
                   >
                     <Feather name="headphones" size={16} color="#fff" />
                     <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
@@ -240,8 +240,8 @@ export default function SubmissionReviewScreen() {
               <Text style={[s.bigScore, { color: scoreColor }]}>{data.score}%</Text>
             </View>
             <View style={{ alignItems: "flex-end", gap: 6 }}>
-              <View style={{ backgroundColor: "#fef3c7", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#92400e" }}>+{data.pointsEarned} ⭐</Text>
+              <View style={{ backgroundColor: "#fce7f3", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#9d174d" }}>+{data.pointsEarned} ⭐</Text>
               </View>
               <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
                 {new Date(data.submittedAt).toLocaleDateString("ru-RU")}
@@ -251,11 +251,11 @@ export default function SubmissionReviewScreen() {
 
           <View style={s.statsRow}>
             <View style={s.stat}>
-              <Text style={[s.statVal, { color: "#10b981" }]}>{data.correctCount}</Text>
+              <Text style={[s.statVal, { color: "#6366f1" }]}>{data.correctCount}</Text>
               <Text style={s.statLabel}>Правильно</Text>
             </View>
             <View style={s.stat}>
-              <Text style={[s.statVal, { color: "#ef4444" }]}>{data.totalQuestions - data.correctCount}</Text>
+              <Text style={[s.statVal, { color: "#e11d48" }]}>{data.totalQuestions - data.correctCount}</Text>
               <Text style={s.statLabel}>Ошибок</Text>
             </View>
             <View style={s.stat}>
@@ -297,13 +297,13 @@ export default function SubmissionReviewScreen() {
                 )}
               </View>
             ) : (
-              <View style={{ backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#86efac", gap: 8 }}>
+              <View style={{ backgroundColor: "#eef2ff", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#a5b4fc", gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <Feather name="check-circle" size={16} color="#10b981" />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#065f46" }}>Проверено учителем</Text>
+                  <Feather name="check-circle" size={16} color="#6366f1" />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#3730a3" }}>Проверено учителем</Text>
                 </View>
                 {!!data.textAnswer && (
-                  <View style={{ backgroundColor: "#fff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#86efac" }}>
+                  <View style={{ backgroundColor: "#fff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#a5b4fc" }}>
                     <Text style={{ fontSize: 14, color: "#1f2937", lineHeight: 20 }}>{data.textAnswer}</Text>
                   </View>
                 )}
@@ -311,7 +311,7 @@ export default function SubmissionReviewScreen() {
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => setZoomImg(data.attachmentUrl!)}
-                    style={{ borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#86efac" }}
+                    style={{ borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#a5b4fc" }}
                   >
                     <Image source={{ uri: data.attachmentUrl }} style={{ width: "100%", height: 200 }} resizeMode="cover" />
                     <View style={{ position: "absolute", bottom: 8, right: 8, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -320,9 +320,9 @@ export default function SubmissionReviewScreen() {
                   </TouchableOpacity>
                 )}
                 {!!data.teacherFeedback && (
-                  <View style={{ backgroundColor: "#ecfdf5", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#6ee7b7" }}>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#065f46", marginBottom: 3 }}>Комментарий учителя</Text>
-                    <Text style={{ fontSize: 13, color: "#064e3b", lineHeight: 19 }}>{data.teacherFeedback}</Text>
+                  <View style={{ backgroundColor: "#eef2ff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#a5b4fc" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#3730a3", marginBottom: 3 }}>Комментарий учителя</Text>
+                    <Text style={{ fontSize: 13, color: "#312e81", lineHeight: 19 }}>{data.teacherFeedback}</Text>
                   </View>
                 )}
               </View>
@@ -336,22 +336,22 @@ export default function SubmissionReviewScreen() {
             <Text style={s.sectionTitle}>Ошибки · {wrong.length}</Text>
             {wrong.map((a, i) => (
               <View key={a.id} style={[s.answerCard, {
-                backgroundColor: "#fef2f2", borderColor: "#fca5a5",
+                backgroundColor: "#fff1f2", borderColor: "#fda4af",
               }]}>
-                <Text style={[s.questionNum, { color: "#ef4444" }]}>Вопрос {data.answers.indexOf(a) + 1}</Text>
+                <Text style={[s.questionNum, { color: "#e11d48" }]}>Вопрос {data.answers.indexOf(a) + 1}</Text>
                 <Text style={s.questionText}>{a.questionText}</Text>
                 <View style={s.answerRow}>
-                  <Feather name="x-circle" size={15} color="#ef4444" style={{ marginTop: 1 }} />
+                  <Feather name="x-circle" size={15} color="#e11d48" style={{ marginTop: 1 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.answerLabel, { color: "#ef4444" }]}>Ваш ответ</Text>
-                    <Text style={[s.answerText, { color: "#ef4444" }]}>{a.studentAnswer}</Text>
+                    <Text style={[s.answerLabel, { color: "#e11d48" }]}>Ваш ответ</Text>
+                    <Text style={[s.answerText, { color: "#e11d48" }]}>{a.studentAnswer}</Text>
                   </View>
                 </View>
                 <View style={[s.answerRow, { marginTop: 8 }]}>
-                  <Feather name="check-circle" size={15} color="#10b981" style={{ marginTop: 1 }} />
+                  <Feather name="check-circle" size={15} color="#6366f1" style={{ marginTop: 1 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.answerLabel, { color: "#10b981" }]}>Правильный ответ</Text>
-                    <Text style={[s.answerText, { color: "#10b981" }]}>{a.correctAnswer}</Text>
+                    <Text style={[s.answerLabel, { color: "#6366f1" }]}>Правильный ответ</Text>
+                    <Text style={[s.answerText, { color: "#6366f1" }]}>{a.correctAnswer}</Text>
                   </View>
                 </View>
               </View>
@@ -367,15 +367,15 @@ export default function SubmissionReviewScreen() {
             </Text>
             {correct.map((a) => (
               <View key={a.id} style={[s.answerCard, {
-                backgroundColor: "#f0fdf4", borderColor: "#86efac",
+                backgroundColor: "#eef2ff", borderColor: "#a5b4fc",
               }]}>
-                <Text style={[s.questionNum, { color: "#10b981" }]}>Вопрос {data.answers.indexOf(a) + 1}</Text>
+                <Text style={[s.questionNum, { color: "#6366f1" }]}>Вопрос {data.answers.indexOf(a) + 1}</Text>
                 <Text style={s.questionText}>{a.questionText}</Text>
                 <View style={s.answerRow}>
-                  <Feather name="check-circle" size={15} color="#10b981" style={{ marginTop: 1 }} />
+                  <Feather name="check-circle" size={15} color="#6366f1" style={{ marginTop: 1 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.answerLabel, { color: "#10b981" }]}>Ответ</Text>
-                    <Text style={[s.answerText, { color: "#10b981" }]}>{a.studentAnswer}</Text>
+                    <Text style={[s.answerLabel, { color: "#6366f1" }]}>Ответ</Text>
+                    <Text style={[s.answerText, { color: "#6366f1" }]}>{a.studentAnswer}</Text>
                   </View>
                 </View>
               </View>

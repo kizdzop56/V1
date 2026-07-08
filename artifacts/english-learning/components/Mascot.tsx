@@ -77,8 +77,8 @@ export function MascotModal({
 
   if (!visible) return null;
 
-  const bgColor     = mood === "celebrate" ? "#f3e8ff" : mood === "sad" ? "#fee2e2" : "#ede9fe";
-  const borderColor = mood === "celebrate" ? "#a855f7" : mood === "sad" ? "#ef4444" : "#8b5cf6";
+  const bgColor     = mood === "celebrate" ? "#f3e8ff" : mood === "sad" ? "#ffe4e6" : "#ede9fe";
+  const borderColor = mood === "celebrate" ? "#a855f7" : mood === "sad" ? "#e11d48" : "#8b5cf6";
   const pose        = MOOD_TO_POSE[mood];
 
   return (

@@ -19,16 +19,16 @@ const colors = {
     muted: "rgba(220,210,255,0.55)",
     mutedForeground: "#5b4f8e",
 
-    accent: "#f0fdf4",
-    accentForeground: "#166534",
+    accent: "#ede9fe",
+    accentForeground: "#3730a3",
 
-    success: "#22c55e",
+    success: "#8b5cf6",
     successForeground: "#ffffff",
 
-    warning: "#f59e0b",
+    warning: "#ec4899",
     warningForeground: "#ffffff",
 
-    destructive: "#ef4444",
+    destructive: "#e11d48",
     destructiveForeground: "#ffffff",
 
     border: "rgba(160,140,220,0.25)",
@@ -39,14 +39,14 @@ const colors = {
 
     // Role colors
     studentColor: "#6366f1",
-    parentColor: "#0ea5e9",
-    adminColor: "#f59e0b",
+    parentColor: "#a855f7",
+    adminColor: "#ec4899",
 
     // Assignment type colors
     textTestColor: "#8b5cf6",
-    audioColor: "#06b6d4",
-    readingColor: "#10b981",
-    videoColor: "#f59e0b",
+    audioColor: "#a855f7",
+    readingColor: "#6366f1",
+    videoColor: "#ec4899",
   },
 
   radius: 12,

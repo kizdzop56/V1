@@ -43,7 +43,7 @@ const TYPE_LABELS: Record<string, string> = {
   text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",
 };
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
+  text_test: "#8b5cf6", audio: "#6366f1", reading: "#6366f1", video: "#ec4899", free_form: "#ec4899",
 };
 const FILTERS = ["Все", "text_test", "audio", "reading", "video", "free_form"] as const;
 type Filter = typeof FILTERS[number];
@@ -135,8 +135,8 @@ function AssignModal({
           </Text>
 
           {error ? (
-            <View style={{ backgroundColor: "#fef2f2", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-              <Text style={{ color: "#dc2626", fontSize: 13 }}>{error}</Text>
+            <View style={{ backgroundColor: "#fff1f2", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+              <Text style={{ color: "#be123c", fontSize: 13 }}>{error}</Text>
             </View>
           ) : null}
 
@@ -401,9 +401,9 @@ export default function AssignmentsScreen() {
     pointsBadge: {
       flexDirection: "row", alignItems: "center", gap: 4,
       paddingHorizontal: 10, paddingVertical: 4,
-      backgroundColor: "#fef3c7", borderRadius: 8,
+      backgroundColor: "#fce7f3", borderRadius: 8,
     },
-    pointsText: { fontSize: 12, fontWeight: "700", color: "#92400e" },
+    pointsText: { fontSize: 12, fontWeight: "700", color: "#9d174d" },
     ageText: { fontSize: 12, color: colors.mutedForeground },
     actionBtn: {
       flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
@@ -468,7 +468,7 @@ export default function AssignmentsScreen() {
             <Text style={[styles.typeBadgeText, { color }]}>{TYPE_LABELS[item.type] ?? item.type}</Text>
           </View>
           <View style={styles.pointsBadge}>
-            <Feather name="star" size={12} color="#92400e" />
+            <Feather name="star" size={12} color="#9d174d" />
             <Text style={styles.pointsText}>{item.points > 0 ? `${item.points} очков` : "по проверке"}</Text>
           </View>
         </View>
@@ -523,12 +523,12 @@ export default function AssignmentsScreen() {
             <Text style={[styles.actionBtnText, { color: colors.mutedForeground }]}>Итоги</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: "#fca5a5", backgroundColor: "#fef2f2", flex: undefined, paddingHorizontal: 12 }]}
+            style={[styles.actionBtn, { borderColor: "#fda4af", backgroundColor: "#fff1f2", flex: undefined, paddingHorizontal: 12 }]}
             onPress={() => setConfirmDelete({ id: item.id, title: item.title })}
           >
             {deletingId === item.id
-              ? <ActivityIndicator size="small" color="#dc2626" />
-              : <Feather name="trash-2" size={14} color="#dc2626" />
+              ? <ActivityIndicator size="small" color="#be123c" />
+              : <Feather name="trash-2" size={14} color="#be123c" />
             }
           </TouchableOpacity>
         </View>
@@ -542,7 +542,7 @@ export default function AssignmentsScreen() {
     const hasSub = !!item.submission;
     if (!hasSub) return null;
     const score = item.submission.score;
-    const scoreColor = score >= 70 ? colors.success : score >= 40 ? "#f59e0b" : colors.destructive;
+    const scoreColor = score >= 70 ? colors.success : score >= 40 ? "#ec4899" : colors.destructive;
     return (
       <TouchableOpacity
         key={`${item.assignedTaskId}`}
@@ -586,7 +586,7 @@ export default function AssignmentsScreen() {
   // ── Student: render one completed assignment card (tappable → review) ──
   const renderCompletedCard = (item: any) => {
     const color = TYPE_COLORS[item.type] || colors.primary;
-    const scoreColor = item.score >= 70 ? colors.success : item.score >= 40 ? "#f59e0b" : colors.destructive;
+    const scoreColor = item.score >= 70 ? colors.success : item.score >= 40 ? "#ec4899" : colors.destructive;
     return (
       <TouchableOpacity
         key={`${item.submissionId}`}
@@ -612,7 +612,7 @@ export default function AssignmentsScreen() {
           </View>
           <Text style={styles.ageText}>{item.correctCount}/{item.totalQuestions} правильно</Text>
           <View style={styles.pointsBadge}>
-            <Feather name="star" size={12} color="#92400e" />
+            <Feather name="star" size={12} color="#9d174d" />
             <Text style={styles.pointsText}>+{item.pointsEarned} очков</Text>
           </View>
           <Text style={styles.ageText}>{new Date(item.submittedAt).toLocaleDateString("ru-RU")}</Text>

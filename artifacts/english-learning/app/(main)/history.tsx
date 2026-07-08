@@ -50,9 +50,9 @@ export default function HistoryScreen() {
   );
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 60) return "#f59e0b";
-    return "#ef4444";
+    if (score >= 80) return "#6366f1";
+    if (score >= 60) return "#ec4899";
+    return "#e11d48";
   };
 
   const s = StyleSheet.create({
@@ -80,8 +80,8 @@ export default function HistoryScreen() {
     scoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 },
     scoreBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 },
     scoreText: { fontSize: 13, fontWeight: "800" },
-    pointsChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fef3c7", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    pointsText: { fontSize: 12, fontWeight: "700", color: "#92400e" },
+    pointsChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fce7f3", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    pointsText: { fontSize: 12, fontWeight: "700", color: "#9d174d" },
     dateText: { fontSize: 12, color: colors.mutedForeground },
     empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 14 },
     emptyEmoji: { fontSize: 52 },
@@ -124,7 +124,7 @@ export default function HistoryScreen() {
           </View>
           {item.pointsEarned > 0 && (
             <View style={s.pointsChip}>
-              <Feather name="star" size={12} color="#92400e" />
+              <Feather name="star" size={12} color="#9d174d" />
               <Text style={s.pointsText}>+{item.pointsEarned} очков</Text>
             </View>
           )}

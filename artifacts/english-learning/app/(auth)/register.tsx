@@ -64,16 +64,16 @@ export default function RegisterScreen() {
       iconName: "users",
       label: "Родитель",
       desc: "Слежу за прогрессом своего ребёнка",
-      bgColor: "#e0f2fe",
-      iconColor: "#0369a1",
+      bgColor: "#e0e7ff",
+      iconColor: "#4338ca",
     },
     {
       key: "teacher",
       iconName: "star",
       label: "Учитель",
       desc: "Создаю задания и управляю учениками",
-      bgColor: "#fef3c7",
-      iconColor: "#b45309",
+      bgColor: "#fce7f3",
+      iconColor: "#9d174d",
     },
   ];
 

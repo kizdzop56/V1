@@ -103,7 +103,7 @@ function CalendarTabIcon({ color }: { color: string }) {
       {unreadCount > 0 && (
         <View style={{
           position: "absolute", top: -4, right: -6,
-          backgroundColor: "#ef4444", borderRadius: 8,
+          backgroundColor: "#e11d48", borderRadius: 8,
           minWidth: 16, height: 16, paddingHorizontal: 3,
           alignItems: "center", justifyContent: "center",
         }}>

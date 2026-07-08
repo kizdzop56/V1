@@ -26,7 +26,7 @@ async function apiFetch(path: string) {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  text_test: "#8b5cf6", audio: "#06b6d4", reading: "#10b981", video: "#f59e0b", free_form: "#ec4899",
+  text_test: "#8b5cf6", audio: "#6366f1", reading: "#6366f1", video: "#ec4899", free_form: "#ec4899",
 };
 const TYPE_LABELS: Record<string, string> = {
   text_test: "Тест", audio: "Аудирование", reading: "Чтение", video: "Видео", free_form: "Свободный ответ",
@@ -221,7 +221,7 @@ export default function StudentDetailScreen() {
         {/* Stats grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Feather name="star" size={20} color="#f59e0b" />
+            <Feather name="star" size={20} color="#ec4899" />
             <Text style={styles.statValue}>{student.totalPoints ?? 0}</Text>
             <Text style={styles.statLabel}>Очков</Text>
           </View>
@@ -231,7 +231,7 @@ export default function StudentDetailScreen() {
             <Text style={styles.statLabel}>Выполнено</Text>
           </View>
           <View style={styles.statCard}>
-            <Feather name="clock" size={20} color="#06b6d4" />
+            <Feather name="clock" size={20} color="#6366f1" />
             <Text style={styles.statValue}>{timeLabel}</Text>
             <Text style={styles.statLabel}>Учится</Text>
           </View>
@@ -264,7 +264,7 @@ export default function StudentDetailScreen() {
             <Text style={styles.empty}>Ещё нет выполненных заданий</Text>
           ) : (
             submissions.slice(0, 10).map((sub) => {
-              const scoreColor = sub.score >= 70 ? colors.success : sub.score >= 40 ? "#f59e0b" : colors.destructive;
+              const scoreColor = sub.score >= 70 ? colors.success : sub.score >= 40 ? "#ec4899" : colors.destructive;
               const color = TYPE_COLORS[sub.type] ?? colors.primary;
               return (
                 <View key={sub.submissionId} style={styles.subCard}>

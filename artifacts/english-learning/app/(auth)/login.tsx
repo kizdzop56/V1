@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   eyeBtn: { padding: 6 },
   error: {
     fontSize: 13,
-    color: "#ef4444",
+    color: "#e11d48",
     textAlign: "center",
     marginBottom: 12,
   },

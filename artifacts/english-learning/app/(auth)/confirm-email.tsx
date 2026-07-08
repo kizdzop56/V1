@@ -193,10 +193,10 @@ export default function ConfirmEmailScreen() {
     resendDisabled: { fontSize: 14, color: colors.mutedForeground },
     resentBadge: {
       flexDirection: "row", gap: 6, alignItems: "center",
-      backgroundColor: "#f0fdf4", borderRadius: 10, paddingHorizontal: 12,
+      backgroundColor: "#eef2ff", borderRadius: 10, paddingHorizontal: 12,
       paddingVertical: 6, marginTop: 12,
     },
-    resentText: { fontSize: 13, color: "#15803d", fontWeight: "600" },
+    resentText: { fontSize: 13, color: "#4338ca", fontWeight: "600" },
   });
 
   return (
@@ -279,7 +279,7 @@ export default function ConfirmEmailScreen() {
 
         {resent && (
           <View style={s.resentBadge}>
-            <Feather name="check" size={14} color="#15803d" />
+            <Feather name="check" size={14} color="#4338ca" />
             <Text style={s.resentText}>Код отправлен на почту</Text>
           </View>
         )}

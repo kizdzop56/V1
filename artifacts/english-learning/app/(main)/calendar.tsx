@@ -225,15 +225,15 @@ function WheelColumn({ items, value, onChange, fg, muted, hlColor }: WheelColumn
 }
 
 const STATUS_CFG = {
-  available:    { label: "Свободно",      color: "#10b981", icon: "circle"       as const },
-  pending:      { label: "Ожидает",       color: "#f59e0b", icon: "clock"        as const },
+  available:    { label: "Свободно",      color: "#6366f1", icon: "circle"       as const },
+  pending:      { label: "Ожидает",       color: "#ec4899", icon: "clock"        as const },
   confirmed_me: { label: "Записан",       color: "#6366f1", icon: "check-circle" as const },
-  unavailable:  { label: "Занято",        color: "#ef4444", icon: "x-circle"     as const },
+  unavailable:  { label: "Занято",        color: "#e11d48", icon: "x-circle"     as const },
 };
 const BOOKING_CFG = {
-  pending:   { label: "Ожидает",       color: "#f59e0b", icon: "clock"        as const },
-  confirmed: { label: "Подтверждено",  color: "#10b981", icon: "check-circle" as const },
-  rejected:  { label: "Отклонено",     color: "#ef4444", icon: "x-circle"     as const },
+  pending:   { label: "Ожидает",       color: "#ec4899", icon: "clock"        as const },
+  confirmed: { label: "Подтверждено",  color: "#6366f1", icon: "check-circle" as const },
+  rejected:  { label: "Отклонено",     color: "#e11d48", icon: "x-circle"     as const },
 };
 
 const DATES = getDates(35);
@@ -580,8 +580,8 @@ export default function CalendarScreen() {
     bookingNote: { fontSize: 12, color: colors.mutedForeground, marginTop: 2, fontStyle: "italic" },
 
     btnRow: { flexDirection: "row", gap: 8 },
-    btnConfirm: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, backgroundColor: "#10b981" },
-    btnReject:  { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, backgroundColor: "#ef4444" },
+    btnConfirm: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, backgroundColor: "#6366f1" },
+    btnReject:  { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, backgroundColor: "#e11d48" },
     btnCancel:  {
       paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10,
       borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.muted,
@@ -663,7 +663,7 @@ export default function CalendarScreen() {
     const pending = slot.bookings.filter((b) => b.status === "pending");
     const confirmed = slot.bookings.find((b) => b.status === "confirmed");
     const isBusy = !!confirmed;
-    const borderColor = dimmed ? colors.border : (isBusy ? "#6366f1" : "#10b981");
+    const borderColor = dimmed ? colors.border : (isBusy ? "#6366f1" : "#6366f1");
     const dotColor   = dimmed ? colors.mutedForeground : borderColor;
     return (
       <View key={slot.id} style={[s.slotCard, { borderLeftWidth: 4, borderLeftColor: borderColor, opacity: dimmed ? 0.55 : 1 }]}>
@@ -925,10 +925,10 @@ export default function CalendarScreen() {
       const cfg = BOOKING_CFG[b.status as keyof typeof BOOKING_CFG];
       const isRejected = b.status === "rejected";
       // Rejected bookings always shown prominently in red, never treated as generic "Завершено"
-      const cardColor = isRejected ? "#ef4444" : isPast ? colors.border : (cfg?.color ?? colors.border);
-      const iconColor = isRejected ? "#ef4444" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.primary);
+      const cardColor = isRejected ? "#e11d48" : isPast ? colors.border : (cfg?.color ?? colors.border);
+      const iconColor = isRejected ? "#e11d48" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.primary);
       const statusLabel = isRejected ? "Отклонено" : isPast ? "Завершено" : (cfg?.label ?? b.status);
-      const statusColor = isRejected ? "#ef4444" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.mutedForeground);
+      const statusColor = isRejected ? "#e11d48" : isPast ? colors.mutedForeground : (cfg?.color ?? colors.mutedForeground);
       return (
         <View
           key={b.id}
@@ -950,7 +950,7 @@ export default function CalendarScreen() {
           </View>
           {b.note ? <Text style={s.reqNote}>«{b.note}»</Text> : null}
           {isRejected && (
-            <Text style={{ fontSize: 12, color: "#ef4444", marginHorizontal: 12, marginBottom: 10, fontStyle: "italic" }}>
+            <Text style={{ fontSize: 12, color: "#e11d48", marginHorizontal: 12, marginBottom: 10, fontStyle: "italic" }}>
               Учитель отклонил вашу запись
             </Text>
           )}
@@ -1008,7 +1008,7 @@ export default function CalendarScreen() {
             {customRequests.map((cr) => {
               const isPastCr = isPastSlot(cr.date, cr.endTime);
               const isRejCr = cr.status === "rejected";
-              const crColor = cr.status === "confirmed" ? "#10b981" : isRejCr ? "#ef4444" : "#8b5cf6";
+              const crColor = cr.status === "confirmed" ? "#6366f1" : isRejCr ? "#e11d48" : "#8b5cf6";
               const crLabel = cr.status === "confirmed" ? "Принято" : isRejCr ? "Отклонено" : "Ожидает";
               return (
                 <View
@@ -1028,7 +1028,7 @@ export default function CalendarScreen() {
                   </View>
                   {cr.note ? <Text style={s.reqNote}>«{cr.note}»</Text> : null}
                   {isRejCr && (
-                    <Text style={{ fontSize: 12, color: "#ef4444", marginHorizontal: 12, marginBottom: 10, fontStyle: "italic" }}>
+                    <Text style={{ fontSize: 12, color: "#e11d48", marginHorizontal: 12, marginBottom: 10, fontStyle: "italic" }}>
                       Учитель отклонил ваш запрос на время
                     </Text>
                   )}
@@ -1079,7 +1079,7 @@ export default function CalendarScreen() {
             <Text style={[s.historyLabel, { marginTop: 8 }]}>— {monthLabel(mk)} —</Text>
             {grouped[mk].map((item) => {
               const isPast = item.date < todayStr() || (item.date === todayStr() && item.endTime <= `${new Date().getHours().toString().padStart(2,"0")}:${new Date().getMinutes().toString().padStart(2,"0")}`);
-              const accent = isPast ? "#10b981" : colors.primary;
+              const accent = isPast ? "#6366f1" : colors.primary;
               const statusLabel = isPast ? "Проведён" : "Запланирован";
               const statusIcon = isPast ? "check-circle" : "clock";
               return (
@@ -1179,12 +1179,12 @@ export default function CalendarScreen() {
           </View>
 
           {addEnd <= addStart && (
-            <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
               ⚠ Конец раньше начала: {addStart} → {addEnd}
             </Text>
           )}
           {addEnd > addStart && isPastSlot(selectedDate, addEnd) && (
-            <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            <Text style={{ color: "#ec4899", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
               ⚠ Это время уже прошло — слот не сохранится
             </Text>
           )}
@@ -1265,12 +1265,12 @@ export default function CalendarScreen() {
           </View>
 
           {crEnd <= crStart && (
-            <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
               ⚠ Конец раньше начала: {crStart} → {crEnd}
             </Text>
           )}
           {crEnd > crStart && isPastSlot(selectedDate, crEnd) && (
-            <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            <Text style={{ color: "#ec4899", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
               ⚠ Это время уже прошло — выберите будущее время
             </Text>
           )}
@@ -1285,8 +1285,8 @@ export default function CalendarScreen() {
           />
 
           {crError && (
-            <View style={{ backgroundColor: "#fee2e2", borderRadius: 10, padding: 10, marginBottom: 10 }}>
-              <Text style={{ color: "#dc2626", fontSize: 13, textAlign: "center" }}>⚠ {crError}</Text>
+            <View style={{ backgroundColor: "#ffe4e6", borderRadius: 10, padding: 10, marginBottom: 10 }}>
+              <Text style={{ color: "#be123c", fontSize: 13, textAlign: "center" }}>⚠ {crError}</Text>
             </View>
           )}
 
@@ -1383,8 +1383,8 @@ export default function CalendarScreen() {
           )}
 
           {assignError && (
-            <View style={{ backgroundColor: "#fee2e2", borderRadius: 10, padding: 10, marginBottom: 10, marginTop: 8 }}>
-              <Text style={{ color: "#dc2626", fontSize: 13, textAlign: "center" }}>⚠ {assignError}</Text>
+            <View style={{ backgroundColor: "#ffe4e6", borderRadius: 10, padding: 10, marginBottom: 10, marginTop: 8 }}>
+              <Text style={{ color: "#be123c", fontSize: 13, textAlign: "center" }}>⚠ {assignError}</Text>
             </View>
           )}
 

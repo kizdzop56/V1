@@ -133,7 +133,7 @@ export function AnimatedAvatar({
             width: dotSize,
             height: dotSize,
             borderRadius: dotSize / 2,
-            backgroundColor: onlineDot ? "#22c55e" : "#94a3b8",
+            backgroundColor: onlineDot ? "#818cf8" : "#94a3b8",
             borderWidth: 2,
             borderColor: "#fff",
           }}

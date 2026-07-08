@@ -205,7 +205,7 @@ export default function TeacherResultsScreen() {
       borderTopWidth: 1, borderTopColor: colors.border,
     },
     pendingTag: {
-      backgroundColor: "#fef3c7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
+      backgroundColor: "#fce7f3", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
     },
     sectionLabel: {
       fontSize: 12, fontWeight: "700", color: colors.mutedForeground,
@@ -213,7 +213,7 @@ export default function TeacherResultsScreen() {
     },
     deleteBtn: {
       width: 32, height: 32, borderRadius: 10,
-      backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fca5a5",
+      backgroundColor: "#fff1f2", borderWidth: 1, borderColor: "#fda4af",
       justifyContent: "center", alignItems: "center",
     },
   });
@@ -287,10 +287,10 @@ export default function TeacherResultsScreen() {
             const ytEmbed = mUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
 
             if (isVideo) return (
-              <View style={{ backgroundColor: "#fef3c7", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#f59e0b40", gap: 8 }}>
+              <View style={{ backgroundColor: "#fce7f3", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#ec489940", gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Feather name="video" size={16} color="#f59e0b" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400e" }}>Видео к заданию</Text>
+                  <Feather name="video" size={16} color="#ec4899" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#9d174d" }}>Видео к заданию</Text>
                 </View>
                 {Platform.OS === "web" && ytEmbed.includes("embed") ? (
                   <View style={{ borderRadius: 10, overflow: "hidden" }}>
@@ -298,7 +298,7 @@ export default function TeacherResultsScreen() {
                     <iframe src={ytEmbed} style={{ width: "100%", height: 200, border: "none" }} allowFullScreen />
                   </View>
                 ) : null}
-                <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#f59e0b", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#ec4899", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
                   <Feather name="play-circle" size={16} color="#fff" />
                   <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть видео</Text>
                 </TouchableOpacity>
@@ -306,16 +306,16 @@ export default function TeacherResultsScreen() {
             );
 
             if (isAudio) return (
-              <View style={{ backgroundColor: "#ecfeff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#06b6d440", gap: 8 }}>
+              <View style={{ backgroundColor: "#e0e7ff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#6366f140", gap: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Feather name="headphones" size={16} color="#06b6d4" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#0e7490" }}>Аудио к заданию</Text>
+                  <Feather name="headphones" size={16} color="#6366f1" />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#4338ca" }}>Аудио к заданию</Text>
                 </View>
                 {Platform.OS === "web" ? (
                   /* @ts-ignore */
                   <audio controls src={mUrl} style={{ width: "100%", borderRadius: 8 }} />
                 ) : (
-                  <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#06b6d4", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                  <TouchableOpacity onPress={openUrl} style={{ backgroundColor: "#6366f1", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}>
                     <Feather name="headphones" size={16} color="#fff" />
                     <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
                   </TouchableOpacity>
@@ -334,13 +334,13 @@ export default function TeacherResultsScreen() {
               <Text style={s.statLabel}>Назначено</Text>
             </View>
             <View style={s.statCard}>
-              <Feather name="check-circle" size={20} color="#10b981" />
-              <Text style={[s.statVal, { color: "#10b981" }]}>{submitted.length}</Text>
+              <Feather name="check-circle" size={20} color="#6366f1" />
+              <Text style={[s.statVal, { color: "#6366f1" }]}>{submitted.length}</Text>
               <Text style={s.statLabel}>Выполнили</Text>
             </View>
             <View style={s.statCard}>
-              <Feather name="star" size={20} color="#f59e0b" />
-              <Text style={[s.statVal, { color: "#f59e0b" }]}>
+              <Feather name="star" size={20} color="#ec4899" />
+              <Text style={[s.statVal, { color: "#ec4899" }]}>
                 {avgScore !== null ? `${avgScore}%` : "—"}
               </Text>
               <Text style={s.statLabel}>Средний балл</Text>
@@ -354,7 +354,7 @@ export default function TeacherResultsScreen() {
               {submitted.map((r) => {
                 const sub = r.submission!;
                 const isPendingReview = sub.status === "pending";
-                const scoreColor = sub.score >= 70 ? "#10b981" : sub.score >= 50 ? "#f59e0b" : "#ef4444";
+                const scoreColor = sub.score >= 70 ? "#6366f1" : sub.score >= 50 ? "#ec4899" : "#e11d48";
                 const isExpanded = expanded.has(r.assignedTaskId);
                 const isDeleting = deletingId === r.assignedTaskId;
                 const isGrading = gradingId === sub.id;
@@ -374,7 +374,7 @@ export default function TeacherResultsScreen() {
                       </View>
                       {isPendingReview ? (
                         <View style={s.pendingTag}>
-                          <Text style={{ fontSize: 12, fontWeight: "600", color: "#92400e" }}>На проверке</Text>
+                          <Text style={{ fontSize: 12, fontWeight: "600", color: "#9d174d" }}>На проверке</Text>
                         </View>
                       ) : (
                         <View style={s.scoreBox}>
@@ -388,8 +388,8 @@ export default function TeacherResultsScreen() {
                         disabled={isDeleting}
                       >
                         {isDeleting
-                          ? <ActivityIndicator size="small" color="#dc2626" />
-                          : <Feather name="trash-2" size={15} color="#dc2626" />
+                          ? <ActivityIndicator size="small" color="#be123c" />
+                          : <Feather name="trash-2" size={15} color="#be123c" />
                         }
                       </TouchableOpacity>
                     </View>
@@ -418,10 +418,10 @@ export default function TeacherResultsScreen() {
                               <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 4 }}>Правильных ответов</Text>
                               <TextInput
                                 style={{
-                                  borderWidth: 1.5, borderColor: "#10b98160", borderRadius: 10,
+                                  borderWidth: 1.5, borderColor: "#6366f160", borderRadius: 10,
                                   paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
-                                  fontWeight: "700", color: "#10b981",
-                                  backgroundColor: "#f0fdf4", textAlign: "center",
+                                  fontWeight: "700", color: "#6366f1",
+                                  backgroundColor: "#eef2ff", textAlign: "center",
                                 }}
                                 keyboardType="number-pad"
                                 placeholder="0"
@@ -453,7 +453,7 @@ export default function TeacherResultsScreen() {
                               const t = parseInt(gradeTotal[sub.id] ?? "", 10);
                               if (!isNaN(c) && !isNaN(t) && t > 0) {
                                 const pct = Math.round((c / t) * 100);
-                                const col = pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+                                const col = pct >= 70 ? "#6366f1" : pct >= 40 ? "#ec4899" : "#e11d48";
                                 return (
                                   <View style={{ alignItems: "center", marginTop: 16 }}>
                                     <Text style={{ fontSize: 22, fontWeight: "900", color: col }}>{pct}%</Text>
@@ -482,8 +482,8 @@ export default function TeacherResultsScreen() {
                           // Hide the validation-specific error as soon as inputs become valid
                           if (inputsOk && gradeError[sub.id] === "Укажите корректное количество правильных ответов и вопросов") return null;
                           return (
-                            <View style={{ backgroundColor: "#fef2f2", borderRadius: 8, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "#fca5a5" }}>
-                              <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>{gradeError[sub.id]}</Text>
+                            <View style={{ backgroundColor: "#fff1f2", borderRadius: 8, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "#fda4af" }}>
+                              <Text style={{ color: "#be123c", fontSize: 13, fontWeight: "600" }}>{gradeError[sub.id]}</Text>
                             </View>
                           );
                         })()}
@@ -526,23 +526,23 @@ export default function TeacherResultsScreen() {
                       <View
                         key={a.id}
                         style={[s.answerRow, {
-                          borderColor: a.isCorrect ? "#10b98140" : "#ef444440",
-                          backgroundColor: a.isCorrect ? "#f0fdf4" : "#fef2f2",
+                          borderColor: a.isCorrect ? "#6366f140" : "#e11d4840",
+                          backgroundColor: a.isCorrect ? "#eef2ff" : "#fff1f2",
                         }]}
                       >
                         <Feather
                           name={a.isCorrect ? "check-circle" : "x-circle"}
                           size={16}
-                          color={a.isCorrect ? "#10b981" : "#ef4444"}
+                          color={a.isCorrect ? "#6366f1" : "#e11d48"}
                           style={{ marginTop: 2 }}
                         />
                         <View style={{ flex: 1 }}>
                           <Text style={s.qText}>{i + 1}. {a.questionText}</Text>
-                          <Text style={[s.aText, { color: a.isCorrect ? "#10b981" : "#ef4444", fontWeight: "600" }]}>
+                          <Text style={[s.aText, { color: a.isCorrect ? "#6366f1" : "#e11d48", fontWeight: "600" }]}>
                             Ответ: {a.studentAnswer}
                           </Text>
                           {!a.isCorrect && (
-                            <Text style={[s.aText, { color: "#10b981", marginTop: 2 }]}>
+                            <Text style={[s.aText, { color: "#6366f1", marginTop: 2 }]}>
                               Правильно: {a.correctAnswer}
                             </Text>
                           )}
@@ -573,7 +573,7 @@ export default function TeacherResultsScreen() {
                         {r.studentName}
                       </Text>
                       <View style={s.pendingTag}>
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#92400e" }}>Ожидает</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#9d174d" }}>Ожидает</Text>
                       </View>
                       <TouchableOpacity
                         style={s.deleteBtn}
@@ -581,8 +581,8 @@ export default function TeacherResultsScreen() {
                         disabled={isDeleting}
                       >
                         {isDeleting
-                          ? <ActivityIndicator size="small" color="#dc2626" />
-                          : <Feather name="trash-2" size={15} color="#dc2626" />
+                          ? <ActivityIndicator size="small" color="#be123c" />
+                          : <Feather name="trash-2" size={15} color="#be123c" />
                         }
                       </TouchableOpacity>
                     </View>
