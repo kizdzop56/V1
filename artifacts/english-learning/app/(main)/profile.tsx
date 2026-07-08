@@ -20,6 +20,7 @@ import { AchievementsShowcase } from "@/components/AchievementsShowcase";
 import { MascotModal, getMascotMessage } from "@/components/Mascot";
 import { AchievementToast } from "@/components/AchievementToast";
 import { DailyGoalBar } from "@/components/DailyGoalBar";
+import { AssignmentRingsChart, type CategoryStat } from "@/components/AssignmentRingsChart";
 import { useGamification } from "@/hooks/useGamification";
 
 function calcAge(dateOfBirth: string | null): number | null {
@@ -799,6 +800,14 @@ export default function ProfileScreen() {
   // Do NOT add sessionSeconds here — that would double-count the current session.
   const totalMinutes = timeStats?.totalMinutes ?? 0;
 
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
+  useEffect(() => {
+    if (!isStudent || !user?.id) return;
+    apiFetch(`/api/students/${user.id}/category-stats`)
+      .then((data) => setCategoryStats(data ?? []))
+      .catch(() => setCategoryStats([]));
+  }, [isStudent, user?.id]);
+
   // ── Load gamification stats & claim daily login on focus ──────────
   useFocusEffect(
     useCallback(() => {
@@ -1436,20 +1445,35 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* Таймер времени */}
+            {/* Статистика заданий + Таймер времени — два отдельных пузыря в одной строке */}
             <View style={s.section}>
-              <Text style={s.sectionTitle}>Время в приложении</Text>
-              <View style={s.timerCard}>
-                <View style={s.timerIcon}>
-                  <Feather name="clock" size={24} color={colors.primary} />
+              <View style={{ flexDirection: "row", gap: 10, alignItems: "stretch" }}>
+                <View style={{
+                  flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 14,
+                  borderWidth: 1, borderColor: colors.border,
+                }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+                    Мои задания
+                  </Text>
+                  <AssignmentRingsChart stats={categoryStats} colors={colors} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.timerValue}>
-                    {formatTime(gamStats?.totalTimeMinutes ?? totalMinutes)}
-                  </Text>
-                  <Text style={s.timerLabel}>
-                    Сегодня: {formatSessionTime(sessionSeconds)} в этой сессии
-                  </Text>
+
+                <View style={{
+                  flex: 1, backgroundColor: colors.primary + "12", borderRadius: 16, padding: 14,
+                  borderWidth: 1.5, borderColor: colors.primary + "35",
+                  justifyContent: "center",
+                }}>
+                  <View style={{ alignItems: "center", gap: 8 }}>
+                    <View style={s.timerIcon}>
+                      <Feather name="clock" size={24} color={colors.primary} />
+                    </View>
+                    <Text style={[s.timerValue, { textAlign: "center" }]}>
+                      {formatTime(gamStats?.totalTimeMinutes ?? totalMinutes)}
+                    </Text>
+                    <Text style={[s.timerLabel, { textAlign: "center" }]}>
+                      Сегодня: {formatSessionTime(sessionSeconds)}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
