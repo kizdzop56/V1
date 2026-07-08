@@ -4,3 +4,4 @@
 - [Purple-only color palette convention](purple-palette-convention.md) — app is restricted to purple/indigo/rose/fuchsia; green/orange/red/cyan mapped to specific purple-family tones; medals get real metallic gradients.
 - [Automatic points system](auto-points-system.md) — points are app-computed via lib/points.ts, never teacher-set; every create/edit/grade path must ignore client points and recompute.
 - [Averaging submissions.score](submissions-avg-scoring.md) — filter status="graded" before any avg/sum; pending submissions have score 0 and tank rankings otherwise.
+- [In-app media popup convention](media-popup-convention.md) — all assignment video/audio/link attachments must open in an in-app modal (MediaViewerModal), never Linking.openURL/new tab.

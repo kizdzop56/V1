@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, Image, Linking,
+  ActivityIndicator, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
+import { MediaViewerModal, type MediaKind } from "@/components/MediaViewerModal";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -66,6 +67,7 @@ export default function SubmissionReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [zoomImg, setZoomImg] = useState<string | null>(null);
+  const [mediaModal, setMediaModal] = useState<{ url: string; kind: MediaKind } | null>(null);
 
   useEffect(() => {
     apiFetch(`/api/submissions/${submissionId}/review`)
@@ -135,6 +137,7 @@ export default function SubmissionReviewScreen() {
   return (
     <View style={s.container}>
       <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+      <MediaViewerModal url={mediaModal?.url ?? null} kind={mediaModal?.kind ?? "other"} onClose={() => setMediaModal(null)} />
       <View style={s.header}>
         <TouchableOpacity
           style={{ width: 36, height: 36, justifyContent: "center", alignItems: "center" }}
@@ -177,7 +180,7 @@ export default function SubmissionReviewScreen() {
           const aType = data.assignment!.type;
           const isAudio = aType === "audio" || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/audio");
           const isVideo = aType === "video" || mUrl.includes("youtube") || mUrl.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/video");
-          const openUrl = () => Linking.openURL(mUrl.startsWith("http") ? mUrl : `https://${mUrl}`);
+          const openInModal = (kind: MediaKind) => setMediaModal({ url: mUrl, kind });
           const ytEmbed = mUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
 
           if (isVideo) {
@@ -194,7 +197,7 @@ export default function SubmissionReviewScreen() {
                   </View>
                 ) : null}
                 <TouchableOpacity
-                  onPress={openUrl}
+                  onPress={() => openInModal("video")}
                   style={{ backgroundColor: "#ec4899", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
                 >
                   <Feather name="play-circle" size={16} color="#fff" />
@@ -216,7 +219,7 @@ export default function SubmissionReviewScreen() {
                   <audio controls src={mUrl} style={{ width: "100%", borderRadius: 8 }} />
                 ) : (
                   <TouchableOpacity
-                    onPress={openUrl}
+                    onPress={() => openInModal("audio")}
                     style={{ backgroundColor: "#6366f1", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
                   >
                     <Feather name="headphones" size={16} color="#fff" />
@@ -227,7 +230,21 @@ export default function SubmissionReviewScreen() {
             );
           }
 
-          return null;
+          return (
+            <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#8b5cf640", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Feather name="paperclip" size={16} color="#8b5cf6" />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#5b21b6" }}>Файл к заданию</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => openInModal("other")}
+                style={{ backgroundColor: "#8b5cf6", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+              >
+                <Feather name="external-link" size={16} color="#fff" />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть файл</Text>
+              </TouchableOpacity>
+            </View>
+          );
         })() : null}
 
         {/* Summary card */}

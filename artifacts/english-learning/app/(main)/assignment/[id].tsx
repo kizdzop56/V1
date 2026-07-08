@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, Alert, TextInput, Linking, Image,
+  ActivityIndicator, Platform, Alert, TextInput, Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
+import { MediaViewerModal, type MediaKind } from "@/components/MediaViewerModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -111,6 +112,7 @@ export default function AssignmentDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [zoomImg, setZoomImg] = useState<string | null>(null);
+  const [mediaModal, setMediaModal] = useState<{ url: string; kind: MediaKind; title?: string } | null>(null);
   const [showUnansweredModal, setShowUnansweredModal] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -322,6 +324,7 @@ export default function AssignmentDetailScreen() {
   const isVideoUrl = (url: string) => url.includes("youtube") || url.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("/upload/video");
   const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (assignment.type !== "audio" && !isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
   const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (assignment.type !== "video" && !showVideoBlock && isAudioUrl(mediaUrl)));
+  const showOtherBlock = !!mediaUrl && !showVideoBlock && !showAudioBlock;
 
   const youtubeEmbed = mediaUrl
     ? mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
@@ -329,7 +332,8 @@ export default function AssignmentDetailScreen() {
 
   const openMedia = () => {
     if (!mediaUrl) return;
-    Linking.openURL(mediaUrl.startsWith("http") ? mediaUrl : `https://${mediaUrl}`);
+    const kind: MediaKind = showVideoBlock ? "video" : showAudioBlock ? "audio" : "other";
+    setMediaModal({ url: mediaUrl, kind, title: assignment.title });
   };
 
   const toggleAudio = () => {
@@ -382,6 +386,7 @@ export default function AssignmentDetailScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
         <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+        <MediaViewerModal url={mediaModal?.url ?? null} kind={mediaModal?.kind ?? "other"} title={mediaModal?.title} onClose={() => setMediaModal(null)} />
         {/* Header */}
         <View style={[s.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
           <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
@@ -440,6 +445,15 @@ export default function AssignmentDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+          {showOtherBlock && (
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Прикреплённый файл</Text>
+              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: PRIMARY }]} onPress={openMedia}>
+                <Feather name="paperclip" size={16} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть файл</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {/* Questions — teacher sees correct answers */}
           {questions.length > 0 && (
             <View>
@@ -476,6 +490,7 @@ export default function AssignmentDetailScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
         <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+        <MediaViewerModal url={mediaModal?.url ?? null} kind={mediaModal?.kind ?? "other"} title={mediaModal?.title} onClose={() => setMediaModal(null)} />
         <View style={[s.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
           <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
             <Feather name="arrow-left" size={20} color={SLATE} />
@@ -583,6 +598,7 @@ export default function AssignmentDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: QUIZ_BG }}>
       <ImageZoomModal uri={zoomImg} onClose={() => setZoomImg(null)} />
+      <MediaViewerModal url={mediaModal?.url ?? null} kind={mediaModal?.kind ?? "other"} title={mediaModal?.title} onClose={() => setMediaModal(null)} />
       <ConfirmModal
         visible={showUnansweredModal}
         title="Не все вопросы отвечены"
@@ -740,6 +756,16 @@ export default function AssignmentDetailScreen() {
             <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#ec4899" }]} onPress={openMedia}>
               <Feather name="play-circle" size={16} color="#fff" />
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть видео</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Attached file card (unrecognized type) ── */}
+        {showOtherBlock && (
+          <View style={[s.card, { marginBottom: 12 }]}>
+            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: PRIMARY }]} onPress={openMedia}>
+              <Feather name="paperclip" size={16} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть файл</Text>
             </TouchableOpacity>
           </View>
         )}
