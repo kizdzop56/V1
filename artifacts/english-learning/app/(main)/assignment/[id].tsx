@@ -305,8 +305,8 @@ export default function AssignmentDetailScreen() {
 
   const isAudioUrl = (url: string) => /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(url) || url.includes("/upload/audio") || url.includes("/upload/student-recording");
   const isVideoUrl = (url: string) => url.includes("youtube") || url.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("/upload/video");
-  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (!isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
-  const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (!showVideoBlock && isAudioUrl(mediaUrl)));
+  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (assignment.type !== "audio" && !isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
+  const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (assignment.type !== "video" && !showVideoBlock && isAudioUrl(mediaUrl)));
 
   const youtubeEmbed = mediaUrl
     ? mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/")
@@ -664,7 +664,7 @@ export default function AssignmentDetailScreen() {
                         style={{
                           width: 3, borderRadius: 2,
                           height: 6 + Math.abs(Math.sin(i * 0.7 + 1) * 14),
-                          backgroundColor: played ? ORANGE : (audioPlaying && i / 30 < fraction + 0.05 ? ORANGE : BORDER),
+                          backgroundColor: played ? ORANGE : BORDER,
                         }}
                       />
                     );
