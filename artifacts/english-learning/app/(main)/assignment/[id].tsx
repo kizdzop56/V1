@@ -78,8 +78,8 @@ const PRIMARY = "#7c3aed";
 const PRIMARY_LIGHT = "#f5f3ff";
 const PRIMARY_DARK = "#6d28d9";
 const ORANGE = "#ec4899";
-const AUDIO_BG = "#e9e3fb";
-const QUESTION_BG = "#efe9fe";
+const AUDIO_BG = "#cbb8ef";
+const QUESTION_BG = "#d3c2f2";
 const WAVE_START = "#6d28d9";
 const WAVE_END = "#c4b5fd";
 const lerpColor = (c1: string, c2: string, t: number) => {
@@ -776,8 +776,22 @@ export default function AssignmentDetailScreen() {
 
         {/* ── Current question card ── */}
         {currentQ && (
-          <View style={[s.card, { marginBottom: 12, backgroundColor: QUESTION_BG, borderLeftWidth: 4, borderLeftColor: PRIMARY }]}>
-            <Text style={s.questionText}>{currentQ.text}</Text>
+          <View style={[s.card, { marginBottom: 12, backgroundColor: QUESTION_BG }]}>
+            <Text
+              // @ts-ignore web gradient text
+              style={[
+                s.questionText,
+                Platform.OS === "web" && {
+                  color: "#4c1d95",
+                  backgroundImage: "linear-gradient(90deg, #6d28d9, #a21caf)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                },
+              ]}
+            >
+              {currentQ.text}
+            </Text>
           </View>
         )}
 
@@ -911,7 +925,22 @@ export default function AssignmentDetailScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ fontSize: 15 }}>📚</Text>
-              <Text style={s.progressLabel} numberOfLines={1}>{assignment.title}</Text>
+              <Text
+                // @ts-ignore web gradient text
+                style={[
+                  s.progressLabel,
+                  Platform.OS === "web" && {
+                    color: "#6d28d9",
+                    backgroundImage: "linear-gradient(90deg, #6d28d9, #a21caf)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {assignment.title}
+              </Text>
             </View>
             <Text style={s.progressPct}>{Math.round(progressPct)}%</Text>
           </View>
