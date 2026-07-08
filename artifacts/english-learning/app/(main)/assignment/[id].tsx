@@ -107,7 +107,6 @@ export default function AssignmentDetailScreen() {
 
   // Step-by-step navigation
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [imgExpanded, setImgExpanded] = useState(false);
   const [readingExpanded, setReadingExpanded] = useState(false);
 
   // Free-form
@@ -557,7 +556,6 @@ export default function AssignmentDetailScreen() {
   const goNext = () => {
     if (!isLastStep) {
       setCurrentQuestionIndex(i => i + 1);
-      setImgExpanded(false);
     } else {
       handleSubmitPressed();
     }
@@ -739,15 +737,15 @@ export default function AssignmentDetailScreen() {
         {imageUrl && (
           <TouchableOpacity
             activeOpacity={0.92}
-            onPress={() => setImgExpanded(e => !e)}
-            style={[s.card, { padding: 0, overflow: "hidden", marginBottom: 12 }]}
+            onPress={() => setZoomImg(imageUrl)}
+            style={[s.card, { padding: 4, overflow: "hidden", marginBottom: 12, borderWidth: 1.5, borderColor: BORDER }]}
           >
             <Image
               source={{ uri: imageUrl }}
-              style={{ width: "100%", height: imgExpanded ? 240 : 160, borderRadius: 14 }}
+              style={{ width: "100%", height: 160, borderRadius: 10 }}
               resizeMode="cover"
             />
-            <View style={{ position: "absolute", bottom: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.88)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+            <View style={{ position: "absolute", bottom: 12, right: 12, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.9)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
               <Feather name="maximize-2" size={11} color={SLATE} />
               <Text style={{ fontSize: 11, color: SLATE, fontWeight: "600" }}>Увеличить</Text>
             </View>
