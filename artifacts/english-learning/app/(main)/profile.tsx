@@ -455,12 +455,14 @@ function FriendsModal({
                           avatarEmoji={f.user.avatarEmoji}
                           avatarUrl={(f.user as any).avatarUrl}
                         />
-                        <View style={{
-                          position: "absolute", bottom: 0, right: 0,
-                          width: 13, height: 13, borderRadius: 7,
-                          backgroundColor: f.user.isOnline ? "#22c55e" : "#94a3b8",
-                          borderWidth: 2, borderColor: colors.card,
-                        }} />
+                        {f.user.isOnline && (
+                          <View style={{
+                            position: "absolute", bottom: 0, right: 0,
+                            width: 13, height: 13, borderRadius: 7,
+                            backgroundColor: "#22c55e",
+                            borderWidth: 2, borderColor: colors.card,
+                          }} />
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{f.user.name}</Text>
@@ -518,12 +520,14 @@ function FriendsModal({
                               avatarEmoji={t.avatarEmoji ?? "🎓"}
                               avatarUrl={(t as any).avatarUrl}
                             />
-                            <View style={{
-                              position: "absolute", bottom: 0, right: 0,
-                              width: 13, height: 13, borderRadius: 7,
-                              backgroundColor: t.isOnline ? "#22c55e" : "#94a3b8",
-                              borderWidth: 2, borderColor: colors.card,
-                            }} />
+                            {t.isOnline && (
+                              <View style={{
+                                position: "absolute", bottom: 0, right: 0,
+                                width: 13, height: 13, borderRadius: 7,
+                                backgroundColor: "#22c55e",
+                                borderWidth: 2, borderColor: colors.card,
+                              }} />
+                            )}
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{t.name}</Text>

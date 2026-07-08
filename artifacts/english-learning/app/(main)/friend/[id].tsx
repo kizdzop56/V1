@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ACHIEVEMENTS, getUnlockedAchievements, type AchievementStats } from "@/constants/achievements";
 import authStorage from "@/utils/authStorage";
 import { AchievementsShowcase } from "@/components/AchievementsShowcase";
+import { AssignmentRingsChart, type CategoryStat } from "@/components/AssignmentRingsChart";
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -75,6 +76,7 @@ export default function FriendProfileScreen() {
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus>("loading");
   const [friendshipId, setFriendshipId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
   const onlinePollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isStudent = user?.role === "student";
@@ -92,6 +94,16 @@ export default function FriendProfileScreen() {
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  }, [friendId]);
+
+  const loadCategoryStats = useCallback(async () => {
+    if (!friendId) return;
+    try {
+      const data = await apiFetch(`/api/students/${friendId}/category-stats`);
+      setCategoryStats(data ?? []);
+    } catch {
+      setCategoryStats([]);
     }
   }, [friendId]);
 
@@ -118,12 +130,13 @@ export default function FriendProfileScreen() {
   useEffect(() => {
     loadProfile();
     loadFriendStatus();
+    loadCategoryStats();
     // Poll online status every 30s so it stays up-to-date
     onlinePollerRef.current = setInterval(pollOnlineStatus, 30_000);
     return () => {
       if (onlinePollerRef.current) clearInterval(onlinePollerRef.current);
     };
-  }, [loadProfile, loadFriendStatus, pollOnlineStatus]);
+  }, [loadProfile, loadFriendStatus, loadCategoryStats, pollOnlineStatus]);
 
   const handleSendRequest = async () => {
     setActionLoading(true);
@@ -321,6 +334,17 @@ export default function FriendProfileScreen() {
               </Text>
             </View>
           ))}
+        </View>
+
+        {/* ── Задания по категориям ── */}
+        <View style={{
+          backgroundColor: colors.card, borderRadius: 16, padding: 16,
+          borderWidth: 1, borderColor: colors.border, marginBottom: 16,
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            Задания по категориям
+          </Text>
+          <AssignmentRingsChart stats={categoryStats} colors={colors} />
         </View>
 
         <AchievementsShowcase

@@ -64,12 +64,14 @@ function UserCard({ item, onRemove, onPress, colors }: { item: PersonItem; onRem
             avatarUrl={item.avatarUrl}
           />
         </View>
-        <View style={{
-          position: "absolute", bottom: 1, right: 1,
-          width: 14, height: 14, borderRadius: 7,
-          backgroundColor: item.isOnline ? "#22c55e" : "#94a3b8",
-          borderWidth: 2, borderColor: colors.card,
-        }} />
+        {item.isOnline && (
+          <View style={{
+            position: "absolute", bottom: 1, right: 1,
+            width: 14, height: 14, borderRadius: 7,
+            backgroundColor: "#22c55e",
+            borderWidth: 2, borderColor: colors.card,
+          }} />
+        )}
       </View>
 
       <View style={{ flex: 1 }}>

@@ -124,7 +124,7 @@ export function AnimatedAvatar({
         )}
       </View>
 
-      {onlineDot !== undefined && onlineDot !== null && (
+      {onlineDot === true && (
         <View
           style={{
             position: "absolute",

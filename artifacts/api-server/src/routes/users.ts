@@ -1,8 +1,21 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, submissionsTable, timeSessionsTable, assignmentsTable } from "@workspace/db";
-import { eq, and, sql, desc, isNull, inArray } from "drizzle-orm";
+import { usersTable, submissionsTable, timeSessionsTable, assignmentsTable, friendshipsTable } from "@workspace/db";
+import { eq, and, or, sql, desc, isNull, inArray } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
+
+async function areFriends(userIdA: number, userIdB: number): Promise<boolean> {
+  const [friendship] = await db.select().from(friendshipsTable).where(
+    and(
+      or(
+        and(eq(friendshipsTable.requesterId, userIdA), eq(friendshipsTable.addresseeId, userIdB)),
+        and(eq(friendshipsTable.requesterId, userIdB), eq(friendshipsTable.addresseeId, userIdA)),
+      ),
+      eq(friendshipsTable.status, "accepted"),
+    )
+  );
+  return !!friendship;
+}
 
 const router = Router();
 
@@ -225,7 +238,10 @@ router.get("/students/:id/category-stats", requireAuth, async (req, res) => {
   const caller = getUser(req);
   const studentId = Number(req.params["id"]);
 
-  if (!isTeacher(caller.role) && caller.role !== "admin" && caller.userId !== studentId) {
+  if (
+    !isTeacher(caller.role) && caller.role !== "admin" && caller.userId !== studentId
+    && !(await areFriends(caller.userId, studentId))
+  ) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
