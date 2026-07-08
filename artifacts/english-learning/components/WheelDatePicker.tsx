@@ -6,7 +6,7 @@ const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;
 const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PADDING = (ITEM_HEIGHT * (VISIBLE_ITEMS - 1)) / 2;
-const SETTLE_DELAY = 120;
+const SETTLE_DELAY = 100;
 
 const MONTHS = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -33,24 +33,28 @@ function Wheel({
   width: number;
 }) {
   const scrollRef = useRef<ScrollView>(null);
-  const isProgrammatic = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastOffsetY = useRef(selectedIndex * ITEM_HEIGHT);
+  // Tracks the index this wheel itself last committed via user scroll, so we
+  // can tell apart "external" changes (a different wheel clamped our value,
+  // or initial mount) from our own commits, and only force-scroll for the
+  // former. This avoids fighting the user's in-progress scroll gesture.
+  const committedIndex = useRef(selectedIndex);
+  const didMount = useRef(false);
 
   useEffect(() => {
-    isProgrammatic.current = true;
-    scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
-    const t = setTimeout(() => { isProgrammatic.current = false; }, 50);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.length]);
-
-  useEffect(() => {
-    isProgrammatic.current = true;
-    scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: true });
-    lastOffsetY.current = selectedIndex * ITEM_HEIGHT;
-    const t = setTimeout(() => { isProgrammatic.current = false; }, 250);
-    return () => clearTimeout(t);
+    if (!didMount.current) {
+      didMount.current = true;
+      scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+      committedIndex.current = selectedIndex;
+      lastOffsetY.current = selectedIndex * ITEM_HEIGHT;
+      return;
+    }
+    if (selectedIndex !== committedIndex.current) {
+      scrollRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: true });
+      committedIndex.current = selectedIndex;
+      lastOffsetY.current = selectedIndex * ITEM_HEIGHT;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]);
 
@@ -62,11 +66,11 @@ function Wheel({
 
   const commitFromOffset = (y: number) => {
     const index = Math.max(0, Math.min(data.length - 1, Math.round(y / ITEM_HEIGHT)));
+    committedIndex.current = index;
     if (index !== selectedIndex) onSelect(index);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isProgrammatic.current) return;
     const y = e.nativeEvent.contentOffset.y;
     lastOffsetY.current = y;
     if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -76,7 +80,6 @@ function Wheel({
   };
 
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isProgrammatic.current) return;
     if (settleTimer.current) clearTimeout(settleTimer.current);
     commitFromOffset(e.nativeEvent.contentOffset.y);
   };
@@ -149,6 +152,7 @@ export default function WheelDatePicker({
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <View pointerEvents="none" style={[styles.highlight, { borderColor: colors.primary + "40" }]} />
       <Wheel
+        key="day"
         data={days}
         selectedIndex={dayIndex}
         onSelect={(i) => onChange({ ...value, day: days[i] })}
@@ -156,6 +160,7 @@ export default function WheelDatePicker({
         width={64}
       />
       <Wheel
+        key="month"
         data={months}
         selectedIndex={monthIndex}
         onSelect={(i) => {
@@ -167,6 +172,7 @@ export default function WheelDatePicker({
         width={128}
       />
       <Wheel
+        key="year"
         data={years}
         selectedIndex={yearIndex}
         onSelect={(i) => {
