@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator,
-  Image, ScrollView,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import PrismaticBurst from "@/components/PrismaticBurst";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,18 +71,6 @@ export default function LoginScreen() {
           colors={["#6d28d9", "#d946ef", "#8b5cf6"]}
         />
 
-        <LinearGradient
-          colors={["#7c3aed", "#c026d3"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoBox}
-        >
-          <Image
-            source={require("@/assets/images/leopard_transparent.png")}
-            style={styles.logoImg}
-            resizeMode="contain"
-          />
-        </LinearGradient>
         <Text style={styles.appName}>ENGLISH</Text>
         <Text style={styles.appNameSub}>LEARNING</Text>
         <Text style={styles.tagline}>Платформа для изучения английского</Text>
@@ -175,26 +162,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     overflow: "hidden",
     backgroundColor: "#0a0118",
-  },
-
-  logoBox: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 22,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.45)",
-    shadowColor: "#c026d3",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 24,
-    elevation: 12,
-  } as any,
-  logoImg: {
-    width: 92,
-    height: 92,
   },
 
   appName: {
