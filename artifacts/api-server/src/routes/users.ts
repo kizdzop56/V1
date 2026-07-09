@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, submissionsTable, timeSessionsTable, assignmentsTable, friendshipsTable } from "@workspace/db";
+import { usersTable, submissionsTable, timeSessionsTable, assignmentsTable, friendshipsTable, voiceChatSessionsTable, voiceChatMessagesTable } from "@workspace/db";
 import { eq, and, or, sql, desc, isNull, inArray } from "drizzle-orm";
 import { requireAuth, getUser, isTeacher } from "../lib/auth";
 
@@ -263,6 +263,50 @@ router.get("/students/:id/category-stats", requireAuth, async (req, res) => {
   });
 
   res.json(stats);
+});
+
+router.delete("/users/:id", requireAuth, async (req, res) => {
+  const caller = getUser(req);
+  if (!isTeacher(caller.role)) {
+    res.status(403).json({ error: "Только учитель может удалять пользователей" });
+    return;
+  }
+
+  const targetId = Number(req.params["id"]);
+  if (isNaN(targetId)) {
+    res.status(400).json({ error: "Неверный ID" });
+    return;
+  }
+
+  if (caller.userId === targetId) {
+    res.status(400).json({ error: "Нельзя удалить свой собственный аккаунт" });
+    return;
+  }
+
+  const [target] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, targetId));
+  if (!target) {
+    res.status(404).json({ error: "Пользователь не найден" });
+    return;
+  }
+  if (isTeacher(target.role)) {
+    res.status(403).json({ error: "Нельзя удалить другого учителя" });
+    return;
+  }
+
+  // Delete records without cascade first
+  const sessions = await db.select({ id: voiceChatSessionsTable.id })
+    .from(voiceChatSessionsTable).where(eq(voiceChatSessionsTable.studentId, targetId));
+  if (sessions.length > 0) {
+    const sessionIds = sessions.map((s) => s.id);
+    await db.delete(voiceChatMessagesTable).where(inArray(voiceChatMessagesTable.sessionId, sessionIds));
+  }
+  await db.delete(voiceChatSessionsTable).where(eq(voiceChatSessionsTable.studentId, targetId));
+  await db.delete(submissionsTable).where(eq(submissionsTable.studentId, targetId));
+  await db.delete(timeSessionsTable).where(eq(timeSessionsTable.studentId, targetId));
+
+  await db.delete(usersTable).where(eq(usersTable.id, targetId));
+
+  res.json({ ok: true, deletedId: targetId });
 });
 
 export default router;

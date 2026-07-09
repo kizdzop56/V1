@@ -44,3 +44,8 @@ timeoutMs = 20000
 [nix]
 channel = "stable-25_05"
 packages = ["gir-rs"]
+
+[userenv]
+
+[userenv.production]
+ADMIN_CLEANUP_TOKEN = "evijswihv2627y9otobguo"
