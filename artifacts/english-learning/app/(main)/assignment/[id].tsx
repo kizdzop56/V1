@@ -23,6 +23,7 @@ async function apiFetch(path: string, options?: RequestInit) {
   const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,

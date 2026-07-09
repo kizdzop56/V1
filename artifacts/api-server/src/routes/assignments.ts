@@ -90,6 +90,7 @@ router.get("/assignments/my-tasks", requireAuth, async (req, res) => {
 
 // ── Teacher: get their assigned tasks + results ───────────────────────
 router.get("/assignments/teacher-results", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
   if (!isTeacher(caller.role)) { res.status(403).json({ error: "Forbidden" }); return; }
 
@@ -151,6 +152,7 @@ router.get("/assignments/teacher-results", requireAuth, async (req, res) => {
 
 // ── Student: my completed assignments ────────────────────────────────
 router.get("/assignments/my-submissions", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
 
   const rows = await db.select({
@@ -176,6 +178,7 @@ router.get("/assignments/my-submissions", requireAuth, async (req, res) => {
 
 // ── Review a submission (student sees own answers, teacher sees any) ──
 router.get("/submissions/:submissionId/review", requireAuth, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const caller = getUser(req);
   const submissionId = Number(req.params["submissionId"]);
 

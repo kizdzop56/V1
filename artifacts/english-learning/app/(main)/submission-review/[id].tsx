@@ -19,6 +19,7 @@ const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
 async function apiFetch(path: string) {
   const token = await authStorage.getItem("auth_token");
   const res = await fetch(`${BASE}${path}`, {
+    cache: "no-store",
     headers: { Authorization: `Bearer ${token ?? ""}` },
   });
   const data = await res.json();
