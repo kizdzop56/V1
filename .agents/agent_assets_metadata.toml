@@ -203,3 +203,9 @@ id = "2n3DZZSQ-CFFGEfxfXtVw"
 uri = "file://screenshots/screen3_forgot_password.jpg"
 type = "image"
 title = "3. Восстановление пароля"
+
+[[outputs]]
+id = "ns68wIaE31IvYPnohSJSH"
+uri = "file://screenshots/leaderboard_ad.jpg"
+type = "image"
+title = "Рейтинг — рекламный макет (15 учеников)"
