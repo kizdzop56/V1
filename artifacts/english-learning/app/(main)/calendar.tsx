@@ -504,7 +504,7 @@ export default function CalendarScreen() {
     headerTitle: { flex: 1, fontSize: 22, fontWeight: "800", color: colors.foreground },
 
     tabRow: {
-      flexDirection: "row", marginHorizontal: 16, marginBottom: 8, gap: 8,
+      flexDirection: "row", marginHorizontal: 16, marginBottom: 8, gap: 12,
     },
     tab: {
       flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: "center",
