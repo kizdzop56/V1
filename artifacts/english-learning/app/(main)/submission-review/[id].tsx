@@ -302,7 +302,7 @@ export default function SubmissionReviewScreen() {
                     </View>
                   </View>
                   {/* Duration */}
-                  <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "600", minWidth: 36 }}>
+                  <Text style={{ fontSize: 12, color: AUDIO_PRIMARY, fontWeight: "800", minWidth: 36 }}>
                     {audioDuration ? formatAudioTime(audioDuration) : "—:——"}
                   </Text>
                 </View>
