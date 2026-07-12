@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, Platform, AppState, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, Platform, AppState, ActivityIndicator, Image } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect, useRef, useCallback, useState } from "react";
@@ -128,9 +128,10 @@ interface CustomTabBarProps {
   descriptors: any;
   navigation: any;
   onFirstVisit: (tabName: TabGuideTab, navigateFn: () => void) => void;
+  userId: number;
 }
 
-function CustomTabBar({ state, descriptors, navigation, onFirstVisit }: CustomTabBarProps) {
+function CustomTabBar({ state, descriptors, navigation, onFirstVisit, userId }: CustomTabBarProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -205,7 +206,7 @@ function CustomTabBar({ state, descriptors, navigation, onFirstVisit }: CustomTa
 
             // Only show guide for tabs that have content + not yet seen
             if (GUIDE_TABS.has(tabName)) {
-              const seenKey = `${TAB_SEEN_PREFIX}${tabName}`;
+              const seenKey = `${TAB_SEEN_PREFIX}${userId}_${tabName}`;
               const seen = await AsyncStorage.getItem(seenKey);
               if (!seen) {
                 await AsyncStorage.setItem(seenKey, "1");
@@ -318,6 +319,7 @@ function MainLayoutInner() {
           <CustomTabBar
             {...props}
             onFirstVisit={handleFirstVisit}
+            userId={user.id}
           />
         )}
         screenOptions={{
@@ -387,6 +389,12 @@ function MainLayoutInner() {
         <Tabs.Screen name="teacher-results/[id]" options={{ href: null }} />
         <Tabs.Screen name="submission-review/[id]" options={{ href: null }} />
       </Tabs>
+
+      {/* Preload mascot image so it appears instantly when TabGuide opens */}
+      <Image
+        source={require("@/assets/images/mascot_full.png")}
+        style={{ width: 0, height: 0, opacity: 0, position: "absolute" }}
+      />
 
       <TabGuide
         tabName={guideState.tabName}

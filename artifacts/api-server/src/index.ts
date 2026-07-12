@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { db, usersTable, timeSessionsTable } from "@workspace/db";
+import { db, usersTable, timeSessionsTable, submissionsTable, authTokensTable } from "@workspace/db";
 import { sql, eq, and } from "drizzle-orm";
 
 // One-time cleanup: earlier avatar uploads stored uncompressed base64 data
@@ -64,7 +64,27 @@ async function fixLizaOrphanedSession() {
   }
 }
 
-cleanupOversizedAvatars().then(() => fixLizaOrphanedSession()).finally(() => {
+// One-time cleanup: delete user Анна (id=12) and all her data.
+// submissions.studentId has no CASCADE so must be deleted explicitly first;
+// submission_answers cascade from submissions. assigned_tasks, teacher_students,
+// friendships all have onDelete:cascade from users so they clean up automatically.
+async function deleteAnnaUser() {
+  try {
+    const [anna] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, 12));
+    if (!anna) return; // Already deleted — no-op on every subsequent restart
+    await db.delete(authTokensTable).where(eq(authTokensTable.userId, 12));
+    await db.delete(submissionsTable).where(eq(submissionsTable.studentId, 12));
+    await db.delete(usersTable).where(eq(usersTable.id, 12));
+    logger.info("Deleted user Анна (id=12) and all related data");
+  } catch (err) {
+    logger.error({ err }, "Failed to delete user Анна");
+  }
+}
+
+cleanupOversizedAvatars().then(() => fixLizaOrphanedSession()).then(() => deleteAnnaUser()).finally(() => {
   app.listen(port, (err) => {
     if (err) {
       logger.error({ err }, "Error listening on port");
