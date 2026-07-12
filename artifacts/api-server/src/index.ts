@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { db, usersTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { db, usersTable, timeSessionsTable } from "@workspace/db";
+import { sql, eq, and } from "drizzle-orm";
 
 // One-time cleanup: earlier avatar uploads stored uncompressed base64 data
 // URIs (up to several MB) directly in avatar_url. Any user row that still has
@@ -38,7 +38,33 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-cleanupOversizedAvatars().finally(() => {
+// One-time fix: session #51 was an orphaned session that ran for ~5 days
+// (7165 min) due to the old bug where sessions were never capped. The fix caps
+// that session to 0 and resets the user's cached total to 180 min (3 hours).
+// The condition matches only that exact row — once corrected the block is a no-op.
+async function fixLizaOrphanedSession() {
+  try {
+    const [session] = await db
+      .select({ id: timeSessionsTable.id, durationMinutes: timeSessionsTable.durationMinutes })
+      .from(timeSessionsTable)
+      .where(and(eq(timeSessionsTable.id, 51), eq(timeSessionsTable.durationMinutes, 7165)));
+    if (session) {
+      await db
+        .update(timeSessionsTable)
+        .set({ durationMinutes: 0 })
+        .where(eq(timeSessionsTable.id, 51));
+      await db
+        .update(usersTable)
+        .set({ totalTimeMinutes: 180 })
+        .where(eq(usersTable.id, 6));
+      logger.info("Applied one-time time correction for user Лиза (orphaned session #51 reset)");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to apply Liza time fix");
+  }
+}
+
+cleanupOversizedAvatars().then(() => fixLizaOrphanedSession()).finally(() => {
   app.listen(port, (err) => {
     if (err) {
       logger.error({ err }, "Error listening on port");
