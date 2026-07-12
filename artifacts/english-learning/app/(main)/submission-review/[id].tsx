@@ -1,16 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
 import { ImageZoomModal } from "@/components/ImageZoomModal";
 import { MediaViewerModal, type MediaKind } from "@/components/MediaViewerModal";
 import { InlineMediaPlayer } from "@/components/InlineMediaPlayer";
+
+const AUDIO_PRIMARY = "#7c3aed";
+const AUDIO_BG      = "#cbb8ef";
+const WAVE_START    = "#6d28d9";
+const WAVE_END      = "#c4b5fd";
+const WAVE_IDLE     = "#e2e8f0";
+const TEXT_MUTED    = "#94a3b8";
+const SLATE         = "#475569";
+
+function lerpColor(c1: string, c2: string, t: number): string {
+  const h = (s: string) => parseInt(s.slice(1), 16);
+  const r1 = (h(c1) >> 16) & 0xff, g1 = (h(c1) >> 8) & 0xff, b1 = h(c1) & 0xff;
+  const r2 = (h(c2) >> 16) & 0xff, g2 = (h(c2) >> 8) & 0xff, b2 = h(c2) & 0xff;
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+function formatAudioTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 const BASE = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -70,6 +95,37 @@ export default function SubmissionReviewScreen() {
   const [error, setError] = useState("");
   const [zoomImg, setZoomImg] = useState<string | null>(null);
   const [mediaModal, setMediaModal] = useState<{ url: string; kind: MediaKind } | null>(null);
+
+  // Audio player state (mirrors assignment/[id].tsx)
+  const audioRef = useRef<any>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioSpeed, setAudioSpeed] = useState<1 | 0.5>(1);
+
+  const toggleAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.playbackRate = audioSpeed;
+    if (audioPlaying) { el.pause(); setAudioPlaying(false); }
+    else { el.play().catch(() => {}); setAudioPlaying(true); }
+  }, [audioPlaying, audioSpeed]);
+
+  const replayAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = 0;
+    el.playbackRate = audioSpeed;
+    el.play().catch(() => {});
+    setAudioPlaying(true);
+  }, [audioSpeed]);
+
+  const toggleAudioSpeed = useCallback(() => {
+    const next: 1 | 0.5 = audioSpeed === 1 ? 0.5 : 1;
+    setAudioSpeed(next);
+    const el = audioRef.current;
+    if (el) el.playbackRate = next;
+  }, [audioSpeed]);
 
   useEffect(() => {
     apiFetch(`/api/submissions/${submissionId}/review`)
@@ -180,10 +236,102 @@ export default function SubmissionReviewScreen() {
         {data.assignment?.mediaUrl ? (() => {
           const mUrl = data.assignment!.mediaUrl!;
           const aType = data.assignment!.type;
-          const isAudio = aType === "audio" || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/audio");
-          const isVideo = aType === "video" || mUrl.includes("youtube") || mUrl.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(mUrl) || mUrl.includes("/upload/video");
+
+          // Assignment type takes priority over URL format.
+          // An "audio" assignment must NEVER show a video player
+          // even if the teacher uploaded a .mp4 file as the audio source.
+          const isAudioUrl = (u: string) =>
+            /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(u) || u.includes("/upload/audio");
+          const isVideoUrl = (u: string) =>
+            u.includes("youtube") || u.includes("youtu.be") ||
+            /\.(mp4|mov|webm|avi)(\?|$)/i.test(u) || u.includes("/upload/video");
+
+          const isAudio = aType === "audio" || (aType !== "video" && isAudioUrl(mUrl));
+          const isVideo = !isAudio && (aType === "video" || isVideoUrl(mUrl));
+
           const openInModal = (kind: MediaKind) => setMediaModal({ url: mUrl, kind });
 
+          // ── Audio assignment: full waveform player (same design as quiz screen) ──
+          if (isAudio) {
+            return (
+              <View style={{ backgroundColor: AUDIO_BG, borderRadius: 16, padding: 14, marginBottom: 16, gap: 8 }}>
+                {/* Hidden web audio element */}
+                {Platform.OS === "web" && (
+                  // @ts-ignore
+                  <audio
+                    ref={audioRef}
+                    src={mUrl}
+                    style={{ display: "none" }}
+                    onEnded={() => setAudioPlaying(false)}
+                    onLoadedMetadata={(e: any) => setAudioDuration(e.target.duration)}
+                    onTimeUpdate={(e: any) => setAudioCurrentTime(e.target.currentTime)}
+                  />
+                )}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  {/* Play/Pause button */}
+                  <TouchableOpacity
+                    style={{ borderRadius: 24, overflow: "hidden" }}
+                    onPress={Platform.OS === "web" ? toggleAudio : () => openInModal("audio")}
+                  >
+                    <LinearGradient
+                      colors={[AUDIO_PRIMARY, "#a78bfa"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center" }}
+                    >
+                      <Feather name={audioPlaying ? "pause" : "play"} size={20} color="#fff" />
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  {/* Waveform bars */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 32, width: "100%" }}>
+                      {Array.from({ length: 30 }).map((_, i) => {
+                        const fraction = audioDuration ? audioCurrentTime / audioDuration : 0;
+                        const played = i / 30 < fraction;
+                        return (
+                          <View
+                            key={i}
+                            style={{
+                              width: 3, borderRadius: 2,
+                              height: 6 + Math.abs(Math.sin(i * 0.7 + 1) * 14),
+                              backgroundColor: played ? lerpColor(WAVE_START, WAVE_END, i / 30) : WAVE_IDLE,
+                            }}
+                          />
+                        );
+                      })}
+                    </View>
+                  </View>
+                  {/* Duration */}
+                  <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "600", minWidth: 36 }}>
+                    {audioDuration ? formatAudioTime(audioDuration) : "—:——"}
+                  </Text>
+                </View>
+                {/* Controls row */}
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+                  <TouchableOpacity
+                    onPress={Platform.OS === "web" ? replayAudio : () => openInModal("audio")}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: "rgba(255,255,255,0.45)", borderRadius: 10 }}
+                  >
+                    <Feather name="refresh-cw" size={12} color={SLATE} />
+                    <Text style={{ fontSize: 13, color: SLATE, fontWeight: "600" }}>Слушать снова</Text>
+                  </TouchableOpacity>
+                  {Platform.OS === "web" && (
+                    <TouchableOpacity
+                      onPress={toggleAudioSpeed}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: audioSpeed === 0.5 ? AUDIO_PRIMARY + "20" : "rgba(255,255,255,0.45)", borderWidth: audioSpeed === 0.5 ? 1.5 : 0, borderColor: AUDIO_PRIMARY }}
+                    >
+                      <Feather name="zap" size={12} color={audioSpeed === 0.5 ? AUDIO_PRIMARY : SLATE} />
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: audioSpeed === 0.5 ? AUDIO_PRIMARY : SLATE }}>
+                        {audioSpeed === 1 ? "1x" : "0.5x"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          }
+
+          // ── Video assignment ──
           if (isVideo) {
             return (
               <View style={{ backgroundColor: "#fce7f3", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#ec489940", gap: 8 }}>
@@ -196,29 +344,7 @@ export default function SubmissionReviewScreen() {
             );
           }
 
-          if (isAudio) {
-            return (
-              <View style={{ backgroundColor: "#e0e7ff", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#6366f140", gap: 8 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Feather name="headphones" size={16} color="#6366f1" />
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#4338ca" }}>Аудио к заданию</Text>
-                </View>
-                {Platform.OS === "web" ? (
-                  /* @ts-ignore */
-                  <audio controls src={mUrl} style={{ width: "100%", borderRadius: 8 }} />
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => openInModal("audio")}
-                    style={{ backgroundColor: "#6366f1", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
-                  >
-                    <Feather name="headphones" size={16} color="#fff" />
-                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть аудио</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            );
-          }
-
+          // ── Other attachment ──
           return (
             <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#8b5cf640", gap: 8 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
