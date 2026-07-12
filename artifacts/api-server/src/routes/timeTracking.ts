@@ -12,9 +12,15 @@ router.post("/time-tracking/start", requireAuth, async (req, res) => {
   const openSessions = await db.select().from(timeSessionsTable)
     .where(and(eq(timeSessionsTable.studentId, user.userId), isNull(timeSessionsTable.endedAt)));
 
+  // Max minutes we credit for a single abandoned session.
+  // Prevents inflated leaderboard times when a session was never properly
+  // closed (e.g. browser crash, network failure on beforeunload).
+  const MAX_ORPHAN_MINUTES = 240;
+
   let accumulatedMinutes = 0;
   for (const session of openSessions) {
-    const durationMinutes = Math.round((Date.now() - session.startedAt.getTime()) / 60000);
+    const rawMinutes = Math.round((Date.now() - session.startedAt.getTime()) / 60000);
+    const durationMinutes = Math.min(rawMinutes, MAX_ORPHAN_MINUTES);
     accumulatedMinutes += durationMinutes;
     await db.update(timeSessionsTable)
       .set({ endedAt: new Date(), durationMinutes })

@@ -50,16 +50,23 @@ router.get("/gamification/stats", requireAuth, async (req, res) => {
     .where(eq(voiceChatSessionsTable.studentId, userId));
   const voiceChatSessions = voiceSessions[0]?.count ?? 0;
 
-  // Perfect score count (submissions with score = 100)
+  // Perfect score count — only graded submissions with score = 100
   const perfectSubs = await db.select({ count: sql<number>`count(*)::int` })
     .from(submissionsTable)
-    .where(and(eq(submissionsTable.studentId, userId), eq(submissionsTable.score, 100)));
+    .where(and(
+      eq(submissionsTable.studentId, userId),
+      eq(submissionsTable.status, "graded"),
+      eq(submissionsTable.score, 100),
+    ));
   const perfectScoreCount = perfectSubs[0]?.count ?? 0;
 
-  // Completed assignments count
+  // Completed assignments count — only graded submissions count as "done"
   const completedSubs = await db.select({ count: sql<number>`count(*)::int` })
     .from(submissionsTable)
-    .where(eq(submissionsTable.studentId, userId));
+    .where(and(
+      eq(submissionsTable.studentId, userId),
+      eq(submissionsTable.status, "graded"),
+    ));
   const completedAssignments = completedSubs[0]?.count ?? 0;
 
   // Early bird sessions (sessions started before 9am)

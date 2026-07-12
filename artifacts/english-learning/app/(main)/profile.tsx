@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Platform, TextInput, Modal, FlatList, ActivityIndicator,
+  Platform, AppState, TextInput, Modal, FlatList, ActivityIndicator,
   Clipboard, Image, Alert, KeyboardAvoidingView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -77,22 +77,65 @@ function formatSessionTime(seconds: number) {
   return `${h} ч ${m} мин`;
 }
 
-// Live in-app timer — restores elapsed time from session start saved in AsyncStorage
+// Live in-app timer — only ticks while the user is actively in the app.
+// Reads SESSION_START_KEY from AsyncStorage to get accurate elapsed time.
+// Pauses when the app goes to background / tab is hidden, resumes on return.
 const SESSION_START_KEY = "timer_session_start";
 
 function useLiveTimer() {
   const [seconds, setSeconds] = useState(0);
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const syncFromStorage = useCallback(async () => {
+    const stored = await AsyncStorage.getItem(SESSION_START_KEY);
+    const initial = stored ? Math.floor((Date.now() - Number(stored)) / 1000) : 0;
+    setSeconds(Math.max(0, initial));
+  }, []);
+
+  const startTicking = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+  }, []);
+
+  const stopTicking = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    // Read session start from AsyncStorage to get accurate elapsed time even after tab switches
-    AsyncStorage.getItem(SESSION_START_KEY).then((stored) => {
-      const initial = stored ? Math.floor((Date.now() - Number(stored)) / 1000) : 0;
-      setSeconds(Math.max(0, initial));
-      ref.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    // Initial sync + start
+    syncFromStorage().then(startTicking);
+
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const onVisibility = () => {
+        if (document.hidden) {
+          stopTicking();
+        } else {
+          syncFromStorage().then(startTicking);
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      return () => {
+        document.removeEventListener("visibilitychange", onVisibility);
+        stopTicking();
+      };
+    }
+
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        syncFromStorage().then(startTicking);
+      } else {
+        stopTicking();
+      }
     });
-    return () => { if (ref.current) clearInterval(ref.current); };
-  }, []);
+
+    return () => {
+      appStateSub.remove();
+      stopTicking();
+    };
+  }, [syncFromStorage, startTicking, stopTicking]);
 
   return seconds;
 }
