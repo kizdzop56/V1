@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import authStorage from "@/utils/authStorage";
 import { AnimatedAvatar } from "@/components/AnimatedAvatar";
+import { AssignmentRingsChart } from "@/components/AssignmentRingsChart";
 
 const BASE_URL = process.env["EXPO_PUBLIC_DOMAIN"]
   ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
@@ -34,59 +35,12 @@ const TYPE_LABELS: Record<string, string> = {
 const TYPE_ICONS: Record<string, any> = {
   text_test: "edit-3", audio: "headphones", reading: "book", video: "video", free_form: "file-text",
 };
-
-type CategoryStat = { type: string; avgScore: number | null; count: number };
 type Submission = {
   submissionId: number; score: number; correctCount: number;
   totalQuestions: number; pointsEarned: number; submittedAt: string;
   assignmentId: number; title: string; type: string; points: number;
 };
 
-function CategoryChart({ stats, colors }: { stats: CategoryStat[]; colors: any }) {
-  return (
-    <View style={{ gap: 14 }}>
-      {stats.map((stat) => {
-        const color = TYPE_COLORS[stat.type] ?? colors.primary;
-        const pct = stat.avgScore ?? 0;
-        const hasData = stat.count > 0;
-        return (
-          <View key={stat.type}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Feather name={TYPE_ICONS[stat.type]} size={14} color={color} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>
-                  {TYPE_LABELS[stat.type]}
-                </Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                {hasData ? (
-                  <Text style={{ fontSize: 15, fontWeight: "900", color }}>
-                    {pct}%
-                  </Text>
-                ) : (
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>нет данных</Text>
-                )}
-                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-                  {stat.count} зад.
-                </Text>
-              </View>
-            </View>
-            <View style={{ height: 12, backgroundColor: colors.muted, borderRadius: 6, overflow: "hidden" }}>
-              {hasData && (
-                <View style={{
-                  height: 12,
-                  width: `${pct}%` as any,
-                  backgroundColor: color,
-                  borderRadius: 6,
-                }} />
-              )}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function StudentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -243,17 +197,10 @@ export default function StudentDetailScreen() {
         </View>
 
         {/* Category chart */}
-        {categoryStats.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Навыки по областям</Text>
-            <CategoryChart stats={categoryStats} colors={colors} />
-
-            {/* Legend note */}
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 16, lineHeight: 17 }}>
-              Показывает средний процент правильных ответов по каждому типу заданий.
-            </Text>
-          </View>
-        )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Навыки по областям</Text>
+          <AssignmentRingsChart stats={categoryStats} colors={colors} />
+        </View>
 
         {/* Recent submissions */}
         <View style={styles.section}>

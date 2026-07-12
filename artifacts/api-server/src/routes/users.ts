@@ -241,12 +241,8 @@ router.get("/students/:id/category-stats", requireAuth, async (req, res) => {
   const caller = getUser(req);
   const studentId = Number(req.params["id"]);
 
-  if (
-    !isTeacher(caller.role) && caller.role !== "admin" && caller.userId !== studentId
-    && !(await areFriends(caller.userId, studentId))
-  ) {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
+  // Any authenticated user may view another user's category stats
+  // (the data is shown on public profile pages and contains no sensitive info)
 
   const rows = await db.select({
     score: submissionsTable.score,
@@ -254,7 +250,12 @@ router.get("/students/:id/category-stats", requireAuth, async (req, res) => {
   })
     .from(submissionsTable)
     .leftJoin(assignmentsTable, eq(submissionsTable.assignmentId, assignmentsTable.id))
-    .where(eq(submissionsTable.studentId, studentId));
+    .where(
+      and(
+        eq(submissionsTable.studentId, studentId),
+        eq(submissionsTable.status, "graded")
+      )
+    );
 
   const CATEGORIES = ["text_test", "audio", "reading", "video"] as const;
   const stats = CATEGORIES.map((cat) => {
