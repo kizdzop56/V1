@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, Platform, AppState, ActivityIndicator, Image } from "react-native";
+import { View, Text, TouchableOpacity, Platform, AppState, ActivityIndicator } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useColors } from "@/hooks/useColors";
 import { useAuth, isTeacherOrAdmin } from "@/contexts/AuthContext";
 import { useEffect, useRef, useCallback, useState } from "react";
@@ -391,9 +392,10 @@ function MainLayoutInner() {
       </Tabs>
 
       {/* Preload mascot image so it appears instantly when TabGuide opens */}
-      <Image
+      <ExpoImage
         source={require("@/assets/images/mascot_full.png")}
         style={{ width: 0, height: 0, opacity: 0, position: "absolute" }}
+        cachePolicy="memory"
       />
 
       <TabGuide

@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Image } from "react-native";
+import { View } from "react-native";
+import { Image } from "expo-image";
 
 export type MascotPose =
   | "wave" | "celebrate" | "think" | "happy" | "excited"
@@ -35,21 +36,13 @@ export function AnimatedMascotImage({ pose = "wave", width = 200, height, style 
   const imgH = height ?? Math.round(width / RATIO[pose]);
 
   return (
-    <View
-      style={[
-        {
-          width: imgW,
-          height: imgH,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.22,
-          shadowRadius: 6,
-          elevation: 4,
-        },
-        style,
-      ]}
-    >
-      <Image source={SRC[pose]} style={{ width: imgW, height: imgH }} resizeMode="contain" />
+    <View style={[{ width: imgW, height: imgH }, style]}>
+      <Image
+        source={SRC[pose]}
+        style={{ width: imgW, height: imgH }}
+        contentFit="contain"
+        cachePolicy="memory"
+      />
     </View>
   );
 }
