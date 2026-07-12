@@ -227,7 +227,10 @@ router.get("/students/:id/submissions", requireAuth, async (req, res) => {
   })
     .from(submissionsTable)
     .leftJoin(assignmentsTable, eq(submissionsTable.assignmentId, assignmentsTable.id))
-    .where(eq(submissionsTable.studentId, studentId))
+    .where(and(
+      eq(submissionsTable.studentId, studentId),
+      eq(submissionsTable.status, "graded"),
+    ))
     .orderBy(desc(submissionsTable.submittedAt));
 
   res.json(rows);
