@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "jy7bw6GRrr7uJHvsBrS2A"
@@ -186,3 +185,21 @@ id = "yckXbA26Uj-Rn11VWQ-6q"
 uri = "file://artifacts/english-learning/assets/images/mascot_lie_blink.png"
 type = "image"
 title = "lie blink"
+
+[[outputs]]
+id = "bnm9pCzKJ_uY7fd1x10j8"
+uri = "file://screenshots/screen1_home.jpg"
+type = "image"
+title = "1. Экран входа"
+
+[[outputs]]
+id = "jqhONxfE6ESv6B5ytSNUx"
+uri = "file://screenshots/screen2_register.jpg"
+type = "image"
+title = "2. Выбор роли при регистрации"
+
+[[outputs]]
+id = "2n3DZZSQ-CFFGEfxfXtVw"
+uri = "file://screenshots/screen3_forgot_password.jpg"
+type = "image"
+title = "3. Восстановление пароля"
