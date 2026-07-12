@@ -640,7 +640,7 @@ export default function CalendarScreen() {
 
   // ── Date strip ──────────────────────────────────────────────────────
   const renderDatePicker = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.datePicker}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.datePicker} style={{ flexGrow: 0 }}>
       {DATES.map((date) => {
         const { day, num, month } = dateLabel(date);
         const active = date === selectedDate;
@@ -737,6 +737,7 @@ export default function CalendarScreen() {
     return (
       <ScrollView
         ref={scheduleScrollRef}
+        style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
@@ -768,6 +769,7 @@ export default function CalendarScreen() {
     const totalCount = bookings.length + customRequests.length;
     return (
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
@@ -840,6 +842,7 @@ export default function CalendarScreen() {
     const past   = daySlots.filter((sl) =>  isPastSlot(sl.date, sl.endTime));
     return (
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
@@ -960,6 +963,7 @@ export default function CalendarScreen() {
 
     return (
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
@@ -1064,6 +1068,7 @@ export default function CalendarScreen() {
 
     return (
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
