@@ -640,7 +640,7 @@ export default function CalendarScreen() {
 
   // ── Date strip ──────────────────────────────────────────────────────
   const renderDatePicker = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.datePicker} style={{ flexGrow: 0 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.datePicker} style={{ flexGrow: 0, marginBottom: 14 }}>
       {DATES.map((date) => {
         const { day, num, month } = dateLabel(date);
         const active = date === selectedDate;
