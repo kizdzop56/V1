@@ -108,7 +108,7 @@ export function InlineMediaPlayer({ url, kind, height = 200, style, title }: Pro
   // ── Audio waveform (matches student player) ────────────────────────
   if (kind === "audio") {
     return (
-      <View style={[{ borderRadius: 14, backgroundColor: AUDIO_BG, padding: 14 }, style]}>
+      <View style={[{ borderRadius: 14, backgroundColor: "#fff", padding: 14, borderWidth: 1, borderColor: "#ede9fe" }, style]}>
         {Platform.OS === "web" && (
           /* @ts-ignore */
           <audio
@@ -155,7 +155,7 @@ export function InlineMediaPlayer({ url, kind, height = 200, style, title }: Pro
             </View>
           </View>
 
-          <Text style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: "600", minWidth: 36 }}>
+          <Text style={{ fontSize: 12, color: PRIMARY, fontWeight: "600", minWidth: 36 }}>
             {audioDuration ? formatAudioTime(audioDuration) : "—:——"}
           </Text>
         </View>
