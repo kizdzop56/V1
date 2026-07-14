@@ -431,21 +431,25 @@ export default function CreateAssignmentScreen() {
           {Platform.OS === "web" ? (
             <>
               {/* @ts-ignore */}
-              <input type="file" accept={acceptMime} style={{ display: "none" }} ref={inputRef}
+              <input type="file" accept={acceptMime} id={`file-input-${kind}`} style={{ display: "none" }} ref={inputRef}
                 onChange={(e: any) => { const f = e.target.files?.[0]; if (f) handleUpload(f, kind); }} />
-              <TouchableOpacity
-                style={[s.uploadArea, { borderColor: accentColor, paddingVertical: 18 }]}
-                onPress={() => inputRef.current?.click()}
-                disabled={uploading === kind}
-              >
-                {uploading === kind
-                  ? <ActivityIndicator size="small" color={accentColor} />
-                  : <Feather name={iconName as any} size={20} color={accentColor} />
-                }
-                <Text style={{ fontSize: 14, fontWeight: "600", color: accentColor }}>
-                  {uploading === kind ? "Загрузка…" : `Выбрать файл`}
-                </Text>
-              </TouchableOpacity>
+              {uploading === kind ? (
+                <View style={[s.uploadArea, { borderColor: accentColor, paddingVertical: 18 }]}>
+                  <ActivityIndicator size="small" color={accentColor} />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: accentColor }}>Загрузка…</Text>
+                </View>
+              ) : (
+                // label triggers file picker natively — no .click() needed (bypasses browser security block)
+                /* @ts-ignore */
+                <label htmlFor={`file-input-${kind}`} style={{
+                  display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center",
+                  gap: 8, paddingTop: 18, paddingBottom: 18, borderRadius: 12,
+                  border: `1.5px dashed ${accentColor}`, cursor: "pointer", backgroundColor: "transparent",
+                }}>
+                  <Feather name={iconName as any} size={20} color={accentColor} />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: accentColor }}>Выбрать файл</Text>
+                </label>
+              )}
             </>
           ) : (
             <TextInput
