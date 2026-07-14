@@ -117,17 +117,44 @@ export default function CreateAssignmentScreen() {
     set("formError" as any, "");
     try {
       const token = await authStorage.getItem("auth_token");
-      const form = new FormData();
-      form.append("file", file);
-      const endpoint = kind === "audio" ? "/api/upload/audio" : kind === "video" ? "/api/upload/video" : "/api/upload/image";
-      const res = await fetch(`${BASE}${endpoint}`, {
-        method: "POST", headers: { Authorization: `Bearer ${token ?? ""}` }, body: form,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Ошибка загрузки");
-      if (kind === "audio") setSt(p => ({ ...p, audioUrl: data.url, uploadedAudioName: file.name }));
-      else if (kind === "video") setSt(p => ({ ...p, videoUrl: data.url, uploadedVideoName: file.name }));
-      else setSt(p => ({ ...p, imageUrl: data.url, uploadedImageName: file.name }));
+
+      if (kind === "image") {
+        // Images are small — standard multer upload works fine.
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${BASE}/api/upload/image`, {
+          method: "POST", headers: { Authorization: `Bearer ${token ?? ""}` }, body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Ошибка загрузки");
+        setSt(p => ({ ...p, imageUrl: data.url, uploadedImageName: file.name }));
+      } else {
+        // Video/audio: use presigned GCS upload to bypass deployment proxy body-size limits.
+        // Step 1: request a presigned PUT URL from our server (tiny JSON — no proxy issue).
+        const presignedRes = await fetch(`${BASE}/api/storage/request-upload-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
+          body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+        });
+        const presignedData = await presignedRes.json();
+        if (!presignedRes.ok) throw new Error(presignedData.error ?? "Ошибка получения URL загрузки");
+
+        const { uploadURL, objectPath } = presignedData as { uploadURL: string; objectPath: string };
+
+        // Step 2: upload directly to GCS via presigned URL (bypasses our proxy entirely).
+        const uploadRes = await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!uploadRes.ok) throw new Error("Ошибка загрузки файла на сервер");
+
+        // Serving URL goes through our storage proxy (GET requests are not limited by proxy).
+        const serveUrl = `${BASE}/api/storage${objectPath}`;
+
+        if (kind === "audio") setSt(p => ({ ...p, audioUrl: serveUrl, uploadedAudioName: file.name }));
+        else setSt(p => ({ ...p, videoUrl: serveUrl, uploadedVideoName: file.name }));
+      }
     } catch (e: any) {
       set("formError" as any, e.message);
     } finally {
@@ -212,6 +239,7 @@ export default function CreateAssignmentScreen() {
     const finalMediaUrl = type === "audio" ? (audioUrl.trim() || mediaUrl.trim() || undefined)
       : type === "video" ? (videoUrl.trim() || mediaUrl.trim() || undefined)
       : type === "free_form" ? (audioUrl.trim() || videoUrl.trim() || undefined)
+      : type === "text_test" ? (videoUrl.trim() || undefined)
       : undefined;
     // For reading: optional supplementary audio/video
     const suppAudio = type === "reading" ? audioUrl.trim() || undefined : undefined;
@@ -571,11 +599,12 @@ export default function CreateAssignmentScreen() {
           "audio/*",
         )}
 
-        {/* Видео — только reading и video */}
-        {(type === "reading" || type === "video") && renderMediaSection(
+        {/* Видео — для reading, video и text_test */}
+        {(type === "reading" || type === "video" || type === "text_test") && renderMediaSection(
           "video",
           videoUrl, v => set("videoUrl", v),
           videoInputMode, v => {
+            set("formError" as any, "");
             if (v === "url") setSt(p => ({ ...p, videoInputMode: "url", videoUrl: "", uploadedVideoName: "" }));
             else set("videoInputMode", "file");
           },
