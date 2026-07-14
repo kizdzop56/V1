@@ -322,10 +322,10 @@ export default function AssignmentDetailScreen() {
   const textContent = assignment.type === "reading" ? assignment.content : null;
   const imageUrl = assignment.imageUrl;
 
-  const isAudioUrl = (url: string) => /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(url) || url.includes("/upload/audio") || url.includes("/upload/student-recording");
-  const isVideoUrl = (url: string) => url.includes("youtube") || url.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("/upload/video");
-  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || (assignment.type !== "audio" && !isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
-  const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (assignment.type !== "video" && !showVideoBlock && isAudioUrl(mediaUrl)));
+  const isAudioUrl = (url: string) => url.includes("kind=audio") || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(url) || url.includes("/upload/audio") || url.includes("/upload/student-recording");
+  const isVideoUrl = (url: string) => url.includes("kind=video") || url.includes("youtube") || url.includes("youtu.be") || /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("/upload/video") || url.includes("/api/storage/objects/");
+  const showVideoBlock = !!mediaUrl && (assignment.type === "video" || assignment.type === "text_test" || (assignment.type !== "audio" && !isAudioUrl(mediaUrl) && isVideoUrl(mediaUrl)));
+  const showAudioBlock = !!mediaUrl && (assignment.type === "audio" || (assignment.type !== "video" && assignment.type !== "text_test" && !showVideoBlock && isAudioUrl(mediaUrl)));
   const showOtherBlock = !!mediaUrl && !showVideoBlock && !showAudioBlock;
 
   const openMedia = () => {
@@ -417,30 +417,19 @@ export default function AssignmentDetailScreen() {
           )}
           {/* Media */}
           {textContent && <View style={s.card}><Text style={s.sectionTitle}>Текст для чтения</Text><Text style={s.bodyText}>{textContent}</Text></View>}
-          {showAudioBlock && (
-            <View style={[s.card, { backgroundColor: AUDIO_BG }]}>
-              <Text style={s.sectionTitle}>Аудио</Text>
-              {Platform.OS === "web" ? (/* @ts-ignore */ <audio controls src={mediaUrl} style={{ width: "100%", borderRadius: 8 }} />) : (
-                <TouchableOpacity style={[s.mediaBtn, { backgroundColor: "#6366f1" }]} onPress={openMedia}>
-                  <Feather name="headphones" size={16} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть аудио</Text>
-                </TouchableOpacity>
-              )}
+          {showAudioBlock && mediaUrl && (
+            <View style={s.card}>
+              <InlineMediaPlayer url={mediaUrl} kind="audio" title={assignment.title} />
             </View>
           )}
           {showVideoBlock && mediaUrl && (
             <View style={s.card}>
-              <Text style={s.sectionTitle}>Видео</Text>
-              <InlineMediaPlayer url={mediaUrl} kind="video" height={200} />
+              <InlineMediaPlayer url={mediaUrl} kind="video" height={200} title={assignment.title} />
             </View>
           )}
-          {showOtherBlock && (
+          {showOtherBlock && mediaUrl && (
             <View style={s.card}>
-              <Text style={s.sectionTitle}>Прикреплённый файл</Text>
-              <TouchableOpacity style={[s.mediaBtn, { backgroundColor: PRIMARY }]} onPress={openMedia}>
-                <Feather name="paperclip" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "700" }}>Открыть файл</Text>
-              </TouchableOpacity>
+              <InlineMediaPlayer url={mediaUrl} kind="other" height={200} title={assignment.title} />
             </View>
           )}
           {/* Questions — teacher sees correct answers */}
@@ -741,12 +730,9 @@ export default function AssignmentDetailScreen() {
         )}
 
         {/* ── Attached file card (unrecognized type) ── */}
-        {showOtherBlock && (
+        {showOtherBlock && mediaUrl && (
           <View style={[s.card, { marginBottom: 12 }]}>
-            <TouchableOpacity style={[s.mediaBtn, { backgroundColor: PRIMARY }]} onPress={openMedia}>
-              <Feather name="paperclip" size={16} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Открыть файл</Text>
-            </TouchableOpacity>
+            <InlineMediaPlayer url={mediaUrl} kind="other" height={200} title={assignment.title} />
           </View>
         )}
 

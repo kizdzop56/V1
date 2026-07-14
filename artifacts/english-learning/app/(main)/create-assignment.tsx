@@ -150,7 +150,8 @@ export default function CreateAssignmentScreen() {
         if (!uploadRes.ok) throw new Error("Ошибка загрузки файла на сервер");
 
         // Serving URL goes through our storage proxy (GET requests are not limited by proxy).
-        const serveUrl = `${BASE}/api/storage${objectPath}`;
+        // Append kind so viewers can detect video vs audio without relying on file extension.
+        const serveUrl = `${BASE}/api/storage${objectPath}?kind=${kind}`;
 
         if (kind === "audio") setSt(p => ({ ...p, audioUrl: serveUrl, uploadedAudioName: file.name }));
         else setSt(p => ({ ...p, videoUrl: serveUrl, uploadedVideoName: file.name }));

@@ -241,13 +241,13 @@ export default function SubmissionReviewScreen() {
           // An "audio" assignment must NEVER show a video player
           // even if the teacher uploaded a .mp4 file as the audio source.
           const isAudioUrl = (u: string) =>
-            /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(u) || u.includes("/upload/audio");
+            u.includes("kind=audio") || /\.(mp3|m4a|wav|ogg|aac)(\?|$)/i.test(u) || u.includes("/upload/audio");
           const isVideoUrl = (u: string) =>
-            u.includes("youtube") || u.includes("youtu.be") ||
-            /\.(mp4|mov|webm|avi)(\?|$)/i.test(u) || u.includes("/upload/video");
+            u.includes("kind=video") || u.includes("youtube") || u.includes("youtu.be") ||
+            /\.(mp4|mov|webm|avi)(\?|$)/i.test(u) || u.includes("/upload/video") || u.includes("/api/storage/objects/");
 
-          const isAudio = aType === "audio" || (aType !== "video" && isAudioUrl(mUrl));
-          const isVideo = !isAudio && (aType === "video" || isVideoUrl(mUrl));
+          const isAudio = (aType === "audio" || (aType !== "video" && aType !== "text_test" && isAudioUrl(mUrl)));
+          const isVideo = !isAudio && (aType === "video" || aType === "text_test" || isVideoUrl(mUrl));
 
           const openInModal = (kind: MediaKind) => setMediaModal({ url: mUrl, kind });
 
@@ -346,18 +346,8 @@ export default function SubmissionReviewScreen() {
 
           // ── Other attachment ──
           return (
-            <View style={{ backgroundColor: "#ede9fe", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#8b5cf640", gap: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Feather name="paperclip" size={16} color="#8b5cf6" />
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#5b21b6" }}>Файл к заданию</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => openInModal("other")}
-                style={{ backgroundColor: "#8b5cf6", borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
-              >
-                <Feather name="external-link" size={16} color="#fff" />
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Открыть файл</Text>
-              </TouchableOpacity>
+            <View style={{ marginBottom: 16 }}>
+              <InlineMediaPlayer url={mUrl} kind="other" height={200} />
             </View>
           );
         })() : null}
