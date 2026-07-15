@@ -58,7 +58,9 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  // On web, fonts are injected via CSS @font-face above and must not block rendering.
+  // On native, wait for font to load (or error) before continuing.
+  if (Platform.OS !== "web" && !fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
