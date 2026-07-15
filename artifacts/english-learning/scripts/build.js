@@ -558,28 +558,66 @@ async function exportWebBuild(domain, expoPublicReplId) {
 #_splash-screen.hidden{opacity:0;pointer-events:none}
 #_splash-spin{width:36px;height:36px;border:3px solid rgba(100,60,220,.2);border-top-color:#6B3EDB;border-radius:50%;animation:_sp-anim .7s linear infinite;margin-bottom:16px}
 @keyframes _sp-anim{to{transform:rotate(360deg)}}
-#_splash-txt{color:#6B3EDB;font-size:15px;font-weight:500;opacity:.8}
+#_splash-txt{color:#6B3EDB;font-size:14px;font-weight:500;opacity:.7;margin-top:4px}
+#_splash-step{color:#9B7EDB;font-size:11px;margin-top:8px;opacity:.6;max-width:260px;text-align:center}
 #_err-screen{display:none;position:fixed;inset:0;z-index:99999;background:#fff;padding:24px;overflow:auto;font-family:monospace;font-size:13px;white-space:pre-wrap;word-break:break-all;color:#c00}
 </style>
-<div id="_splash-screen"><div id="_splash-spin"></div><div id="_splash-txt">Загрузка...</div></div>
+<div id="_splash-screen"><div id="_splash-spin"></div><div id="_splash-txt">Загрузка...</div><div id="_splash-step">Подключение...</div></div>
 <div id="_err-screen"></div>
 <script>
 (function(){
   var splash=document.getElementById('_splash-screen');
   var errDiv=document.getElementById('_err-screen');
+  var stepEl=document.getElementById('_splash-step');
+  var started=Date.now();
+
+  function setStep(s){if(stepEl)stepEl.textContent=s;}
+  function hideSplash(){
+    if(!splash||!splash.parentNode)return;
+    splash.classList.add('hidden');
+    setTimeout(function(){if(splash&&splash.parentNode)splash.remove();},600);
+    if(typeof mo!=='undefined')mo.disconnect();
+  }
+
+  // Expose hideSplash globally so React can call it directly
+  window.__hideSplash=hideSplash;
+
+  // Step 1: HTML parsed, waiting for JS bundle
+  setStep('Загрузка приложения...');
+
+  // Monitor the entry script for load/error
+  var scripts=document.querySelectorAll('script[src]');
+  for(var i=0;i<scripts.length;i++){
+    (function(s){
+      var origSrc=s.src;
+      s.addEventListener('load',function(){
+        setStep('Запуск приложения...');
+      });
+      s.addEventListener('error',function(){
+        setStep('');
+        var spin=document.getElementById('_splash-spin');
+        var txt=document.getElementById('_splash-txt');
+        if(spin)spin.style.display='none';
+        if(txt){
+          txt.innerHTML='Ошибка загрузки.<br><small style="font-size:11px;opacity:.7">Нет сети или блокировка</small><br><br><button onclick="location.reload()" style="background:#6B3EDB;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer">Обновить</button>';
+          txt.style.opacity='1';
+          txt.style.textAlign='center';
+        }
+      });
+    })(scripts[i]);
+  }
 
   // Hide splash once app root has any child element
   var mo=new MutationObserver(function(){
     var root=document.getElementById('root')||document.querySelector('[data-reactroot]');
     if(root&&root.childElementCount>0){
-      splash.classList.add('hidden');
-      setTimeout(function(){splash.remove();},600);
-      mo.disconnect();
+      hideSplash();
     }
   });
   mo.observe(document.body,{childList:true,subtree:true});
 
-  // Safety timeout — if the app hasn't rendered after 12s, show a retry button
+  // Safety timeout steps
+  setTimeout(function(){if(splash&&splash.parentNode)setStep('Ещё немного...');},5000);
   setTimeout(function(){
     if(!splash||!splash.parentNode)return;
     var spin=document.getElementById('_splash-spin');
@@ -591,6 +629,7 @@ async function exportWebBuild(domain, expoPublicReplId) {
       txt.style.textAlign='center';
       txt.style.lineHeight='1.5';
     }
+    if(stepEl)stepEl.textContent='';
   },12000);
 
   // Global error handler — show error instead of white screen

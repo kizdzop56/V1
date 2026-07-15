@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useLayoutEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -49,6 +49,15 @@ setBaseUrl(domain ? `https://${domain}` : null);
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Feather: require("../assets/fonts/Feather.ttf"),
+  });
+
+  // On web: directly remove the HTML loading screen as soon as React renders.
+  // This is the most reliable approach — no MutationObserver race conditions.
+  useLayoutEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const hide = (window as any).__hideSplash;
+      if (typeof hide === "function") hide();
+    }
   });
 
   useEffect(() => {
