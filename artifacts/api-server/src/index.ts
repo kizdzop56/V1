@@ -77,6 +77,7 @@ async function deleteAnnaUser() {
     if (!anna) return; // Already deleted — no-op on every subsequent restart
     await db.delete(authTokensTable).where(eq(authTokensTable.userId, 12));
     await db.delete(submissionsTable).where(eq(submissionsTable.studentId, 12));
+    await db.delete(timeSessionsTable).where(eq(timeSessionsTable.studentId, 12));
     await db.delete(usersTable).where(eq(usersTable.id, 12));
     logger.info("Deleted user Анна (id=12) and all related data");
   } catch (err) {
