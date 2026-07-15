@@ -579,13 +579,19 @@ async function exportWebBuild(domain, expoPublicReplId) {
   });
   mo.observe(document.body,{childList:true,subtree:true});
 
-  // Safety timeout — hide splash after 30s even if app never renders
+  // Safety timeout — if the app hasn't rendered after 12s, show a retry button
   setTimeout(function(){
-    if(splash&&splash.parentNode){
-      splash.classList.add('hidden');
-      setTimeout(function(){if(splash.parentNode)splash.remove();},600);
+    if(!splash||!splash.parentNode)return;
+    var spin=document.getElementById('_splash-spin');
+    var txt=document.getElementById('_splash-txt');
+    if(spin)spin.style.display='none';
+    if(txt){
+      txt.innerHTML='Не удалось загрузить.<br><br><button onclick="location.reload()" style="background:#6B3EDB;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer">Обновить страницу</button>';
+      txt.style.opacity='1';
+      txt.style.textAlign='center';
+      txt.style.lineHeight='1.5';
     }
-  },30000);
+  },12000);
 
   // Global error handler — show error instead of white screen
   window.addEventListener('error',function(e){

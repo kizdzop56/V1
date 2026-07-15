@@ -15,11 +15,6 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   style.textContent = "input, textarea { outline: none !important; }";
   document.head.appendChild(style);
 
-  // Disable iOS Safari's automatic data detectors (phone numbers, addresses,
-  // dates, emails) that turn plain UI text/numbers into tap-to-open links
-  // (e.g. Apple/Google Maps, Calendar). The +html.tsx meta tag only applies
-  // to static exports, not the Expo dev server, so it must also be injected
-  // here at runtime to take effect during development.
   if (!document.querySelector('meta[name="format-detection"]')) {
     const meta = document.createElement("meta");
     meta.name = "format-detection";
@@ -27,7 +22,6 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
     document.head.appendChild(meta);
   }
 
-  // Ensure Feather icon font is available via CSS (fallback for mobile browsers)
   try {
     const featherUrl = require("../assets/fonts/Feather.ttf");
     const iconStyle = document.createElement("style");
@@ -36,7 +30,12 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   } catch (_) {}
 }
 
-SplashScreen.preventAutoHideAsync();
+// SplashScreen is native-only — on web it creates a persistent overlay that
+// never gets removed because useFonts does not resolve for CSS-loaded fonts,
+// so hideAsync() is never called and the overlay blocks the React tree forever.
+if (Platform.OS !== "web") {
+  SplashScreen.preventAutoHideAsync();
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,18 +52,15 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (Platform.OS !== "web" && (fontsLoaded || fontError)) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
-  // On web, fonts are injected via CSS @font-face above and must not block rendering.
-  // On native, wait for font to load (or error) before continuing.
   if (Platform.OS !== "web" && !fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* Gradient covers the entire app — all screens are transparent */}
       <LinearGradient
         colors={["#F8F5FF", "#E8DFFF", "#D0C2FF"]}
         start={{ x: 0.1, y: 0 }}
