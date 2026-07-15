@@ -12,6 +12,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
 const STATIC_ROOT = path.resolve(__dirname, "..", "static-build");
 const WEB_ROOT = path.join(STATIC_ROOT, "web");
@@ -76,30 +77,43 @@ function cacheHeaderFor(ext, filePath) {
   return "public, max-age=300";
 }
 
-function serveWebBuild(urlPath, res) {
+const COMPRESSIBLE = new Set([".js", ".css", ".html", ".json", ".svg", ".txt"]);
+
+function sendFile(req, res, filePath, extraHeaders) {
+  const ext = path.extname(filePath).toLowerCase();
+  const content = fs.readFileSync(filePath);
+  const headers = {
+    "content-type": MIME_TYPES[ext] || "application/octet-stream",
+    "cache-control": cacheHeaderFor(ext, filePath),
+    ...extraHeaders,
+  };
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  if (COMPRESSIBLE.has(ext) && acceptEncoding.includes("gzip")) {
+    const compressed = zlib.gzipSync(content, { level: 6 });
+    headers["content-encoding"] = "gzip";
+    headers["vary"] = "Accept-Encoding";
+    res.writeHead(200, headers);
+    res.end(compressed);
+  } else {
+    res.writeHead(200, headers);
+    res.end(content);
+  }
+}
+
+function serveWebBuild(req, urlPath, res) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
 
   // 1. Try web root first
   const webFilePath = path.join(WEB_ROOT, safePath);
   if (webFilePath.startsWith(WEB_ROOT) && fs.existsSync(webFilePath) && !fs.statSync(webFilePath).isDirectory()) {
-    const ext = path.extname(webFilePath).toLowerCase();
-    res.writeHead(200, {
-      "content-type": MIME_TYPES[ext] || "application/octet-stream",
-      "cache-control": cacheHeaderFor(ext, webFilePath),
-    });
-    res.end(fs.readFileSync(webFilePath));
+    sendFile(req, res, webFilePath);
     return;
   }
 
   // 2. Try static root (Expo Go bundle/asset files don't always send expo-platform header)
   const staticFilePath = path.join(STATIC_ROOT, safePath);
   if (staticFilePath.startsWith(STATIC_ROOT) && fs.existsSync(staticFilePath) && !fs.statSync(staticFilePath).isDirectory()) {
-    const ext = path.extname(staticFilePath).toLowerCase();
-    res.writeHead(200, {
-      "content-type": MIME_TYPES[ext] || "application/octet-stream",
-      "cache-control": cacheHeaderFor(ext, staticFilePath),
-    });
-    res.end(fs.readFileSync(staticFilePath));
+    sendFile(req, res, staticFilePath);
     return;
   }
 
@@ -112,11 +126,21 @@ function serveWebBuild(urlPath, res) {
     try {
       const current = fs.readdirSync(webJsDir).find((f) => /^entry-[0-9a-f]+\.js$/.test(f));
       if (current) {
-        res.writeHead(200, {
-          "content-type": MIME_TYPES[".js"],
-          "cache-control": "no-cache, no-store, must-revalidate",
-        });
-        res.end(fs.readFileSync(path.join(webJsDir, current)));
+        const content = fs.readFileSync(path.join(webJsDir, current));
+        const acceptEncoding = req.headers["accept-encoding"] || "";
+        if (acceptEncoding.includes("gzip")) {
+          const compressed = zlib.gzipSync(content, { level: 6 });
+          res.writeHead(200, {
+            "content-type": MIME_TYPES[".js"],
+            "cache-control": "no-cache, no-store, must-revalidate",
+            "content-encoding": "gzip",
+            "vary": "Accept-Encoding",
+          });
+          res.end(compressed);
+        } else {
+          res.writeHead(200, { "content-type": MIME_TYPES[".js"], "cache-control": "no-cache, no-store, must-revalidate" });
+          res.end(content);
+        }
         return;
       }
     } catch { /* fall through to 404 */ }
@@ -127,11 +151,7 @@ function serveWebBuild(urlPath, res) {
   if (!fileExt) {
     const indexPath = path.join(WEB_ROOT, "index.html");
     if (fs.existsSync(indexPath)) {
-      res.writeHead(200, {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "no-cache, no-store, must-revalidate",
-      });
-      res.end(fs.readFileSync(indexPath));
+      sendFile(req, res, indexPath);
       return;
     }
   }
@@ -227,7 +247,7 @@ const server = http.createServer((req, res) => {
 
   // Browser requests — serve the web build (SPA)
   if (webBuildExists) {
-    return serveWebBuild(pathname, res);
+    return serveWebBuild(req, pathname, res);
   }
 
   // Fallback: landing page if no web build
