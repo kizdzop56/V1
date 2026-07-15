@@ -6,11 +6,17 @@ import { requireAuth } from "../lib/auth";
 
 const router = Router();
 
-// Use a persistent directory at the workspace root so files survive server restarts.
-// process.cwd() is artifacts/api-server/ when pnpm runs the script, so ../../uploads = workspace root /uploads.
-const uploadDir = path.resolve(process.cwd(), "../../uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Use a persistent directory at the workspace root where possible, fall back to /tmp/uploads.
+let uploadDir = path.resolve(process.cwd(), "../../uploads");
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch {
+  uploadDir = "/tmp/uploads";
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
 }
 
 const storage = multer.diskStorage({
