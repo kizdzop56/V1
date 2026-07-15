@@ -512,7 +512,7 @@ async function exportWebBuild(domain, expoPublicReplId) {
     fs.rmSync(webOutputDir, { recursive: true });
   }
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve) => {
     const env = {
       ...process.env,
       EXPO_PUBLIC_DOMAIN: domain,
@@ -543,6 +543,73 @@ async function exportWebBuild(domain, expoPublicReplId) {
       resolve();
     });
   });
+
+  // Post-process: inject a loading screen + global error handler into index.html.
+  // The loading screen shows immediately (no JS needed) and hides once the React
+  // root renders its first child. The error handler catches JS crashes and shows
+  // a visible message instead of a blank white screen.
+  const indexPath = path.join(webOutputDir, "index.html");
+  if (fs.existsSync(indexPath)) {
+    let html = fs.readFileSync(indexPath, "utf-8");
+
+    const injection = `
+<style>
+#_splash-screen{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#F8F5FF 0%,#D0C2FF 100%);font-family:-apple-system,BlinkMacSystemFont,sans-serif;transition:opacity .4s ease}
+#_splash-screen.hidden{opacity:0;pointer-events:none}
+#_splash-spin{width:36px;height:36px;border:3px solid rgba(100,60,220,.2);border-top-color:#6B3EDB;border-radius:50%;animation:_sp-anim .7s linear infinite;margin-bottom:16px}
+@keyframes _sp-anim{to{transform:rotate(360deg)}}
+#_splash-txt{color:#6B3EDB;font-size:15px;font-weight:500;opacity:.8}
+#_err-screen{display:none;position:fixed;inset:0;z-index:99999;background:#fff;padding:24px;overflow:auto;font-family:monospace;font-size:13px;white-space:pre-wrap;word-break:break-all;color:#c00}
+</style>
+<div id="_splash-screen"><div id="_splash-spin"></div><div id="_splash-txt">Загрузка...</div></div>
+<div id="_err-screen"></div>
+<script>
+(function(){
+  var splash=document.getElementById('_splash-screen');
+  var errDiv=document.getElementById('_err-screen');
+
+  // Hide splash once app root has any child element
+  var mo=new MutationObserver(function(){
+    var root=document.getElementById('root')||document.querySelector('[data-reactroot]');
+    if(root&&root.childElementCount>0){
+      splash.classList.add('hidden');
+      setTimeout(function(){splash.remove();},600);
+      mo.disconnect();
+    }
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+
+  // Safety timeout — hide splash after 30s even if app never renders
+  setTimeout(function(){
+    if(splash&&splash.parentNode){
+      splash.classList.add('hidden');
+      setTimeout(function(){if(splash.parentNode)splash.remove();},600);
+    }
+  },30000);
+
+  // Global error handler — show error instead of white screen
+  window.addEventListener('error',function(e){
+    var msg=(e.message||'Unknown error')+'\n'+(e.filename||'')+':'+(e.lineno||'')+(e.colno?':'+e.colno:'');
+    if(e.error&&e.error.stack)msg+='\n\n'+e.error.stack;
+    errDiv.textContent='JavaScript error:\n\n'+msg;
+    errDiv.style.display='block';
+    if(splash&&splash.parentNode)splash.remove();
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    var msg='Unhandled promise rejection: '+(e.reason&&e.reason.message?e.reason.message:String(e.reason));
+    if(e.reason&&e.reason.stack)msg+='\n\n'+e.reason.stack;
+    errDiv.textContent=msg;
+    errDiv.style.display='block';
+    if(splash&&splash.parentNode)splash.remove();
+  });
+})();
+</script>`;
+
+    // Inject just before </body>
+    html = html.replace(/<\/body>/i, injection + "\n</body>");
+    fs.writeFileSync(indexPath, html, "utf-8");
+    console.log("Injected loading screen + error handler into index.html");
+  }
 }
 
 async function main() {
