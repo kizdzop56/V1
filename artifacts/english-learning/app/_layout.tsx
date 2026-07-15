@@ -52,9 +52,18 @@ export default function RootLayout() {
   });
 
   // On web: directly remove the HTML loading screen as soon as React renders.
-  // This is the most reliable approach — no MutationObserver race conditions.
+  // We manipulate the DOM directly so this works even when Telegram/WKWebView
+  // CSP blocks inline scripts (which would prevent window.__hideSplash from loading).
   useLayoutEffect(() => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const splash = document.getElementById("_splash-screen");
+      if (splash) {
+        splash.classList.add("hidden");
+        setTimeout(() => {
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 500);
+      }
+      // Also call helper if it was loaded (belt-and-suspenders)
       const hide = (window as any).__hideSplash;
       if (typeof hide === "function") hide();
     }
