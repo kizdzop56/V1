@@ -66,6 +66,16 @@ function serveManifest(platform, res) {
   res.end(manifest);
 }
 
+// Hashed build assets are immutable; HTML must never be cached so that a new
+// deploy's index.html (with new bundle hashes) is always picked up by browsers.
+function cacheHeaderFor(ext, filePath) {
+  if (ext === ".html") return "no-cache, no-store, must-revalidate";
+  if (/-[0-9a-f]{16,}\./.test(path.basename(filePath)) || filePath.includes("_expo/static")) {
+    return "public, max-age=31536000, immutable";
+  }
+  return "public, max-age=300";
+}
+
 function serveWebBuild(urlPath, res) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
 
@@ -73,7 +83,10 @@ function serveWebBuild(urlPath, res) {
   const webFilePath = path.join(WEB_ROOT, safePath);
   if (webFilePath.startsWith(WEB_ROOT) && fs.existsSync(webFilePath) && !fs.statSync(webFilePath).isDirectory()) {
     const ext = path.extname(webFilePath).toLowerCase();
-    res.writeHead(200, { "content-type": MIME_TYPES[ext] || "application/octet-stream" });
+    res.writeHead(200, {
+      "content-type": MIME_TYPES[ext] || "application/octet-stream",
+      "cache-control": cacheHeaderFor(ext, webFilePath),
+    });
     res.end(fs.readFileSync(webFilePath));
     return;
   }
@@ -82,9 +95,31 @@ function serveWebBuild(urlPath, res) {
   const staticFilePath = path.join(STATIC_ROOT, safePath);
   if (staticFilePath.startsWith(STATIC_ROOT) && fs.existsSync(staticFilePath) && !fs.statSync(staticFilePath).isDirectory()) {
     const ext = path.extname(staticFilePath).toLowerCase();
-    res.writeHead(200, { "content-type": MIME_TYPES[ext] || "application/octet-stream" });
+    res.writeHead(200, {
+      "content-type": MIME_TYPES[ext] || "application/octet-stream",
+      "cache-control": cacheHeaderFor(ext, staticFilePath),
+    });
     res.end(fs.readFileSync(staticFilePath));
     return;
+  }
+
+  // 2.5 Stale-bundle fallback: a browser with a cached index.html may request an
+  // old hashed entry bundle that no longer exists after a redeploy. Serve the
+  // current entry bundle instead of 404 so those clients still boot the app.
+  const entryMatch = safePath.match(/(?:^|[\\/])_expo[\\/]static[\\/]js[\\/]web[\\/]entry-[0-9a-f]+\.js$/);
+  if (entryMatch) {
+    const webJsDir = path.join(WEB_ROOT, "_expo", "static", "js", "web");
+    try {
+      const current = fs.readdirSync(webJsDir).find((f) => /^entry-[0-9a-f]+\.js$/.test(f));
+      if (current) {
+        res.writeHead(200, {
+          "content-type": MIME_TYPES[".js"],
+          "cache-control": "no-cache, no-store, must-revalidate",
+        });
+        res.end(fs.readFileSync(path.join(webJsDir, current)));
+        return;
+      }
+    } catch { /* fall through to 404 */ }
   }
 
   // 3. SPA fallback — only for paths without a file extension (app routes like /login, /home)
@@ -92,7 +127,10 @@ function serveWebBuild(urlPath, res) {
   if (!fileExt) {
     const indexPath = path.join(WEB_ROOT, "index.html");
     if (fs.existsSync(indexPath)) {
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.writeHead(200, {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-cache, no-store, must-revalidate",
+      });
       res.end(fs.readFileSync(indexPath));
       return;
     }
