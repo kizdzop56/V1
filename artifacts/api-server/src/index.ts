@@ -85,13 +85,17 @@ async function deleteAnnaUser() {
   }
 }
 
-cleanupOversizedAvatars().then(() => fixLizaOrphanedSession()).then(() => deleteAnnaUser()).finally(() => {
-  app.listen(port, (err) => {
-    if (err) {
-      logger.error({ err }, "Error listening on port");
-      process.exit(1);
-    }
+// Start listening immediately so healthchecks pass; run one-time cleanup in background.
+app.listen(port, (err) => {
+  if (err) {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
+  }
+  logger.info({ port }, "Server listening");
 
-    logger.info({ port }, "Server listening");
-  });
+  // Background cleanup — must not block startup
+  cleanupOversizedAvatars()
+    .then(() => fixLizaOrphanedSession())
+    .then(() => deleteAnnaUser())
+    .catch((err) => logger.error({ err }, "Startup background cleanup failed"));
 });
