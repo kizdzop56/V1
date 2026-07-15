@@ -62,15 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
               const freshUser = await res.json();
-              if (!freshUser.emailVerified) {
-                // Stale unverified session — clear it so the user lands on login/register
-                await authStorage.removeItem("auth_token");
-                await authStorage.removeItem("auth_user");
-              } else {
-                await authStorage.setItem("auth_user", JSON.stringify(freshUser));
-                setToken(storedToken);
-                setUser(freshUser);
-              }
+              // Keep the session alive regardless of emailVerified.
+              // The routing layer (index.tsx) redirects unverified users to the
+              // confirm-email screen if needed. Force-clearing a valid token here
+              // was logging every user out on each app restart when emailVerified
+              // was false (which was the case for all teacher-created accounts).
+              await authStorage.setItem("auth_user", JSON.stringify(freshUser));
+              setToken(storedToken);
+              setUser(freshUser);
             } else if (res.status === 401) {
               // Token invalid or expired — clear session
               await authStorage.removeItem("auth_token");

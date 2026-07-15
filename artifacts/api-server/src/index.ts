@@ -64,6 +64,30 @@ async function fixLizaOrphanedSession() {
   }
 }
 
+// One-time fix: all existing users were created before the email-verification
+// flow existed. None of them have an email address and none ever went through
+// verification, so email_verified = 'false' for everyone including the teacher.
+// The AuthContext clears stored sessions when emailVerified is false, which logs
+// every user out on every app restart. Setting all accounts to verified is the
+// correct fix — teacher-created students do not need email verification.
+async function verifyAllExistingUsers() {
+  try {
+    const result = await db
+      .update(usersTable)
+      .set({ emailVerified: "true" })
+      .where(eq(usersTable.emailVerified, "false"))
+      .returning({ id: usersTable.id, username: usersTable.username });
+    if (result.length > 0) {
+      logger.info(
+        { users: result.map((u: { id: number; username: string }) => u.username) },
+        "Set emailVerified=true for existing unverified users",
+      );
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to verify existing users");
+  }
+}
+
 // One-time cleanup: delete user Анна (id=12) and all her data.
 // submissions.studentId has no CASCADE so must be deleted explicitly first;
 // submission_answers cascade from submissions. assigned_tasks, teacher_students,
@@ -97,5 +121,6 @@ app.listen(port, (err) => {
   cleanupOversizedAvatars()
     .then(() => fixLizaOrphanedSession())
     .then(() => deleteAnnaUser())
+    .then(() => verifyAllExistingUsers())
     .catch((err) => logger.error({ err }, "Startup background cleanup failed"));
 });
